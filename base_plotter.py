@@ -1,0 +1,147 @@
+import os
+from configparser import ConfigParser
+
+import matplotlib.pyplot as plt
+
+from functions import *
+
+__metaclass__ = type
+
+class BasePlotter:
+
+    def __init__(self, styles=[], rows=1, cols=1, nxcbar=0, nycbar=0,
+            xsize=4.5, ysize=4.5, left=1.0, right=0.15, bottom=0.6, top=0.15,
+            wspace=0.2, hspace=0.2, cbar_width=0.2, cbar_spacing=0.1,
+            sharex=False, sharey=False, projection='rectilinear'):
+        try:
+            plt.close()
+        except:
+            pass
+        plt.style.use(styles)
+
+        # Projection
+        self.projection = projection
+
+        # Determine the number of axes
+        self.nx = cols 
+        self.nxcbar = nxcbar
+        self.ny = rows 
+        self.nycbar = nycbar
+        
+        # Determine figure size
+        if rows==nycbar or cols==nxcbar:
+            share_cbar = False
+        else:
+            share_cbar = True
+        figgeom, cbargeom = get_geometry(rows, cols, nxcbar, nycbar, xsize, 
+                ysize, left, right, bottom, top, wspace, hspace, cbar_width, 
+                cbar_spacing, sharex, sharey, share_cbar=share_cbar)
+        width = 0
+        height = 0
+        for geom in figgeom[:cols] + cbargeom[:nxcbar]:
+            width += geom.width
+        for geom in figgeom[::cols] + cbargeom[:nycbar]:
+            height += geom.height
+        print 'Figure size: width=%.1f in height=%.1f in' % (width, height)
+
+        # Get axes
+        if nxcbar!=0:
+            cbar_orientation = 'vertical'
+        elif nycbar!=0:
+            cbar_orientation = 'horizontal'
+        else:
+            cbar_orientation = None
+        self.axes, self.cbaxes = get_axes(figgeom, cbargeom, rows, cols, width,
+                height, cbar_orientation)
+
+
+        # Create figure
+        self.fig = plt.figure(figsize=(width, height))
+
+    def __iter__(self):
+        for ax in self.axes:
+            yield self.fig.add_axes(ax, projection=self.projection)
+
+    def savefig(self, fname, **kwargs):
+        self.fig.savefig(fname, **kwargs)
+
+    def get_axis(self, n, projection=None, include_cbar=True):
+        if projection is None:
+            projection = self.projection
+
+        axis = self.fig.add_axes(self.axes[n].axis, projection=projection)
+        if not include_cbar:
+            cbax = None
+        elif len(self.cbaxes)==len(self.axes):
+            cbax = self.fig.add_axes(self.cbaxes[n].axis)
+        elif self.nxcbar and n%self.nx==self.nx-1:
+            cbax = self.fig.add_axes(self.cbaxes[n/self.nx].axis)
+        elif self.nycbar and n/self.nx==0:
+            cbax = self.fig.add_axes(self.cbaxes[n%self.nx].axis)
+        else:
+            cbax = None
+
+        return axis, cbax
+
+class SinglePlotter:
+
+    def __init__(self, ax, xscale='linear', yscale='linear'):
+        self.ax = ax
+        self.xscale = xscale
+        self.yscale = yscale
+
+    def config_plot(self, config=ConfigParser(), **kwargs):
+        # Limits
+        if 'xlim' in kwargs or 'xlim' in config:
+            xlim = kwargs.get('xlim') or map(float,config.get('xlim').split(','))
+            self.ax.set_xlim(*xlim)
+        if 'ylim' in kwargs or 'ylim' in config:
+            ylim = kwargs.get('ylim') or map(float,config.get('ylim').split(','))
+            self.ax.set_ylim(*ylim)
+
+        # Coordinate scales
+        if kwargs.get('xscale', self.xscale)=='log':
+            self.ax.set_xscale('log')
+            self.ax.xaxis.set_major_formatter(formatter('log'))
+        if kwargs.get('yscale', self.yscale)=='log':
+            self.ax.set_yscale('log')
+            self.ax.yaxis.set_major_formatter(formatter('log'))
+
+        # Labels
+        self.ax.set_xlabel(kwargs.get('xlabel', ''))
+        self.ax.set_ylabel(kwargs.get('ylabel', ''))
+
+        # Ticks
+        fmt = kwargs.setdefault('ticks_fmt', '%.3f')
+        if 'xticks' in kwargs:
+            self.ax.set_xticks(kwargs['xticks'])
+            self.ax.set_xticklabels([fmt % nu for nu in kwargs['xticks']])
+        elif kwargs.get('unset_xticks', False):
+            self.ax.set_xticklabels(['']*len(self.ax.get_xticks()))
+        if 'minor_xticks' in kwargs:
+            self.ax.set_xticks(kwargs['minor_xticks'], minor=True)
+        if 'yticks' in kwargs:
+            self.ax.set_yticks(kwargs['yticks'])
+            self.ax.set_yticklabels([fmt % nu for nu in kwargs['yticks']])
+        elif kwargs.get('unset_yticks', False):
+            self.ax.set_yticklabels(['']*len(self.ax.get_yticks()))
+        if 'minor_yticks' in kwargs:
+            self.ax.set_yticks(kwargs['minor_yticks'], minor=True)
+
+    def set_xlim(self, xmin=None, xmax=None):
+        self.ax.set_xlim(left=xmin, right=xmax)
+
+    def set_ylim(self, ymin=None, ymax=None):
+        self.ax.set_ylim(bottom=ymin, top=ymax)
+
+    def plot(self, *args, **kwargs):
+        self.ax.plot(*args, **kwargs)
+
+    def errorbar(self, *args, **kwargs):
+        self.ax.errorbar(*args, **kwargs)
+    
+    def annotate(self, *args, **kwargs):
+        self.ax.annotate(*args, **kwargs)
+
+    def legend(self, loc=0):
+        self.ax.legend(loc=loc, frameon=False)
