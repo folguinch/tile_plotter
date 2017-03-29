@@ -84,12 +84,60 @@ class BasePlotter:
 
 class SinglePlotter:
 
+    """Container for axes of a single plot.
+
+    Class for easy and quick configuration of a single axes object. This plot
+    may be included in a grid of several plots.
+
+    Attributes:
+        ax (matplotlib axes): axes of the plot.
+        xscale (str): x axis scale (linear or log).
+        yscale (str): y axis scale (linear or log).
+    """
+
     def __init__(self, ax, xscale='linear', yscale='linear'):
+        """ Create a single plot container.
+
+        Args:
+            ax (matplotlib axes): axes of the plot.
+            xscale (str, optional): x axis scale (linear or log, default
+                linear).
+            yscale (str, optional): y axis scale (linear or log, default
+                linear).
+        """
         self.ax = ax
         self.xscale = xscale
         self.yscale = yscale
 
     def config_plot(self, config=ConfigParser(), **kwargs):
+        """Configure the plot.
+
+        Configures several aspects of the axes: limits, scales, labels and
+        ticks. Keyword parameters overrride the values in the config variable.
+        If a parameter has no value the option is not configured.
+
+        Args:
+            config (dict like, optional): dictionary like structure with
+                configuration values (default empty dict).
+        Keyword args:
+            xlim (float iterable): x axis limits.
+            ylim (float iterable): y axis limits.
+            xscale (str): x axis scale (linear or log, default initialized
+                value).
+            yscale (str): y axis scale (linear or log, default initialized
+                value).
+            xlabel (str): x axis label (default '').
+            ylabel (str): y axis label (default '').
+            ticks_fmt (str): ticks string format (default %.3f).
+            xticks (float list like): x ticks positions. The ticks labels are
+                formated with xticks_fmt.
+            yticks (float list like): y ticks positions. The ticks labels are
+                formated with yticks_fmt.
+            unset_xticks (bool): whether to unset the x ticks labels (default
+                False).
+            unset_yticks (bool): whether to unset the y ticks labels (default
+                False.
+        """
         # Limits
         if 'xlim' in kwargs or 'xlim' in config:
             xlim = kwargs.get('xlim') or map(float,config.get('xlim').split(','))
@@ -128,19 +176,52 @@ class SinglePlotter:
             self.ax.set_yticks(kwargs['minor_yticks'], minor=True)
 
     def set_xlim(self, xmin=None, xmax=None):
+        """Set the axis x limits"""
         self.ax.set_xlim(left=xmin, right=xmax)
 
     def set_ylim(self, ymin=None, ymax=None):
+        """Set the axis y limits"""
         self.ax.set_ylim(bottom=ymin, top=ymax)
 
     def plot(self, *args, **kwargs):
+        """Plot on the axis.
+
+        Arguments are the same as for the matplotlib.pyplot.plot() finction.
+
+        Args:
+            *args: data to plot.
+            **kwargs: arguments for matplotlib.pyplot.plot().
+        """
         self.ax.plot(*args, **kwargs)
 
     def errorbar(self, *args, **kwargs):
+        """Plot on the axis.
+
+        Arguments are the same as for the matplotlib.pyplot.errorbar() finction.
+
+        Args:
+            *args: data to plot.
+            **kwargs: arguments for matplotlib.pyplot.errorbar().
+        """
         self.ax.errorbar(*args, **kwargs)
     
     def annotate(self, *args, **kwargs):
+        """Annotate the axis.
+
+        Arguments are the same as for the matplotlib.pyplot.annotate() finction.
+
+        Args:
+            *args: data to plot.
+            **kwargs: arguments for matplotlib.pyplot.annotate().
+        """
         self.ax.annotate(*args, **kwargs)
 
     def legend(self, loc=0):
+        """Plot the legend.
+
+        Args:
+            loc (int, optional): legend position. 
+                See matplotlib.pyplot.lengend() documentation for available
+                values and positions (default 0, i.e. best location).
+        """
         self.ax.legend(loc=loc, frameon=False)
