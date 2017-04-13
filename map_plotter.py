@@ -50,14 +50,21 @@ class MapPlotter:
 
         # Plot contours
         if contours is not None and levels is not None:
-            if contours_wcs is not None:
-                self.ax.contour(contours, 
-                        transform=self.ax.get_transform(contours_wcs),
-                        levels=levels, colors=colors, zorder=2,
-                        linewidths=linewidths)
-            else:
-                self.ax.contour(contours, levels=levels, colors=colors,
-                        zorder=2, extent=extent_cont, linewidths=linewidths)
+            self.plot_contours(contours, levels, wcs=contours_wcs,
+                    extent=extent_cont, linewidths=linewidths, colors=colors,
+                    zorder=2)
+
+    def plot_contours(self, data, levels, wcs=None, extent=None, linewidths=None,
+            colors='g', zorder=0):
+        if wcs is not None:
+            self.ax.contour(data, 
+                    transform=self.ax.get_transform(wcs),
+                    levels=levels, colors=colors, zorder=zorder,
+                    linewidths=linewidths)
+        else:
+            self.ax.contour(data, levels=levels, colors=colors,
+                    zorder=zorder, extent=extent, linewidths=linewidths)
+
 
     def recenter(self, r, ra, dec, wcs):
         x, y = wcs.all_world2pix([[ra,dec]], 0)[0]
