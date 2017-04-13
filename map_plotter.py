@@ -3,6 +3,7 @@ from configparser import ConfigParser
 import numpy as np
 from astropy.visualization import LogStretch, LinearStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
+from wcsaxes import SphericalCircle
 import matplotlib
 from matplotlib.patches import Rectangle, Ellipse
 
@@ -188,6 +189,11 @@ class MapPlotter:
 
     def scatter(self, x, y, **kwargs):
         self.ax.scatter(x, y, transform=self.ax.get_transform('world'), **kwargs)
+
+    def circle(self, x, y, r, color='g', facecolor='none', zorder=0):
+        cir = SphericalCircle((x, y), r, edgecolor=color, facecolor=facecolor,
+                transform=self.ax.get_transform('fk5'), zorder=zorder)
+        self.ax.add_patch(cir)
 
     def plot(self, *args, **kwargs):
         kwargs['transform'] = self.ax.get_transform('world')
