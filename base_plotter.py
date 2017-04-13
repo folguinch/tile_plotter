@@ -1,12 +1,13 @@
 from configparser import ConfigParser
+from abc import ABCMeta, abstractmethod
 
 import matplotlib.pyplot as plt
 
 from functions import *
 
-__metaclass__ = type
+class BasePlotter(object):
 
-class BasePlotter:
+    __metaclass__ = ABCMeta
 
     def __init__(self, styles=[], rows=1, cols=1, nxcbar=0, nycbar=0,
             xsize=4.5, ysize=4.5, left=1.0, right=0.15, bottom=0.6, top=0.15,
@@ -64,6 +65,7 @@ class BasePlotter:
     def savefig(self, fname, **kwargs):
         self.fig.savefig(fname, **kwargs)
 
+    @abstractmethod
     def get_axis(self, n, projection=None, include_cbar=True):
         if projection is None:
             projection = self.projection
