@@ -5,6 +5,30 @@ import matplotlib.pyplot as plt
 
 from functions import *
 
+class FigAxes(object):
+    """Figure axes collection.
+
+    Keeps track of the Figure axes, whether they have been initialized or not.
+    Attributes:
+        axes (list): list of the axes.
+        cbaxes (list): list of the colorbar axes.
+    """
+
+    def __init__(self, axes=None, cbaxes=None):
+        """Create an axes container.
+
+        Args:
+            axes (list, optional): list of axes.
+            cbaxes (list, optional): list of colorbar axes.
+        """
+        self.axes = axes
+        self.cbaxes = cbaxes
+
+
+    def init(self, n, ax, projection=None, cbaxis=False):
+
+
+
 class BasePlotter(object):
 
     __metaclass__ = ABCMeta
@@ -54,7 +78,6 @@ class BasePlotter(object):
         self.axes, self.cbaxes = get_axes(figgeom, cbargeom, rows, cols, width,
                 height, cbar_orientation)
 
-
         # Create figure
         self.fig = plt.figure(figsize=(width, height))
 
@@ -65,7 +88,19 @@ class BasePlotter(object):
     def savefig(self, fname, **kwargs):
         self.fig.savefig(fname, **kwargs)
 
-    @abstractmethod
+    def is_init(self, n, cbaxis=False):
+        """Check if an axis has been initialized.
+
+        Args:
+            n (int): number of the axis.
+            cbaxis (bool, optional): whether to check for a colorbar axis 
+                instead. Default: False.
+        """
+        if not cbaxis:
+            return hasattr(self.axes[n], 'plot')
+        else:
+            return hasattr(self.cbaxes[n], 'plot')
+
     def get_axis(self, n, projection=None, include_cbar=True):
         if projection is None:
             projection = self.projection
@@ -83,6 +118,31 @@ class BasePlotter(object):
             cbax = None
 
         return axis, cbax
+
+    @abstractmethod
+    def init_axis(self, n, projection=None, include_cbar=True):
+        if projection is None:
+            projection = self.projection
+
+        if self.is_init(n):
+            pass
+        else:
+            assert hasattr(self.axes[n], 'axis')
+            self.axes[n] = self.fig.add_axes(self.axes[n].axis, 
+                    projection=projection)
+
+        if not include_cbar:
+            pass
+        elif len(self.cbaxes)==len(self.axes):
+            self.cbaxes[n] = self.fig.add_axes(self.cbaxes[n].axis)
+        elif self.nxcbar and n%self.nx==self.nx-1:
+            self.cbaxes[n/self.nx] = self.fig.add_axes(self.cbaxes[n/self.nx].axis)
+        elif self.nycbar and n/self.nx==0:
+            self.cbaxes[n%self.nx] = self.fig.add_axes(self.cbaxes[n%self.nx].axis)
+        else:
+            pass
+
+        return 
 
 class SinglePlotter:
 
