@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 
 from functions import *
 
-class FigAxes(object):
+class BasePlotter(object):
+
     """Figure axes collection.
 
     Keeps track of the Figure axes, whether they have been initialized or not.
@@ -13,23 +14,6 @@ class FigAxes(object):
         axes (list): list of the axes.
         cbaxes (list): list of the colorbar axes.
     """
-
-    def __init__(self, axes=None, cbaxes=None):
-        """Create an axes container.
-
-        Args:
-            axes (list, optional): list of axes.
-            cbaxes (list, optional): list of colorbar axes.
-        """
-        self.axes = axes
-        self.cbaxes = cbaxes
-
-
-    def init(self, n, ax, projection=None, cbaxis=False):
-
-
-
-class BasePlotter(object):
 
     __metaclass__ = ABCMeta
 
