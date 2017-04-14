@@ -1,4 +1,3 @@
-
 __metaclass__ = type
 
 class FigGeometry:
