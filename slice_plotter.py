@@ -28,10 +28,10 @@ class SlicePlotter(SinglePlotter):
 
             if kwargs.setdefault('direction','horizontal') == 'horizontal':
                 x = np.arange(img.data.shape[1]) - x0 + 0.5
-                y = img.data[y0,:]
+                y = img.data[int(y0)]
             else:
                 x = np.arange(img.data.shape[0]) - y0 + 0.5
-                y = img.data[:,x0]
+                y = img.data[:,int(x0)]
 
             if kwargs.get('recenter', False):
                 aux = ~np.isnan(y)
@@ -95,3 +95,6 @@ class SlicesPlotter(BasePlotter):
     def get_axis(self, nax=0):
         axis, cbaxis = super(SlicesPlotter,self).get_axis(nax, include_cbar=False)
         return SlicePlotter(axis)
+
+    def init_axis(self, n):
+        super(SlicesPlotter, self).init_axis(n)
