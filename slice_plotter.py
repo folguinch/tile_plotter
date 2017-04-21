@@ -90,7 +90,8 @@ class SlicePlotter(SinglePlotter):
         if error is None:
             super(SlicePlotter, self).plot(x, y, ''.join(ln), label=lb)
         else:
-            super(SlicePlotter, self).errorbar(x, y, yerr, fmt=ln)
+            super(SlicePlotter, self).errorbar(x, y, yerr, fmt=ln, 
+                    ecolor=ln[0], color=ln[0])
 
     def plot_slices(self, *slices, **kwargs):
         # Lines
@@ -124,7 +125,7 @@ class SlicePlotter(SinglePlotter):
                         fmt=kwargs.get('ptype',ln[1]), ecolor=ln[0], color=ln[0])
 
     def plot_hvslit(self, img, ls, width=0, ref_pos='max', position=(None,None), 
-            delta_max=0, direction='horizontal'):
+            delta_max=0, direction='horizontal', error=False):
 
         ra, dec = position
         x0, y0 = get_ref(img, ref_pos, ra=ra, dec=dec)
@@ -133,10 +134,12 @@ class SlicePlotter(SinglePlotter):
             x = np.arange(img.data.shape[1]) - x0 + 0.5
             y0 = int(y0+delta_max)
             y = np.mean(img.data[y0-width/2:y0+width/2+1,:], axis=0)
+            yerr = np.std(img.data[y0-width/2:y0+width/2+1,:], axis=0)
         else:
             x = np.arange(img.data.shape[0]) - y0 + 0.5
             x0 = int(x0+delta_max)
             y = np.mean(img.data[:,x0-width/2:x0+width/2+1], axis=1)
+            yerr = np.std(img.data[:,x0-width/2:x0+width/2+1], axis=1)
 
         wcs = WCS(img.header).sub(['latitude','longitude'])
         pixsize = np.mean(np.abs(proj_plane_pixel_scales(wcs)))
@@ -144,7 +147,11 @@ class SlicePlotter(SinglePlotter):
         x = x*pixsize*3600.
         print pixsize*delta_max*3600, width*pixsize*3600
 
-        super(SlicePlotter, self).plot(x, y, ls)
+        if not error:
+            super(SlicePlotter, self).plot(x, y, ls)
+        else:
+            super(SlicePlotter, self).errorbar(x, y, yerr, fmt=ls, 
+                    ecolor=ln[0], color=ln[0])
 
 class SlicesPlotter(BasePlotter):
 
