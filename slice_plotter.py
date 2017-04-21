@@ -151,7 +151,7 @@ class SlicePlotter(SinglePlotter):
             super(SlicePlotter, self).plot(x, y, ls)
         else:
             super(SlicePlotter, self).errorbar(x, y, yerr, fmt=ls, 
-                    ecolor=ln[0], color=ln[0])
+                    ecolor=ls[0], color=ls[0])
 
 class SlicesPlotter(BasePlotter):
 
