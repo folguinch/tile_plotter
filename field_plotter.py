@@ -32,3 +32,6 @@ class FieldsPlotter(BasePlotter):
         axis, cbax = self.get_axis(n, include_cbar=False)
 
         return FieldPlotter(axis)
+
+    def init_axis(self, n):
+        super(FieldsPlotter, self).init_axis(n)
