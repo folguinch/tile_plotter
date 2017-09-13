@@ -156,13 +156,13 @@ class MapPlotter:
             tlabel.set_family(self.ax.xaxis.get_majorticklabels()[0].get_family())
             tlabel.set_fontname(self.ax.xaxis.get_majorticklabels()[0].get_fontname())
 
-    def plot_beam(self, header=None, bmin=None, bmaj=None, bpa=None, dx=1,
+    def plot_beam(self, header, bmin=None, bmaj=None, bpa=0., dx=1,
             dy=1, pad=2):
         # Beam properties
         pixsize = np.sqrt(np.abs(header['CDELT2']*header['CDELT1']))
-        bmaj = header['BMAJ']/pixsize
-        bmin = header['BMIN']/pixsize
-        bpa = header['BPA']
+        bmaj = header.get('BMAJ', bmaj)/pixsize
+        bmin = header.get('BMIN', bmin)/pixsize
+        bpa = header.get('BPA', bpa)
 
         # Define position
         xmin, xmax = self.ax.get_xlim()
@@ -232,4 +232,7 @@ class MapsPlotter(BasePlotter):
                 include_cbar=include_cbar)
 
         return MapPlotter(axis, cbax, vmin=vmin, vmax=vmax, a=a, stretch=stretch)
+
+    def init_axis(self, n, projection='rectilinear', include_cbar=False):
+        super(MapsPlotter, self).init_axis(n, projection, include_cbar)
 
