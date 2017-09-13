@@ -128,7 +128,7 @@ class BasePlotter(object):
 
         return 
 
-class SinglePlotter:
+class SinglePlotter(object):
 
     """Container for axes of a single plot.
 
@@ -239,6 +239,13 @@ class SinglePlotter:
             **kwargs: arguments for matplotlib.pyplot.plot().
         """
         self.ax.plot(*args, **kwargs)
+
+    def axhline(self, *args, **kwargs):
+        """Plot horizontal line
+
+        Arguments are the same as for the matplotlib.pyplot.axhline function
+        """
+        self.ax.axhline(*args,**kwargs)
 
     def errorbar(self, *args, **kwargs):
         """Plot on the axis.
