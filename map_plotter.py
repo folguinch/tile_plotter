@@ -157,7 +157,7 @@ class MapPlotter:
             tlabel.set_fontname(self.ax.xaxis.get_majorticklabels()[0].get_fontname())
 
     def plot_beam(self, header, bmin=None, bmaj=None, bpa=0., dx=1,
-            dy=1, pad=2):
+            dy=1, pad=2, color='k'):
         # Beam properties
         pixsize = np.sqrt(np.abs(header['CDELT2']*header['CDELT1']))
         bmaj = header.get('BMAJ', bmaj)/pixsize
@@ -174,7 +174,7 @@ class MapPlotter:
         # Plot box and beam
         #rect = Rectangle((xmin,ymin), size, size, fill=True, fc='w', zorder=3)
         beam = Ellipse((xmin+size/2., ymin+size/2.), bmin, bmaj, angle=bpa,
-                zorder=4, fc='k')
+                zorder=4, fc=color)
         #ax.add_patch(rect)
         self.ax.add_patch(beam)
 
