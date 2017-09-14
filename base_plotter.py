@@ -269,7 +269,7 @@ class SinglePlotter(object):
         """
         self.ax.annotate(*args, **kwargs)
 
-    def legend(self, loc=0):
+    def legend(self, loc=0, **kwargs):
         """Plot the legend.
 
         Args:
@@ -277,4 +277,4 @@ class SinglePlotter(object):
                 See matplotlib.pyplot.lengend() documentation for available
                 values and positions (default 0, i.e. best location).
         """
-        self.ax.legend(loc=loc, frameon=False)
+        self.ax.legend(loc=loc, frameon=False, **kwargs)
