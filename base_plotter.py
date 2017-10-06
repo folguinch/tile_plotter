@@ -238,7 +238,7 @@ class SinglePlotter(object):
             *args: data to plot.
             **kwargs: arguments for matplotlib.pyplot.plot().
         """
-        self.ax.plot(*args, **kwargs)
+        return self.ax.plot(*args, **kwargs)
 
     def axhline(self, *args, **kwargs):
         """Plot horizontal line
