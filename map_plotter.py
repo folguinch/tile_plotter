@@ -3,7 +3,7 @@ from configparser import ConfigParser
 import numpy as np
 from astropy.visualization import LogStretch, LinearStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
-from wcsaxes import SphericalCircle
+from astropy.visualization.wcsaxes import SphericalCircle
 import matplotlib
 from matplotlib.patches import Rectangle, Ellipse
 
