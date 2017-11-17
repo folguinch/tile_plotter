@@ -19,7 +19,8 @@ from matplotlib.patches import Rectangle, Ellipse
 from RadModelling.Objects import Source, Profile
 from RadModelling.Configuration.config_main import config_main
 from matplotlib.ticker import FuncFormatter 
-from hyperion.model import ModelOutput
+#from hyperion.model import ModelOutput
+
 
 from geometry import FigGeometry
 
@@ -173,8 +174,9 @@ def get_source(name):
     source = Source(name, config=conf)
     return source
 
-def get_hyperion_model(fname):
-    return ModelOutput(fname)
+# THIS SHOULD NOT BE HERE
+#def get_hyperion_model(fname):
+#    return ModelOutput(fname)
 
 def setup_env(script, name, conf_file='config.cfg'):
     THIS = os.path.dirname(os.path.realpath(script))
