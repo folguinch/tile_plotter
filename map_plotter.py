@@ -187,6 +187,9 @@ class MapPlotter:
     def set_ylim(self, ymin=None, ymax=None):
         self.ax.set_ylim(ymin, ymax)
 
+    def set_title(self, title):
+        self.ax.set_title(title)
+
     def scatter(self, x, y, **kwargs):
         self.ax.scatter(x, y, transform=self.ax.get_transform('world'), **kwargs)
 

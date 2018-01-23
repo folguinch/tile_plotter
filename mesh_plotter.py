@@ -37,7 +37,7 @@ class MeshPlotter(MapPlotter):
                 self.ax.contour(contours, levels=levels, colors=colors,
                         zorder=2)
     def config_plot(self, xlim=None, ylim=None, xlabel=None, ylabel=None,
-            set_xticklabels=True, set_yticklabels=True):
+            set_xticklabels=True, set_yticklabels=True, title=None):
         if xlim:
             self.ax.set_xlim(*xlim)
         if ylim:
@@ -50,6 +50,8 @@ class MeshPlotter(MapPlotter):
             self.ax.xaxis.set_ticklabels(['']*len(self.ax.xaxis.get_ticklabels()))
         if not set_yticklabels:
             self.ax.yaxis.set_ticklabels(['']*len(self.ax.yaxis.get_ticklabels()))
+        if title:
+            self.set_title(title)
 
 class NMeshPlotter(MapsPlotter):
 
