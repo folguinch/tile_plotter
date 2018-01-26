@@ -36,6 +36,13 @@ class MeshPlotter(MapPlotter):
             else:
                 self.ax.contour(contours, levels=levels, colors=colors,
                         zorder=2)
+
+    def plot_field(self, x, y, vx, vy, scale=10000., scale_units='dots',
+            **kwargs):
+        self.ax.quiver(x, y, vx, vy, scale_units=scale_units, scale=scale,
+                **kwargs)
+        #self.ax.set_aspect('equal', 'datalim')
+
     def config_plot(self, xlim=None, ylim=None, xlabel=None, ylabel=None,
             set_xticklabels=True, set_yticklabels=True, title=None):
         if xlim:
