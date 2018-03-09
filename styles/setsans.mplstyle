@@ -1,0 +1,10 @@
+#backend      : PS
+#ps.useafm         : True
+#font.family         : serif
+font.style          : normal
+font.variant        : normal
+font.weight         : medium
+font.stretch        : normal
+#font.size           : 10.0
+font.serif          : DejaVu Sans #Computer Modern Roman
+text.usetex         : False # use latex for all text handling. The following fonts
