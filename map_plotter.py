@@ -1,10 +1,12 @@
 from configparser import ConfigParser
 
 import numpy as np
+import astropy.units as u
 from astropy.visualization import LogStretch, LinearStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.visualization.wcsaxes import SphericalCircle
 import matplotlib
+from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 from matplotlib.patches import Rectangle, Ellipse
 
 from .base_plotter import BasePlotter
@@ -65,7 +67,6 @@ class MapPlotter:
         else:
             self.ax.contour(data, levels=levels, colors=colors,
                     zorder=zorder, extent=extent, linewidths=linewidths)
-
 
     def recenter(self, r, ra, dec, wcs):
         x, y = wcs.all_world2pix([[ra,dec]], 0)[0]
@@ -201,6 +202,24 @@ class MapPlotter:
     def plot(self, *args, **kwargs):
         kwargs['transform'] = self.ax.get_transform('world')
         self.ax.plot(*args, **kwargs)
+
+    def plot_scale(self, size, r, distance, x=0.1, y=0.1, dy=0.01, color='g', zorder=10,
+            unit=u.au, loc=3):
+        length = size.to(u.arcsec) / (2*r.to(u.arcsec))
+        label = distance.to(u.pc) * size.to(u.arcsec)
+        label = label.value * u.au
+        label = "%s" % label.to(unit)
+        self.annotate('', xy=(x,y), xytext=(x+length.value, y),
+                xycoords='axes fraction', arrowprops=dict(arrowstyle="|-|", 
+                    facecolor=color),
+                color=color)
+        xmid = x + length.value/2.
+        self.annotate(label, xy=(xmid,y+dy), xytext=(xmid, y+dy),
+                xycoords='axes fraction', color=color)
+        #bar = AnchoredSizeBar(self.ax.transData, size.to(u.deg), label, loc,
+        #        color=color)
+        #self.ax.add_artist(bar)
+
 
 class MapsPlotter(BasePlotter):
 
