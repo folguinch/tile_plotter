@@ -17,3 +17,6 @@ class LinesPlotter(BasePlotter):
     def get_axis(self, nax=0):
         axis, cbaxis = super(LinesPlotter,self).get_axis(nax, include_cbar=False)
         return LinePlotter(axis)
+
+    def init_axis(self, n):
+        super(LinesPlotter, self).init_axis(n)
