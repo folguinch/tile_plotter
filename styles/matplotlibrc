@@ -38,7 +38,7 @@
 #
 # If you omit this parameter, it will always default to "Agg", which is a
 # non-interactive backend.
-backend      : TkAgg
+backend      : Agg
 
 # If you are using the Qt4Agg backend, you can choose here
 # to use the PyQt4 bindings or the newer PySide bindings to
@@ -450,7 +450,7 @@ legend.frameon       : False     # if True, draw the legend on a background patc
 
 
 ### IMAGES
-#image.aspect : equal             # equal | auto | a number
+image.aspect : equal             # equal | auto | a number
 #image.interpolation  : nearest   # see help(imshow) for options
 #image.cmap   : viridis           # A colormap name, gray etc...
 #image.lut    : 256               # the size of the colormap lookup table
