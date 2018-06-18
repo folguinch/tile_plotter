@@ -9,22 +9,22 @@ import matplotlib
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 from matplotlib.patches import Rectangle, Ellipse
 
-from .base_plotter import BasePlotter
+from .base_plotter import BasePlotter, SinglePlotter
 from .functions import get_ticks
 
 __metaclass__ = type
 
-class MapPlotter:
+class MapPlotter(SinglePlotter):
 
     def __init__(self, ax, cbax=None, vmin=0, vmax=None, a=None,
             stretch='linear'):
         self.im = None
-        self.ax = ax
         self.cbax = cbax
         self.a = a
         self.vmin = vmin
         self.vmax = vmax
         self.stretch = stretch
+        super(MapPlotter, self).__init__(ax)
 
     def plot_map(self, data, wcs=None, r=None, position=None, contours=None, 
             contours_wcs=None, levels=None, colors='g', extent=None, 
