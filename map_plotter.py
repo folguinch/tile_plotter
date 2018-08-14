@@ -26,30 +26,36 @@ class MapPlotter(SinglePlotter):
         self.stretch = stretch
         super(MapPlotter, self).__init__(ax)
 
+    @property
+    def normalization(self):
+        if self.stretch=='log':
+            return ImageNormalize(vmin=self.vmin, vmax=self.vmax, 
+                    stretch=LogStretch(a=self.a))
+        else:
+            return ImageNormalize(vmin=self.vmin, vmax=self.vmax, 
+                    stretch=LinearStretch())
+
     def plot_map(self, data, wcs=None, r=None, position=None, contours=None, 
             contours_wcs=None, levels=None, colors='g', extent=None, 
-            extent_cont=None, linewidths=None, mask=False):
+            extent_cont=None, linewidths=None, mask=False, **kwargs):
 
         # Check wcs and re-centre the image
         if wcs is not None and r is not None and position is not None:
             self.recenter(r, position[0], position[1], wcs)
 
         # Normalisation
-        if self.stretch=='log':
-            norm = ImageNormalize(vmin=self.vmin, vmax=self.vmax, 
-                    stretch=LogStretch(a=self.a))
-        else:
-            norm = ImageNormalize(vmin=self.vmin, vmax=self.vmax, 
-                    stretch=LinearStretch())
+        norm = self.normalization
 
         # Plot data
         if mask:
             cmap = matplotlib.cm.get_cmap()
             cmap.set_bad('w',1.0)
             maskdata = np.ma.array(data, mask=np.isnan(data))
-            self.im = self.ax.imshow(maskdata, norm=norm, zorder=1, extent=extent)
+            self.im = self.ax.imshow(maskdata, norm=norm, zorder=1,
+                    extent=extent, **kwargs)
         else:
-            self.im = self.ax.imshow(data, norm=norm, zorder=1, extent=extent)
+            self.im = self.ax.imshow(data, norm=norm, zorder=1, extent=extent,
+                    **kwargs)
 
         # Plot contours
         if contours is not None and levels is not None:
@@ -58,15 +64,22 @@ class MapPlotter(SinglePlotter):
                     zorder=2)
 
     def plot_contours(self, data, levels, wcs=None, extent=None, linewidths=None,
-            colors='g', zorder=0):
-        if wcs is not None:
-            self.ax.contour(data, 
-                    transform=self.ax.get_transform(wcs),
-                    levels=levels, colors=colors, zorder=zorder,
-                    linewidths=linewidths)
+            colors='g', zorder=0, **kwargs):
+        if 'cmap' not in kwargs:
+            kwargs['colors'] = colors
+        elif 'norm' not in kwargs:
+            kwargs['norm'] = self.normalization
         else:
-            self.ax.contour(data, levels=levels, colors=colors,
-                    zorder=zorder, extent=extent, linewidths=linewidths)
+            pass
+
+        if wcs is not None:
+            return self.ax.contour(data, 
+                    transform=self.ax.get_transform(wcs),
+                    levels=levels, zorder=zorder,
+                    linewidths=linewidths, **kwargs)
+        else:
+            return self.ax.contour(data, levels=levels, zorder=zorder, 
+                    extent=extent, linewidths=linewidths, **kwargs)
 
     def recenter(self, r, ra, dec, wcs):
         x, y = wcs.all_world2pix([[ra,dec]], 0)[0]
@@ -110,7 +123,7 @@ class MapPlotter(SinglePlotter):
         dec.display_minor_ticks(True)
 
     def plot_cbar(self, fig, label=None, ticks=None, ticklabels=None, 
-            orientation='vertical', labelpad=10):
+            orientation='vertical', labelpad=10, lines=None):
         # Ticks
         if ticks is None:
             ticks = get_ticks(self.vmin, self.vmax, self.a, stretch=self.stretch)
@@ -118,6 +131,8 @@ class MapPlotter(SinglePlotter):
         # Create bar
         cbar = fig.colorbar(self.im, ax=self.ax, cax=self.cbax,
                     orientation=orientation, drawedges=False, ticks=ticks)
+        if lines is not None:
+            cbar.add_lines(lines)
             # Tick Font properties
             #print cbar.ax.get_yticklabels()[-1].get_fontsize()
             #for label in cbax.get_xticklabels()+cbax.get_yticklabels():
