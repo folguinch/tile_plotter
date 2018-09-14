@@ -8,6 +8,8 @@ from .base_plotter import BasePlotter, SinglePlotter
 from myutils.fits import get_ref
 
 class FieldPlotter(SinglePlotter):
+    q = None
+
     def plot_field(self, x, y, vx, vy, scale=10000., scale_units='dots'):
         self.q = self.ax.quiver(x, y, vx, vy, scale_units=scale_units, scale=scale)
         self.ax.set_aspect('equal', 'datalim')

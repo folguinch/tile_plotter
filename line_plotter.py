@@ -19,4 +19,4 @@ class LinesPlotter(BasePlotter):
         return LinePlotter(axis)
 
     def init_axis(self, n):
-        super(SlicesPlotter, self).init_axis(n)
+        super(LinesPlotter, self).init_axis(n)

@@ -1,0 +1,33 @@
+#font.sans-serif     : Luxi Sans
+font.size           : 16.0
+lines.linewidth   : 2.0     # line width in points
+xtick.labelsize      : 12 # fontsize of the tick labels
+ytick.labelsize      : 12 # fontsize of the tick labels
+#lines.linewidth   : 2.0
+xtick.major.size     : 8      # major tick size in points
+xtick.minor.size     : 6      # minor tick size in points
+xtick.major.width    : 0.5    # major tick width in points
+xtick.minor.width    : 0.5    # minor tick width in points
+xtick.direction      : in    # direction: in, out, or inout
+xtick.minor.visible  : False  # visibility of minor ticks on x-axis
+xtick.major.top      : True   # draw x axis top major ticks
+xtick.major.bottom   : True   # draw x axis bottom major ticks
+xtick.minor.top      : True   # draw x axis top minor ticks
+xtick.minor.bottom   : True   # draw x axis bottom minor ticks
+
+ytick.major.size     : 8      # major tick size in points
+ytick.minor.size     : 6      # minor tick size in points
+ytick.major.width    : 0.5    # major tick width in points
+ytick.minor.width    : 0.5    # minor tick width in points
+ytick.direction      : in    # direction: in, out, or inout
+ytick.minor.visible  : False  # visibility of minor ticks on y-axis
+ytick.major.left     : True   # draw y axis left major ticks
+ytick.major.right    : True   # draw y axis right major ticks
+ytick.minor.left     : True   # draw y axis left minor ticks
+ytick.minor.right    : True   # draw y axis right minor ticks
+axes.linewidth      : 0.5
+
+### FIGURE
+figure.dpi       : 300      # figure dots per inch
+
+

@@ -1,0 +1,6 @@
+### MATPLOTLIB STYLE
+
+# Style for plotting 2 columns figures for papers with aplpy
+
+image.cmap   : bone_r # gray | jet etc...
+

@@ -1,53 +1,61 @@
 from configparser import ConfigParser
 
 import numpy as np
+import astropy.units as u
 from astropy.visualization import LogStretch, LinearStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.visualization.wcsaxes import SphericalCircle
 import matplotlib
+from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 from matplotlib.patches import Rectangle, Ellipse
 
-from .base_plotter import BasePlotter
+from .base_plotter import BasePlotter, SinglePlotter
 from .functions import get_ticks
 
 __metaclass__ = type
 
-class MapPlotter:
+class MapPlotter(SinglePlotter):
 
     def __init__(self, ax, cbax=None, vmin=0, vmax=None, a=None,
             stretch='linear'):
         self.im = None
-        self.ax = ax
         self.cbax = cbax
         self.a = a
         self.vmin = vmin
         self.vmax = vmax
         self.stretch = stretch
+        super(MapPlotter, self).__init__(ax)
+
+    @property
+    def normalization(self):
+        if self.stretch=='log':
+            return ImageNormalize(vmin=self.vmin, vmax=self.vmax, 
+                    stretch=LogStretch(a=self.a))
+        else:
+            return ImageNormalize(vmin=self.vmin, vmax=self.vmax, 
+                    stretch=LinearStretch())
 
     def plot_map(self, data, wcs=None, r=None, position=None, contours=None, 
             contours_wcs=None, levels=None, colors='g', extent=None, 
-            extent_cont=None, linewidths=None, mask=False):
+            extent_cont=None, linewidths=None, mask=False, **kwargs):
 
         # Check wcs and re-centre the image
         if wcs is not None and r is not None and position is not None:
             self.recenter(r, position[0], position[1], wcs)
 
         # Normalisation
-        if self.stretch=='log':
-            norm = ImageNormalize(vmin=self.vmin, vmax=self.vmax, 
-                    stretch=LogStretch(a=self.a))
-        else:
-            norm = ImageNormalize(vmin=self.vmin, vmax=self.vmax, 
-                    stretch=LinearStretch())
+        norm = self.normalization
 
         # Plot data
         if mask:
             cmap = matplotlib.cm.get_cmap()
             cmap.set_bad('w',1.0)
             maskdata = np.ma.array(data, mask=np.isnan(data))
-            self.im = self.ax.imshow(maskdata, norm=norm, zorder=1, extent=extent)
+            self.im = self.ax.imshow(maskdata, norm=norm, zorder=1,
+                    extent=extent, **kwargs)
         else:
-            self.im = self.ax.imshow(data, norm=norm, zorder=1, extent=extent)
+            self.im = self.ax.imshow(data, norm=norm, zorder=1, extent=extent,
+                    **kwargs)
 
         # Plot contours
         if contours is not None and levels is not None:
@@ -56,16 +64,22 @@ class MapPlotter:
                     zorder=2)
 
     def plot_contours(self, data, levels, wcs=None, extent=None, linewidths=None,
-            colors='g', zorder=0):
-        if wcs is not None:
-            self.ax.contour(data, 
-                    transform=self.ax.get_transform(wcs),
-                    levels=levels, colors=colors, zorder=zorder,
-                    linewidths=linewidths)
+            colors='g', zorder=0, **kwargs):
+        if 'cmap' not in kwargs:
+            kwargs['colors'] = colors
+        elif 'norm' not in kwargs:
+            kwargs['norm'] = self.normalization
         else:
-            self.ax.contour(data, levels=levels, colors=colors,
-                    zorder=zorder, extent=extent, linewidths=linewidths)
+            pass
 
+        if wcs is not None:
+            return self.ax.contour(data, 
+                    transform=self.ax.get_transform(wcs),
+                    levels=levels, zorder=zorder,
+                    linewidths=linewidths, **kwargs)
+        else:
+            return self.ax.contour(data, levels=levels, zorder=zorder, 
+                    extent=extent, linewidths=linewidths, **kwargs)
 
     def recenter(self, r, ra, dec, wcs):
         x, y = wcs.all_world2pix([[ra,dec]], 0)[0]
@@ -109,7 +123,7 @@ class MapPlotter:
         dec.display_minor_ticks(True)
 
     def plot_cbar(self, fig, label=None, ticks=None, ticklabels=None, 
-            orientation='vertical', labelpad=10):
+            orientation='vertical', labelpad=10, lines=None):
         # Ticks
         if ticks is None:
             ticks = get_ticks(self.vmin, self.vmax, self.a, stretch=self.stretch)
@@ -117,6 +131,8 @@ class MapPlotter:
         # Create bar
         cbar = fig.colorbar(self.im, ax=self.ax, cax=self.cbax,
                     orientation=orientation, drawedges=False, ticks=ticks)
+        if lines is not None:
+            cbar.add_lines(lines)
             # Tick Font properties
             #print cbar.ax.get_yticklabels()[-1].get_fontsize()
             #for label in cbax.get_xticklabels()+cbax.get_yticklabels():
@@ -187,6 +203,9 @@ class MapPlotter:
     def set_ylim(self, ymin=None, ymax=None):
         self.ax.set_ylim(ymin, ymax)
 
+    def set_title(self, title):
+        self.ax.set_title(title)
+
     def scatter(self, x, y, **kwargs):
         self.ax.scatter(x, y, transform=self.ax.get_transform('world'), **kwargs)
 
@@ -198,6 +217,24 @@ class MapPlotter:
     def plot(self, *args, **kwargs):
         kwargs['transform'] = self.ax.get_transform('world')
         self.ax.plot(*args, **kwargs)
+
+    def plot_scale(self, size, r, distance, x=0.1, y=0.1, dy=0.01, color='g', zorder=10,
+            unit=u.au, loc=3):
+        length = size.to(u.arcsec) / (2*r.to(u.arcsec))
+        label = distance.to(u.pc) * size.to(u.arcsec)
+        label = label.value * u.au
+        label = "%s" % label.to(unit)
+        self.annotate('', xy=(x,y), xytext=(x+length.value, y),
+                xycoords='axes fraction', arrowprops=dict(arrowstyle="|-|", 
+                    facecolor=color),
+                color=color)
+        xmid = x + length.value/2.
+        self.annotate(label, xy=(xmid,y+dy), xytext=(xmid, y+dy),
+                xycoords='axes fraction', color=color)
+        #bar = AnchoredSizeBar(self.ax.transData, size.to(u.deg), label, loc,
+        #        color=color)
+        #self.ax.add_artist(bar)
+
 
 class MapsPlotter(BasePlotter):
 

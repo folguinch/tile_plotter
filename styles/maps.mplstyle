@@ -1,0 +1,59 @@
+### MATPLOTLIB STYLE
+
+# Style for maps
+
+#font.sans-serif     : Luxi Sans
+font.size           : 16.0
+lines.linewidth   : 2.0     # line width in points
+xtick.labelsize      : 12 # fontsize of the tick labels
+ytick.labelsize      : 12 # fontsize of the tick labels
+#lines.linewidth   : 2.0
+xtick.major.size     : 8      # major tick size in points
+xtick.minor.size     : 6      # minor tick size in points
+xtick.major.width    : 0.5    # major tick width in points
+xtick.minor.width    : 0.5    # minor tick width in points
+ytick.major.size     : 8      # major tick size in points
+ytick.minor.size     : 6      # minor tick size in points
+ytick.major.width    : 0.5    # major tick width in points
+ytick.minor.width    : 0.5    # minor tick width in points
+axes.linewidth      : 0.5
+
+### FIGURE
+#figure.figsize   : 3.25, 9.2 # figure size in inches
+figure.dpi       : 300      # figure dots per inch
+#figure.facecolor : 0.75    # figure facecolor; 0.75 is scalar gray
+#figure.edgecolor : white   # figure edgecolor
+#figure.autolayout : False  # When True, automatically adjust subplot
+                            # parameters to make the plot fit the figure
+
+# The figure subplot parameters.  All dimensions are a fraction of the
+## figure width or height
+#figure.subplot.left    : 0 #0.15  # the left side of the subplots of the figure
+#figure.subplot.right   : 1 # 0.90   # the right side of the subplots of the figure
+#figure.subplot.bottom  : 0 #0.15    # the bottom of the subplots of the figure
+#figure.subplot.top     : 1 #0.9    # the top of the subplots of the figure
+#figure.subplot.wspace  : 0.0    # the amount of width reserved for blank space between subplots
+#figure.subplot.hspace  : 0.0 #0.2    # the amount of height reserved for white space between subplots
+
+### IMAGES
+image.aspect : equal             # equal | auto | a number
+image.interpolation  : nearest # see help(imshow) for options
+image.cmap   : jet               # gray | jet etc...
+#image.lut    : 256               # the size of the colormap lookup table
+image.origin : lower # lower | upper
+#image.resample  : False
+
+### CONTOUR PLOTS
+#contour.negative_linestyle :  dashed # dashed | solid
+
+### Agg rendering
+### Warning: experimental, 2008/10/10
+#agg.path.chunksize : 0           # 0 to disable; values in the range
+                                  # 10000 to 100000 can improve speed slightly
+                                  # and prevent an Agg rendering failure
+                                  # when plotting very large data sets,
+                                  # especially if they are very gappy.
+                                  # It may cause minor artifacts, though.
+                                  # A value of 20000 is probably a good
+                                  # starting point.
+
