@@ -16,8 +16,8 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import FuncFormatter
 from matplotlib.patches import Rectangle, Ellipse
-from RadModelling.Objects import Source, Profile
-from RadModelling.Configuration.config_main import config_main
+#from RadModelling.Objects import Source, Profile
+#from RadModelling.Configuration.config_main import config_main
 from matplotlib.ticker import FuncFormatter 
 #from hyperion.model import ModelOutput
 
