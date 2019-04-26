@@ -1,6 +1,7 @@
 from configparser import ConfigParser
 from abc import ABCMeta, abstractmethod
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from functions import *
@@ -278,3 +279,16 @@ class SinglePlotter(object):
                 values and positions (default 0, i.e. best location).
         """
         self.ax.legend(loc=loc, frameon=False, **kwargs)
+
+    def scatter(self, *args, **kwargs):
+        return self.ax.scatter(*args, **kwargs)
+
+    def clabel(self, *args, **kwargs):
+        self.ax.clabel(*args, **kwargs)
+
+    def contour(self, *args, **kwargs):
+        return self.ax.contour(*args, **kwargs)
+
+    def tricontour(self, x, y, *args, **kwargs):
+        triangulation = mpl.tri.Triangulation(x, y)
+        return self.ax.tricontour(triangulation, *args, **kwargs)
