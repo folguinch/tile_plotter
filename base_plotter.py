@@ -21,7 +21,8 @@ class BasePlotter(object):
     def __init__(self, styles=[], rows=1, cols=1, nxcbar=0, nycbar=0,
             xsize=4.5, ysize=4.5, left=1.0, right=0.15, bottom=0.6, top=0.15,
             wspace=0.2, hspace=0.2, cbar_width=0.2, cbar_spacing=0.1,
-            sharex=False, sharey=False, projection='rectilinear'):
+            sharex=False, sharey=False, projection='rectilinear',
+            share_cbar=False):
         try:
             plt.close()
         except:
@@ -38,10 +39,10 @@ class BasePlotter(object):
         self.nycbar = nycbar
         
         # Determine figure size
-        if rows==nycbar or cols==nxcbar:
-            share_cbar = False
-        else:
-            share_cbar = True
+        #if rows==nycbar or cols==nxcbar:
+        #    share_cbar = False
+        #else:
+        #    share_cbar = True
         figgeom, cbargeom = get_geometry(rows, cols, nxcbar, nycbar, xsize, 
                 ysize, left, right, bottom, top, wspace, hspace, cbar_width, 
                 cbar_spacing, sharex, sharey, share_cbar=share_cbar)
