@@ -139,21 +139,24 @@ class SinglePlotter(object):
 
     Attributes:
         ax (matplotlib axes): axes of the plot.
+        cbax (matplotlib colorbar): color bar axis.
         xscale (str): x axis scale (linear or log).
         yscale (str): y axis scale (linear or log).
     """
 
-    def __init__(self, ax, xscale='linear', yscale='linear'):
+    def __init__(self, ax, cbaxis=None, xscale='linear', yscale='linear'):
         """ Create a single plot container.
 
         Args:
             ax (matplotlib axes): axes of the plot.
+            cbaxis (matplotlib colorbar): color bar axis.
             xscale (str, optional): x axis scale (linear or log, default
                 linear).
             yscale (str, optional): y axis scale (linear or log, default
                 linear).
         """
         self.ax = ax
+        self.cbax = cbaxis
         self.xscale = xscale
         self.yscale = yscale
 
@@ -258,7 +261,7 @@ class SinglePlotter(object):
             *args: data to plot.
             **kwargs: arguments for matplotlib.pyplot.errorbar().
         """
-        self.ax.errorbar(*args, **kwargs)
+        return self.ax.errorbar(*args, **kwargs)
     
     def annotate(self, *args, **kwargs):
         """Annotate the axis.
@@ -271,7 +274,7 @@ class SinglePlotter(object):
         """
         self.ax.annotate(*args, **kwargs)
 
-    def legend(self, loc=0, **kwargs):
+    def legend(self, handles=None, labels=None, loc=0, **kwargs):
         """Plot the legend.
 
         Args:
@@ -279,7 +282,10 @@ class SinglePlotter(object):
                 See matplotlib.pyplot.lengend() documentation for available
                 values and positions (default 0, i.e. best location).
         """
-        self.ax.legend(loc=loc, frameon=False, **kwargs)
+        if handles and labels:
+            self.ax.legend(handles, labels, loc=loc, frameon=False, **kwargs)
+        else:
+            self.ax.legend(loc=loc, frameon=False, **kwargs)
 
     def scatter(self, *args, **kwargs):
         return self.ax.scatter(*args, **kwargs)
@@ -293,3 +299,53 @@ class SinglePlotter(object):
     def tricontour(self, x, y, *args, **kwargs):
         triangulation = mpl.tri.Triangulation(x, y)
         return self.ax.tricontour(triangulation, *args, **kwargs)
+
+    def plot_cbar(self, fig, cs, label=None, ticks=None, ticklabels=None, 
+            orientation='vertical', labelpad=10, lines=None):
+        # Ticks
+        #if ticks is None:
+        #    ticks = get_ticks(self.vmin, self.vmax, self.a, stretch=self.stretch)
+
+        # Create bar
+        cbar = fig.colorbar(cs, ax=self.ax, cax=self.cbax,
+                    orientation=orientation, drawedges=False)
+        if lines is not None:
+            cbar.add_lines(lines)
+            # Tick Font properties
+            #print cbar.ax.get_yticklabels()[-1].get_fontsize()
+            #for label in cbax.get_xticklabels()+cbax.get_yticklabels():
+            #    label.set_fontsize(ax.xaxis.get_majorticklabels()[0].get_fontsize())
+            #    label.set_family(ax.xaxis.get_majorticklabels()[0].get_family())
+            #    label.set_fontname(ax.xaxis.get_majorticklabels()[0].get_fontname())
+
+        # Bar position
+        if orientation=='vertical':
+            cbar.ax.yaxis.set_ticks_position('right')
+            if ticklabels is not None:
+                cbar.ax.yaxis.set_ticklabels(ticklabels)
+        elif orientation=='horizontal':
+            cbar.ax.xaxis.set_ticks_position('top')
+            if ticklabels is not None:
+                cbar.ax.xaxis.set_ticklabels(ticklabels)
+
+        # Label
+        if label is not None:
+            if orientation=='vertical':
+                cbar.ax.yaxis.set_label_position('right')
+                cbar.set_label(label,
+                        fontsize=self.ax.yaxis.get_label().get_fontsize(),
+                        family=self.ax.yaxis.get_label().get_family(),
+                        fontname=self.ax.yaxis.get_label().get_fontname(),
+                        weight=self.ax.yaxis.get_label().get_weight(),
+                        labelpad=labelpad, verticalalignment='top')
+            elif orientation=='horizontal':
+                cbar.ax.xaxis.set_label_position('top')
+                cbar.set_label(label,
+                        fontsize=self.ax.xaxis.get_label().get_fontsize(),
+                        family=self.ax.xaxis.get_label().get_family(),
+                        fontname=self.ax.xaxis.get_label().get_fontname(),
+                        weight=self.ax.xaxis.get_label().get_weight())
+        for tlabel in cbar.ax.xaxis.get_ticklabels(which='both')+cbar.ax.yaxis.get_ticklabels(which='both'):
+            tlabel.set_fontsize(self.ax.xaxis.get_majorticklabels()[0].get_fontsize())
+            tlabel.set_family(self.ax.xaxis.get_majorticklabels()[0].get_family())
+            tlabel.set_fontname(self.ax.xaxis.get_majorticklabels()[0].get_fontname())

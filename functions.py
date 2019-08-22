@@ -60,7 +60,7 @@ def get_geometry(rows, cols, nxcbar=0, nycbar=0, xsize=4.5, ysize=4.5, left=1.0,
                 else:
                     coltop = top+hspace
                 geom_cbar = FigGeometry(xsize, cbar_width, bottom=0, top=coltop)
-            elif rows>1 and sharex:
+            elif rows>1 and sharex and i>0:
                 newtop = hspace
             else:
                 newtop = top 

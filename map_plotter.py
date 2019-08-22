@@ -18,13 +18,13 @@ class MapPlotter(SinglePlotter):
 
     def __init__(self, ax, cbax=None, vmin=0, vmax=None, a=None,
             stretch='linear'):
+        super(MapPlotter, self).__init__(ax)
         self.im = None
         self.cbax = cbax
         self.a = a
         self.vmin = vmin
         self.vmax = vmax
         self.stretch = stretch
-        super(MapPlotter, self).__init__(ax)
 
     @property
     def normalization(self):
@@ -173,7 +173,7 @@ class MapPlotter(SinglePlotter):
             tlabel.set_fontname(self.ax.xaxis.get_majorticklabels()[0].get_fontname())
 
     def plot_beam(self, header, bmin=None, bmaj=None, bpa=0., dx=1,
-            dy=1, pad=2, color='k'):
+            dy=1, pad=2, color='k', **kwargs):
         # Beam properties
         pixsize = np.sqrt(np.abs(header['CDELT2']*header['CDELT1']))
         bmaj = header.get('BMAJ', bmaj)/pixsize
@@ -190,7 +190,7 @@ class MapPlotter(SinglePlotter):
         # Plot box and beam
         #rect = Rectangle((xmin,ymin), size, size, fill=True, fc='w', zorder=3)
         beam = Ellipse((xmin+size/2., ymin+size/2.), bmin, bmaj, angle=bpa,
-                zorder=4, fc=color)
+                zorder=4, fc=color, **kwargs)
         #ax.add_patch(rect)
         self.ax.add_patch(beam)
 
@@ -213,6 +213,12 @@ class MapPlotter(SinglePlotter):
         cir = SphericalCircle((x, y), r, edgecolor=color, facecolor=facecolor,
                 transform=self.ax.get_transform('fk5'), zorder=zorder)
         self.ax.add_patch(cir)
+
+    def rectangle(self, blc, width, height, edgecolor='green',
+            facecolor='none', **kwargs):
+        r = Rectangle(blc, width, height, edgecolor=edgecolor,
+                facecolor=facecolor, **kwargs)
+        self.ax.add_patch(r)
 
     def plot(self, *args, **kwargs):
         kwargs['transform'] = self.ax.get_transform('world')
