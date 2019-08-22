@@ -5,8 +5,8 @@
 #font.sans-serif     : Luxi Sans
 font.size           : 16.0
 lines.linewidth   : 2.0     # line width in points
-xtick.labelsize      : 12 # fontsize of the tick labels
-ytick.labelsize      : 12 # fontsize of the tick labels
+xtick.labelsize      : 14 # fontsize of the tick labels
+ytick.labelsize      : 14 # fontsize of the tick labels
 #lines.linewidth   : 2.0
 xtick.major.size     : 8      # major tick size in points
 xtick.minor.size     : 6      # minor tick size in points
@@ -38,7 +38,7 @@ figure.dpi       : 300      # figure dots per inch
 ### IMAGES
 image.aspect : equal             # equal | auto | a number
 image.interpolation  : nearest # see help(imshow) for options
-image.cmap   : jet               # gray | jet etc...
+image.cmap   : viridis               # gray | jet etc...
 #image.lut    : 256               # the size of the colormap lookup table
 image.origin : lower # lower | upper
 #image.resample  : False
