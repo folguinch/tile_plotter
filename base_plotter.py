@@ -1,3 +1,4 @@
+import os
 from configparser import ConfigParser
 from abc import ABCMeta, abstractmethod
 
@@ -17,118 +18,120 @@ class BasePlotter(object):
     """
 
     __metaclass__ = ABCMeta
+    defconfig = os.path.join(os.path.realpath(__file__), 'configs/default.cfg')
 
-    def __init__(self, styles=[], rows=1, cols=1, nxcbar=0, nycbar=0,
-            xsize=4.5, ysize=4.5, left=1.0, right=0.15, bottom=0.6, top=0.15,
-            wspace=0.2, hspace=0.2, cbar_width=0.2, cbar_spacing=0.1,
-            sharex=False, sharey=False, projection='rectilinear',
-            share_cbar=False):
+    def __init__(self, config=None, section='single', **kwargs):
+        # Close plt if still open
         try:
             plt.close()
         except:
             pass
-        plt.style.use(styles)
+
+        # Update options
+        opts = ConfigParser()
+        opts.read(self.defconfig)
+        if config is None:
+            pass
+        elif os.path.isfile(config):
+            opts.read(config)
+        else:
+            raise IOError('File %s does not exist' % config)
+        opts.read_dict({section: kwargs})
+
+        # Set plot styles
+        plt.style.use(opts.get(section, 'styles').split(','))
 
         # Projection
-        self.projection = projection
+        self.projection = opts.get(section, 'projection')
 
-        # Determine the number of axes
-        self.nx = cols 
-        self.nxcbar = nxcbar
-        self.ny = rows 
-        self.nycbar = nycbar
-        
-        # Determine figure size
-        #if rows==nycbar or cols==nxcbar:
-        #    share_cbar = False
-        #else:
-        #    share_cbar = True
-        figgeom, cbargeom = get_geometry(rows, cols, nxcbar, nycbar, xsize, 
-                ysize, left, right, bottom, top, wspace, hspace, cbar_width, 
-                cbar_spacing, sharex, sharey, share_cbar=share_cbar)
-        width = 0
-        height = 0
-        for geom in figgeom[:cols] + cbargeom[:nxcbar]:
-            width += geom.width
-        for geom in figgeom[::cols] + cbargeom[:nycbar]:
-            height += geom.height
-        print 'Figure size: width=%.1f in height=%.1f in' % (width, height)
+        # Store shape
+        self.shape = (opts[section].getint('nrows'),
+                opts[section].getint('ncols'))
 
         # Get axes
-        if nxcbar!=0:
-            cbar_orientation = 'vertical'
-        elif nycbar!=0:
-            cbar_orientation = 'horizontal'
-        else:
-            cbar_orientation = None
-        self.axes, self.cbaxes = get_axes(figgeom, cbargeom, rows, cols, width,
-                height, cbar_orientation)
+        figsize, self.axes, self.cbaxes = get_geometry(opts, section=section)
+        print('Figure size: width=%.1f in height=%.1f in' % figsize)
 
         # Create figure
-        self.fig = plt.figure(figsize=(width, height))
+        self.fig = plt.figure(figsize=figsize)
 
     def __iter__(self):
         for ax in self.axes:
-            yield self.fig.add_axes(ax, projection=self.projection)
+            yield self.get_axis(*ax)
 
-    def savefig(self, fname, **kwargs):
-        self.fig.savefig(fname, **kwargs)
+    def _get_loc(self, loc):
+        # Compatible with older versions
+        try:
+            row, col = loc
+        except TypeError:
+            row, col = self.axes.keys()[loc]
+        return row, col 
 
-    def is_init(self, n, cbaxis=False):
+    @abstractmethod
+    def init_axis(self, loc, projection=None, include_cbar=True):
+        ij = self._get_loc(loc)
+        if projection is None:
+            projection = self.projection
+
+        if self.is_init(ij):
+            pass
+        else:
+            self.axes[ij] = self.fig.add_axes(self.axes[ij].axis, 
+                    projection=projection)
+
+        if include_cbar:
+            self.init_cbar(ij)
+
+        return 
+
+    def init_cbar(self, loc):
+        ij = self._get_loc(loc)
+        
+        if self.cbaxes[ij].is_empty():
+            pass
+        else:
+            self.cbaxes[ij] = self.fig.add_axes(self.cbaxes[ij].axis)
+
+    def is_init(self, loc, cbaxis=False):
         """Check if an axis has been initialized.
 
         Args:
-            n (int): number of the axis.
+            row (int): row of the axis.
+            col (int): column of the axis.
             cbaxis (bool, optional): whether to check for a colorbar axis 
                 instead. Default: False.
         """
+        ij = self._get_loc(loc)
         if not cbaxis:
-            return hasattr(self.axes[n], 'plot')
+            return hasattr(self.axes[ij], 'plot')
         else:
-            return hasattr(self.cbaxes[n], 'plot')
+            return hasattr(self.cbaxes[ij], 'plot')
 
-    def get_axis(self, n, projection=None, include_cbar=True):
+    def get_axis(self, loc, projection=None, include_cbar=True):
         if projection is None:
             projection = self.projection
+        
+        # Convert to row-col if needed
+        ij = self._get_loc(loc)
 
-        axis = self.fig.add_axes(self.axes[n].axis, projection=projection)
+        # Initialize axis if needed
+        if not self.is_init(row, col):
+            self.init_axis(ij, projection=projection,
+                    include_cbar=include_cbar)
+
+        # Color bar
         if not include_cbar:
             cbax = None
-        elif len(self.cbaxes)==len(self.axes):
-            cbax = self.fig.add_axes(self.cbaxes[n].axis)
-        elif self.nxcbar and n%self.nx==self.nx-1:
-            cbax = self.fig.add_axes(self.cbaxes[n/self.nx].axis)
-        elif self.nycbar and n/self.nx==0:
-            cbax = self.fig.add_axes(self.cbaxes[n%self.nx].axis)
+        elif is_init(ij, cbaxis=True):
+            cbax = self.cbaxes[ij]
         else:
-            cbax = None
+            self.init_cbar(ij)
+            cbax = self.cbaxes[ij]
 
-        return axis, cbax
+        return self.axes[ij], cbax
 
-    @abstractmethod
-    def init_axis(self, n, projection=None, include_cbar=True):
-        if projection is None:
-            projection = self.projection
-
-        if self.is_init(n):
-            pass
-        else:
-            assert hasattr(self.axes[n], 'axis')
-            self.axes[n] = self.fig.add_axes(self.axes[n].axis, 
-                    projection=projection)
-
-        if not include_cbar:
-            pass
-        elif len(self.cbaxes)==len(self.axes):
-            self.cbaxes[n] = self.fig.add_axes(self.cbaxes[n].axis)
-        elif self.nxcbar and n%self.nx==self.nx-1:
-            self.cbaxes[n/self.nx] = self.fig.add_axes(self.cbaxes[n/self.nx].axis)
-        elif self.nycbar and n/self.nx==0:
-            self.cbaxes[n%self.nx] = self.fig.add_axes(self.cbaxes[n%self.nx].axis)
-        else:
-            pass
-
-        return 
+    def savefig(self, fname, **kwargs):
+        self.fig.savefig(fname, **kwargs)
 
 class SinglePlotter(object):
 

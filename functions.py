@@ -1,6 +1,9 @@
 import os, logging
+import copy as cp
 from configparser import ConfigParser
-from itertools import cycle
+from itertools import cycle, product
+from builtins import map, range
+from collections import OrderedDict
 
 import numpy as np
 from astropy.io import fits
@@ -24,73 +27,118 @@ from matplotlib.ticker import FuncFormatter
 
 from geometry import FigGeometry
 
-def get_geometry(rows, cols, nxcbar=0, nycbar=0, xsize=4.5, ysize=4.5, left=1.0,
-        right=.15, bottom=0.6, top=0.15, wspace=0.2, hspace=0.2, 
-        cbar_width=0.2, cbar_spacing=0.1, sharex=False, sharey=False, 
-        share_cbar=False):
+def get_geometry(opts, section='single'):
+    # Geometry
+    ncols = opts[section].getint('ncols')
+    nrows = opts[section].getint('nrows')
+    left = opts[section].getfloat('left')
+    right = opts[section].getfloat('right')
+    top = opts[section].getfloat('top')
+    bottom = opts[section].getfloat('bottom')
+    xsize = opts[section].getfloat('xsize')
+    ysize = opts[section].getfloat('ysize')
+    hspace = opts[section].getfloat('hspace')
+    vspace = opts[section].getfloat('vspace')
+    # Colobar
+    vcbar = opts[section].getboolean('vcbar')
+    hcbar = opts[section].getboolean('hcbar')
+    cbar_width = opts[section].getfloat('cbar_width')
+    cbar_spacing = opts[section].getfloat('cbar_spacing')
+    vcbarpos = list(map(int, opts[section]['vcbarpos'].split(',')))
+    hcbarpos = list(map(int, opts[section]['hcbarpos'].split(',')))
 
-    # Determine width and height
-    geoms_ax = []
-    geoms_cbar = []
-    for i in range(rows):
-        geom_cbar = None
+    # Validate cbar
+    # only allow cbar in 1 axis
+    if vcbar and hcbar:
+        raise ValueError('Colorbars not allowed in both axes')
 
-        if i==rows-1 or not sharex:
-            newbottom = bottom
-        elif sharex:
-            newbottom = 0.
+    # Basic geometries
+    empty = FigGeometry(0, 0)
+    general = FigGeometry(xsize, ysize, left=left, right=right, bottom=bottom,
+            top=top)
 
-        #if (not share_cbar and nycbar>=1) or (nycbar==1 and i==0):
-        #    newtop = cbar_spacing
-        #    if i==0:
-        #        coltop = top
-        #    else:
-        #        coltop = top+hspace
-        #    geom_cbar = FigGeometry(xsize, cbar_width, bottom=0, top=coltop)
-        #elif rows>1 and sharex:
-        #    newtop = hspace
-        #else:
-        #    newtop = top 
+    # Determine geometry
+    cumx, cumy = 0, 0
+    xdim = None
+    axes = {}
+    cbaxes = {}
+    for i,j in product(range(nrows)[::-1], range(ncols)):
+        
+        # Geometry
+        axis = cp.copy(general)
+        cbax = cp.copy(empty)
 
-        for j in range(cols):
-            if (not share_cbar and nycbar>=1) or (nycbar==1 and i==0):
-                newtop = cbar_spacing
-                if i==0:
-                    coltop = top
-                else:
-                    coltop = top+hspace
-                geom_cbar = FigGeometry(xsize, cbar_width, bottom=0, top=coltop)
-            elif rows>1 and sharex and i>0:
-                newtop = hspace
+        # Left and bottom borders
+        if i==nrows-1:
+            pass
+        elif not sharex:
+            axis.bottom = bottom + vspace
+        else:
+            axis.bottom = vspace
+        if j==0:
+            pass
+        elif not sharey:
+            axis.left = left + hspace
+        else:
+            axis.left = hspace
+
+        # Top and right
+        if i!=0 and sharex:
+            axis.top = 0
+        if j!=ncols-1 and sharey:
+            axis.right = 0
+
+        # Color bar
+        vcbar_width = 0
+        hcbar_height = 0
+        if vcbar and ( j in vcbarpos or j-ncols in vcbarpos ):
+            # Bar geometry
+            # this superceeds sharey
+            cbax.xsize = cbar_width
+            cbax.ysize = axis.ysize
+            cbax.left = cbar_spacing
+            cbax.right = right
+            cbax.bottom = axis.bottom
+            cbax.top = axis.top
+            vcbar_width = cbax.width
+
+            # Set axis right
+            axis.right = 0
+            cbax.location = [cumx+axis.width, cumy]
+        elif hcbar and ( i in hcbarpos or i-nrows in hcbarpos ):
+            # Bar geometry
+            # this superceeds sharex
+            cbax.xsize = axis.xsize
+            cbax.ysize = cbar_width
+            cbax.left = axis.left
+            cbax.right = axis.right
+            cbax.bottom = cbar_spacing
+            cbax.top = top
+            hcbar_height = cbax.height
+
+            # Set axis top
+            axis.top = 0
+            cbax.location = [cumx, cumy+axis.height]
+
+        # Set location
+        axis.location = [cumx, cumy]
+        
+        # Cumulative sums
+        if j==ncols-1:
+            if xdim is None:
+                xdim = cumx + axis.width + vcbar_width
+            cumx = 0
+            if i!=0:
+                cumy += axis.height + vspace + hcbar_height
             else:
-                newtop = top 
+                ydim = cumy + axis.height + hcbar_height
+        else:
+            cumx += axis.width + hspace + vcbar_width
 
-            if j==0 or not sharey:
-                newleft = left
-            elif sharey:
-                newleft = 0.
+        axes[(i,j)] = cp.copy(axis)
+        cbaxes[(i,j)] = cp.copy(cbax)
 
-            if (not share_cbar and nxcbar>=1) or (nxcbar==1 and j==cols-1):
-                newright = cbar_spacing
-                if j==cols-1:
-                    colright = right
-                else:
-                    colright = right+wspace
-                geoms_cbar += [FigGeometry(cbar_width, ysize, 0, colright,
-                    newbottom, newtop)]
-            elif cols>1 and sharey:
-                newright = wspace
-            else:
-                newright = right
-
-            geoms_ax += [FigGeometry(xsize, ysize, newleft, newright,
-                newbottom, newtop)]
-            if geom_cbar is not None:
-                geom_cbar.left = newleft
-                geom_cbar.right = newright
-                geoms_cbar += [geom_cbar]
-
-    return geoms_ax, geoms_cbar
+    return (xdim, ydim), OrderedDict(sorted(axes.items())), OrderedDict(sorted(cbaxes.items()))
 
 def get_axes(axgeom, cbargeom, rows, cols, width, height, cbar_orientation):
     factorx = 1./width
