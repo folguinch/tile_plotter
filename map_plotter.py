@@ -1,3 +1,4 @@
+import os
 from configparser import ConfigParser
 
 import numpy as np
@@ -11,20 +12,20 @@ from matplotlib.patches import Rectangle, Ellipse
 
 from .base_plotter import BasePlotter, SinglePlotter
 from .functions import get_ticks
+from .utils import auto_vmin, auto_vmax
 
 __metaclass__ = type
 
 class MapPlotter(SinglePlotter):
 
-    def __init__(self, ax, cbax=None, vmin=0, vmax=None, a=None,
-            stretch='linear'):
-        super(MapPlotter, self).__init__(ax)
+    def __init__(self, ax, cbax=None, vmin=None, vmax=None, a=None,
+            stretch='linear', config=None):
+        super(MapPlotter, self).__init__(ax, cbaxis=cbax)
         self.im = None
-        self.cbax = cbax
-        self.a = a
-        self.vmin = vmin
-        self.vmax = vmax
-        self.stretch = stretch
+        self.a = a or config.get('a', fallback=100)
+        self.vmin = vmin or config.get('vmin', fallback=None)
+        self.vmax = vmax or config.get('vmax', fallback=None)
+        self.stretch = stretch or config.get('stretch', fallback=None)
 
     @property
     def normalization(self):
@@ -39,9 +40,15 @@ class MapPlotter(SinglePlotter):
             contours_wcs=None, levels=None, colors='g', extent=None, 
             extent_cont=None, linewidths=None, mask=False, **kwargs):
 
+        # Define default values for vmin and vmax
+        if self.vmin is None:
+            self.vmin = auto_vmin(data)
+        if self.vmax is None:
+            self.vmax = auto_vmax(data)
+
         # Check wcs and re-centre the image
         if wcs is not None and r is not None and position is not None:
-            self.recenter(r, position[0], position[1], wcs)
+            self.recenter(r, position, wcs)
 
         # Normalisation
         norm = self.normalization
@@ -81,12 +88,20 @@ class MapPlotter(SinglePlotter):
             return self.ax.contour(data, levels=levels, zorder=zorder, 
                     extent=extent, linewidths=linewidths, **kwargs)
 
-    def recenter(self, r, ra, dec, wcs):
+    def recenter(self, r, position, wcs):
+        if hasattr(position, 'ra'):
+            ra = position.ra.degree
+            dec = position.dec.degree
+        else:
+            ra, dec = position
         x, y = wcs.all_world2pix([[ra,dec]], 0)[0]
-        cdelt = np.mean(np.abs(wcs.wcs.cdelt))
-        radius = r/cdelt
-        self.ax.set_xlim(x-radius, x+radius)
-        self.ax.set_ylim(y-radius, y+radius)
+        cdelt = np.mean(np.abs(wcs.wcs.cdelt))*u.deg
+        if hasattr(r, 'unit'):
+            radius = r.to(u.deg) / cdelt
+        else:
+            radius = r*u.deg / cdelt
+        self.ax.set_xlim(x-radius.value, x+radius.value)
+        self.ax.set_ylim(y-radius.value, y+radius.value)
 
     def config_map(self, xformat="hh:mm:ss.s", yformat="dd:mm:ss", xlabel=True,
             ylabel=True, xticks=True, yticks=True, xpad=1., ypad=1., 
@@ -124,6 +139,9 @@ class MapPlotter(SinglePlotter):
 
     def plot_cbar(self, fig, label=None, ticks=None, ticklabels=None, 
             orientation='vertical', labelpad=10, lines=None):
+        assert self.vmin is not None
+        assert self.vmax is not None
+
         # Ticks
         if ticks is None:
             ticks = get_ticks(self.vmin, self.vmax, self.a, stretch=self.stretch)
@@ -244,38 +262,63 @@ class MapPlotter(SinglePlotter):
 
 class MapsPlotter(BasePlotter):
 
-    def __init__(self, vmin=0, vmax=None, a=1000, stretch='linear', config=None, 
+    def __init__(self, config=None, section='map_plot', projection=None, 
             **kwargs):
-        super(MapsPlotter, self).__init__(**kwargs)
-        
-        self.stretch = stretch
-        if config is not None:
-            self.vmin = vmin or config.getfloat('vmin', None)
-            self.vmax = vmax or config.getfloat('vmax', None)
-            self.a = a or config.getfloat('a', None)
-            self.stretch = stretch or config.get('stretch', 'linear')
-        else:
-            self.vmin = vmin
-            self.vmax = vmax
-            self.a = a
+        super(MapsPlotter, self).__init__(config=config, section=section, 
+                **kwargs)
+        self._projection = projection or self.config.get(section,'projection')
+
+    @property
+    def projection(self):
+        return self._projection
 
     def __iter__(self):
-        for i, ax in enumerate(self.axes):
-            axis, cbax = self.get_axis(i)
-            yield MapPlotter(axis, cbax, vmin=self.vmin, vmax=self.vmax,
-                    a=self.a, stretch=self.stretch)
+        for ax in self.axes:
+            axis, cbax = self.get_axis(ax)
+            yield MapPlotter(axis, cbax, config=self.config)
 
-    def get_mapper(self, n, vmin=0, vmax=None, a=1000, stretch=None,
+    def get_mapper(self, loc, vmin=None, vmax=None, a=None, stretch=None,
             projection=None, include_cbar=True):
-        vmin = vmin or self.vmin
-        vmax = vmax or self.vmax
-        a = a or self.a
-        stretch = stretch or self.stretch
-        axis, cbax = self.get_axis(n, projection=projection,
+        axis, cbax = self.get_axis(loc, projection=projection,
                 include_cbar=include_cbar)
 
-        return MapPlotter(axis, cbax, vmin=vmin, vmax=vmax, a=a, stretch=stretch)
+        self.axes[loc] = MapPlotter(axis, cbax, vmin=vmin, vmax=vmax, a=a,
+                stretch=stretch, config=self.config)
 
-    def init_axis(self, n, projection='rectilinear', include_cbar=False):
-        super(MapsPlotter, self).init_axis(n, projection, include_cbar)
+        return self.axes[loc]
+
+    def auto_config(self, config=None, section='map_plot', **kwargs):
+        # Read new config if requested
+        if config is not None:
+            cfg = ConfigParser()
+            cfg.read(os.path.expanduser(config))
+            cfg = cfg['map_plot']
+        else:
+            cfg = self.config
+
+        # Config map options
+        xformat = kwargs.get('xformat', 
+                cfg.get('xformat', fallback="hh:mm:ss.s"))
+        yformat = kwargs.get('yformat', 
+                cfg.get('yformat', fallback="dd:mm:ss"))
+        tickscolor = kwargs.get('tickscolor', 
+                cfg.get('tickscolor', fallback="k"))
+
+        # Config
+        for loc,ax in self.axes.items():
+            # Labels and ticks
+            xlabel = not self.sharex or \
+                    (self.sharex and loc[1]==0 and loc[0]==self.shape[0]-1)
+            xticks = not self.sharex or \
+                    (self.sharex and loc[0]==self.shape[0]-1)
+            ylabel = not self.sharey or \
+                    (self.sharey and loc[1]==0 and loc[0]==self.shape[0]-1)
+            yticks = not self.sharey or (self.sharey and loc[1]==0)
+
+            ax.config_map(xformat=xformat, yformat=yformat, xlabel=xlabel,
+                    ylabel=ylabel, xticks=xticks, yticks=yticks, 
+                    xpad=1., ypad=-0.7, tickscolor=tickscolor, xcoord='ra', ycoord='dec')
+
+    def init_axis(self, loc, projection='rectilinear', include_cbar=False):
+        super(MapsPlotter, self).init_axis(loc, projection, include_cbar)
 
