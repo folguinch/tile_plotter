@@ -32,32 +32,42 @@ class BasePlotter(object):
         opts.read(self.defconfig)
         if config is None:
             pass
-        elif os.path.isfile(config):
+        elif os.path.isfile(os.path.expanduser(config)):
             opts.read(config)
         else:
             raise IOError('File %s does not exist' % config)
         opts.read_dict({section: kwargs})
+        self.config = opts[section]
 
         # Set plot styles
-        plt.style.use(opts.get(section, 'styles').split(','))
-
-        # Projection
-        self.projection = opts.get(section, 'projection')
-
-        # Store shape
-        self.shape = (opts[section].getint('nrows'),
-                opts[section].getint('ncols'))
+        plt.style.use(opts.get(section, 'styles').split(', '))
 
         # Get axes
-        figsize, self.axes, self.cbaxes = get_geometry(opts, section=section)
-        print('Figure size: width=%.1f in height=%.1f in' % figsize)
+        self.figsize, self.axes, self.cbaxes = get_geometry(opts, section=section)
+        print('Figure size: width=%.1f in height=%.1f in' % self.figsize)
 
         # Create figure
-        self.fig = plt.figure(figsize=figsize)
+        self.fig = plt.figure(figsize=self.figsize)
 
     def __iter__(self):
         for ax in self.axes:
             yield self.get_axis(*ax)
+    
+    @property
+    def shape(self):
+        return self.config.getint('nrows'), self.config.getint('ncols')
+
+    @property
+    def projection(self):
+        return self.config['projection']
+
+    @property
+    def sharex(self):
+        return self.config.getboolean('sharex')
+
+    @property
+    def sharey(self):
+        return self.config.getboolean('sharey')
 
     def _get_loc(self, loc):
         # Compatible with older versions
@@ -76,6 +86,8 @@ class BasePlotter(object):
         if self.is_init(ij):
             pass
         else:
+            self.axes[ij].scalex(1./self.figsize[0])
+            self.axes[ij].scaley(1./self.figsize[1])
             self.axes[ij] = self.fig.add_axes(self.axes[ij].axis, 
                     projection=projection)
 
@@ -90,6 +102,8 @@ class BasePlotter(object):
         if self.cbaxes[ij].is_empty():
             pass
         else:
+            self.cbaxes[ij].scalex(1./self.figsize[0])
+            self.cbaxes[ij].scaley(1./self.figsize[1])
             self.cbaxes[ij] = self.fig.add_axes(self.cbaxes[ij].axis)
 
     def is_init(self, loc, cbaxis=False):
@@ -115,14 +129,14 @@ class BasePlotter(object):
         ij = self._get_loc(loc)
 
         # Initialize axis if needed
-        if not self.is_init(row, col):
+        if not self.is_init(ij):
             self.init_axis(ij, projection=projection,
                     include_cbar=include_cbar)
 
         # Color bar
         if not include_cbar:
             cbax = None
-        elif is_init(ij, cbaxis=True):
+        elif self.is_init(ij, cbaxis=True):
             cbax = self.cbaxes[ij]
         else:
             self.init_cbar(ij)

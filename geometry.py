@@ -19,7 +19,7 @@ class FigGeometry:
         text += 'right margin: %.1f\n' % self.right 
         text += 'bottom margin: %.1f\n' % self.bottom 
         text += 'top margin: %.1f\n' % self.top
-        text += 'axis location: %.1f, %.1f\n' % self.location
+        text += 'axis location: %.1f, %.1f\n' % tuple(self.location)
 
         return text
 

@@ -39,6 +39,8 @@ def get_geometry(opts, section='single'):
     ysize = opts[section].getfloat('ysize')
     hspace = opts[section].getfloat('hspace')
     vspace = opts[section].getfloat('vspace')
+    sharex = opts[section].getboolean('sharex')
+    sharey = opts[section].getboolean('sharey')
     # Colobar
     vcbar = opts[section].getboolean('vcbar')
     hcbar = opts[section].getboolean('hcbar')
