@@ -1,7 +1,8 @@
 import os
 from configparser import ConfigParser
 from abc import ABCMeta, abstractmethod
-
+from builtins import map, range
+        
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
@@ -40,7 +41,7 @@ class BasePlotter(object):
         self.config = opts[section]
 
         # Set plot styles
-        plt.style.use(opts.get(section, 'styles').split(', '))
+        plt.style.use(opts.get(section, 'styles').replace(',',' ').split())
 
         # Get axes
         self.figsize, self.axes, self.cbaxes = get_geometry(opts, section=section)
@@ -78,7 +79,7 @@ class BasePlotter(object):
         return row, col 
 
     @abstractmethod
-    def init_axis(self, loc, projection=None, include_cbar=True):
+    def init_axis(self, loc, projection=None, include_cbar=None):
         ij = self._get_loc(loc)
         if projection is None:
             projection = self.projection
@@ -99,7 +100,7 @@ class BasePlotter(object):
     def init_cbar(self, loc):
         ij = self._get_loc(loc)
         
-        if self.cbaxes[ij].is_empty():
+        if self.cbaxes[ij].is_empty() or self.is_init(loc, cbaxis=True):
             pass
         else:
             self.cbaxes[ij].scalex(1./self.figsize[0])
@@ -121,28 +122,64 @@ class BasePlotter(object):
         else:
             return hasattr(self.cbaxes[ij], 'plot')
 
-    def get_axis(self, loc, projection=None, include_cbar=True):
+    def get_axis(self, loc, projection=None, include_cbar=None):
+        # Set projection
         if projection is None:
             projection = self.projection
-        
+
         # Convert to row-col if needed
         ij = self._get_loc(loc)
+
+        # Verify include_cbar
+        if include_cbar is None:
+            if self.config.getboolean('vcbar'):
+                vcbarpos = list(map(int, 
+                    self.config['vcbarpos'].replace(',',' ').split()))
+                include_cbar = ij[1] in vcbarpos or \
+                        ij[1]-self.shape[1] in vcbarpos
+            elif self.config.getboolean('hcbar'):
+                hcbarpos = list(map(int, 
+                    self.config['hcbarpos'].replace(',',' ').split()))
+                include_cbar = ij[0] in hcbarpos or \
+                        ij[0]-self.shape[0] in hcbarpos
+            else:
+                include_cbar = False
 
         # Initialize axis if needed
         if not self.is_init(ij):
             self.init_axis(ij, projection=projection,
                     include_cbar=include_cbar)
 
-        # Color bar
-        if not include_cbar:
-            cbax = None
-        elif self.is_init(ij, cbaxis=True):
-            cbax = self.cbaxes[ij]
-        else:
-            self.init_cbar(ij)
-            cbax = self.cbaxes[ij]
+        return self.axes[ij], self.cbaxes[ij]
 
-        return self.axes[ij], cbax
+    def get_value(self, key, default=None, ax=None, n=None, sep=' '):
+        if ax is not None and ax in self.axes:
+            n = self.axes.keys().index(ax)
+
+        if n and (key + str(n)) in self.config:
+            newkey = key + str(n)
+            value = self.config[newkey]
+        elif key in self.config:
+            value = self.config[key]
+            if n:
+                if sep!=' ':
+                    value = value.split(sep)
+                else:
+                    # for back compatibility
+                    value = value.replace(',',' ').split()
+                if len(value)==1:
+                    value = value[0]
+                else:
+                    try:
+                        value = value[n]
+                    except IndexError:
+                        print('WARNING: %s does not exist in config, using default'\
+                        % key)
+                        value = default
+        else:
+            value = default
+
+        return value
 
     def savefig(self, fname, **kwargs):
         self.fig.savefig(fname, **kwargs)

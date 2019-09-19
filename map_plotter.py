@@ -139,6 +139,9 @@ class MapPlotter(SinglePlotter):
 
     def plot_cbar(self, fig, label=None, ticks=None, ticklabels=None, 
             orientation='vertical', labelpad=10, lines=None):
+        if self.cbax is None:
+            print('WARNING: skipping color bar')
+            return
         assert self.vmin is not None
         assert self.vmax is not None
 
@@ -212,9 +215,6 @@ class MapPlotter(SinglePlotter):
         #ax.add_patch(rect)
         self.ax.add_patch(beam)
 
-    def annotate(self, *args, **kwargs):
-        self.ax.annotate(*args, **kwargs)
-
     def set_xlim(self, xmin=None, xmax=None):
         self.ax.set_xlim(xmin, xmax)
 
@@ -225,7 +225,7 @@ class MapPlotter(SinglePlotter):
         self.ax.set_title(title)
 
     def scatter(self, x, y, **kwargs):
-        self.ax.scatter(x, y, transform=self.ax.get_transform('world'), **kwargs)
+        return self.ax.scatter(x, y, transform=self.ax.get_transform('world'), **kwargs)
 
     def circle(self, x, y, r, color='g', facecolor='none', zorder=0):
         cir = SphericalCircle((x, y), r, edgecolor=color, facecolor=facecolor,
@@ -259,6 +259,15 @@ class MapPlotter(SinglePlotter):
         #        color=color)
         #self.ax.add_artist(bar)
 
+    def plot_markers(self, markers, skip_label=False):
+        for m in markers:
+            self.scatter(m['loc'].ra.degree, m['loc'].dec.degree, c=m['color'],
+                    marker=m['style'], zorder=2)
+            if m.get('label') and not skip_label:
+                labloc = m['labloc'].ra.degree, m['labloc'].dec.degree
+                self.annotate(m['label'].strip(), xy=labloc, xytext=labloc,
+                        xycoords=self.ax.get_transform('world'),
+                        color=m['color'], zorder=3)
 
 class MapsPlotter(BasePlotter):
 
@@ -266,7 +275,7 @@ class MapsPlotter(BasePlotter):
             **kwargs):
         super(MapsPlotter, self).__init__(config=config, section=section, 
                 **kwargs)
-        self._projection = projection or self.config.get(section,'projection')
+        self._projection = projection or self.config.get('projection')
 
     @property
     def projection(self):
@@ -278,7 +287,7 @@ class MapsPlotter(BasePlotter):
             yield MapPlotter(axis, cbax, config=self.config)
 
     def get_mapper(self, loc, vmin=None, vmax=None, a=None, stretch=None,
-            projection=None, include_cbar=True):
+            projection=None, include_cbar=None):
         axis, cbax = self.get_axis(loc, projection=projection,
                 include_cbar=include_cbar)
 
@@ -301,11 +310,11 @@ class MapsPlotter(BasePlotter):
                 cfg.get('xformat', fallback="hh:mm:ss.s"))
         yformat = kwargs.get('yformat', 
                 cfg.get('yformat', fallback="dd:mm:ss"))
-        tickscolor = kwargs.get('tickscolor', 
+        tickscolors = kwargs.get('tickscolor', 
                 cfg.get('tickscolor', fallback="k"))
 
         # Config
-        for loc,ax in self.axes.items():
+        for i,(loc,ax) in enumerate(self.axes.items()):
             # Labels and ticks
             xlabel = not self.sharex or \
                     (self.sharex and loc[1]==0 and loc[0]==self.shape[0]-1)
@@ -314,11 +323,20 @@ class MapsPlotter(BasePlotter):
             ylabel = not self.sharey or \
                     (self.sharey and loc[1]==0 and loc[0]==self.shape[0]-1)
             yticks = not self.sharey or (self.sharey and loc[1]==0)
+            
+            # Ticks color
+            if len(tickscolors) == 1:
+                tickscolor = tickscolors
+            else:
+                try:
+                    tickscolor = tickscolors.replace(',',' ').split()[i]
+                except IndexError:
+                    tickscolor = tickscolors[0]
 
             ax.config_map(xformat=xformat, yformat=yformat, xlabel=xlabel,
                     ylabel=ylabel, xticks=xticks, yticks=yticks, 
                     xpad=1., ypad=-0.7, tickscolor=tickscolor, xcoord='ra', ycoord='dec')
 
-    def init_axis(self, loc, projection='rectilinear', include_cbar=False):
+    def init_axis(self, loc, projection='rectilinear', include_cbar=None):
         super(MapsPlotter, self).init_axis(loc, projection, include_cbar)
 

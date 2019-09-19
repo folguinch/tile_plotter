@@ -1,17 +1,27 @@
 import numpy as np
 
-def auto_vminmax(data):
-    return auto_vmin(data), auto_vmax(data)
+def auto_vminmax(data, dtype='intensity'):
+    return auto_vmin(data, dtype=dtype), auto_vmax(data, dtype=dtype)
 
-def auto_vmin(data, perc=20, nrms=2.):
-    perc = np.nanpercentile(data, perc)
-    rms = np.sqrt(np.nanmean(np.abs(data[data<perc])**2))
-    vmin = nrms*rms
+def auto_vmin(data, perc=20, nrms=2., vfrac=1.02, dtype='intensity'):
+    if dtype=='intensity':
+        perc = np.nanpercentile(data, perc)
+        rms = np.sqrt(np.nanmean(np.abs(data[data<perc])**2))
+        vmin = nrms*rms
+    elif dtype=='velocity':
+        vmin = np.nanmin(data)*vfrac
+    else:
+        raise KeyError('dtype %s not recognized' % dtype)
 
     return vmin
 
-def auto_vmax(data, frac=0.8):
-    return np.nanmax(data)*frac
+def auto_vmax(data, frac=0.8, vfrac=0.98, dtype='intensity'):
+    if dtype=='intensity':
+        return np.nanmax(data)*frac
+    elif dtype=='velocity':
+        return np.nanmax(data)*vfrac
+    else:
+        raise KeyError('dtype %s not recognized' % dtype)
 
 def auto_levels(data, n=10, stretch='linear', perc=20):
     if stretch=='log':
