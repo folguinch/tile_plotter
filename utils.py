@@ -23,9 +23,11 @@ def auto_vmax(data, frac=0.8, vfrac=0.98, dtype='intensity'):
     else:
         raise KeyError('dtype %s not recognized' % dtype)
 
-def auto_levels(data, n=10, stretch='linear', perc=20):
-    if stretch=='log':
+def auto_levels(data, n=10, stretch='linear', perc=20, vmin=None, vmax=None):
+    if vmin is None or vmax is None:
         vmin, vmax = auto_vminmax(data)
+
+    if stretch=='log':
         assert vmax>0
         try:
             assert vmin>0

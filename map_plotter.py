@@ -12,20 +12,21 @@ from matplotlib.patches import Rectangle, Ellipse
 
 from .base_plotter import BasePlotter, SinglePlotter
 from .functions import get_ticks
-from .utils import auto_vmin, auto_vmax
+from .utils import auto_vmin, auto_vmax, auto_levels
 
 __metaclass__ = type
 
 class MapPlotter(SinglePlotter):
 
-    def __init__(self, ax, cbax=None, vmin=None, vmax=None, a=None,
-            stretch='linear', config=None):
+    def __init__(self, ax, cbax=None, vmin=None, vmax=None, a=1000.,
+            stretch='linear'):
         super(MapPlotter, self).__init__(ax, cbaxis=cbax)
         self.im = None
-        self.a = a or config.get('a', fallback=100)
-        self.vmin = vmin or config.get('vmin', fallback=None)
-        self.vmax = vmax or config.get('vmax', fallback=None)
-        self.stretch = stretch or config.get('stretch', fallback=None)
+        self.label = None
+        self.a = a #or config.get('a', fallback=100)
+        self.vmin = vmin #or config.get('vmin', fallback=None)
+        self.vmax = vmax #or config.get('vmax', fallback=None)
+        self.stretch = stretch #or config.get('stretch', fallback='linear')
 
     @property
     def normalization(self):
@@ -36,9 +37,9 @@ class MapPlotter(SinglePlotter):
             return ImageNormalize(vmin=self.vmin, vmax=self.vmax, 
                     stretch=LinearStretch())
 
-    def plot_map(self, data, wcs=None, r=None, position=None, contours=None, 
-            contours_wcs=None, levels=None, colors='g', extent=None, 
-            extent_cont=None, linewidths=None, mask=False, **kwargs):
+    def plot_map(self, data, wcs=None, label=None, r=None, position=None, 
+            extent=None, self_contours=False, levels=None, colors='w', 
+            linewidths=None, nlevels=10, mask=False, **kwargs):
 
         # Define default values for vmin and vmax
         if self.vmin is None:
@@ -54,6 +55,7 @@ class MapPlotter(SinglePlotter):
         norm = self.normalization
 
         # Plot data
+        self.label = label
         if mask:
             cmap = matplotlib.cm.get_cmap()
             cmap.set_bad('w',1.0)
@@ -65,13 +67,18 @@ class MapPlotter(SinglePlotter):
                     **kwargs)
 
         # Plot contours
-        if contours is not None and levels is not None:
-            self.plot_contours(contours, levels, wcs=contours_wcs,
-                    extent=extent_cont, linewidths=linewidths, colors=colors,
-                    zorder=2)
+        if self_contours:
+            if levels is None:
+                levels = auto_levels(data, n=nlevels, stretch=self.stretch, 
+                        vmin=self.vmin, vmax=self.vmax)
+            self.plot_contours(data, levels, wcs=wcs, extent=extent, 
+                    colors=colors, zorder=2, linewidths=linewidths)
+            return levels
+        else:
+            return None
 
-    def plot_contours(self, data, levels, wcs=None, extent=None, linewidths=None,
-            colors='g', zorder=0, **kwargs):
+    def plot_contours(self, data, levels, wcs=None, extent=None, colors='g', 
+            zorder=0, **kwargs):
         if 'cmap' not in kwargs:
             kwargs['colors'] = colors
         elif 'norm' not in kwargs:
@@ -80,13 +87,12 @@ class MapPlotter(SinglePlotter):
             pass
 
         if wcs is not None:
-            return self.ax.contour(data, 
-                    transform=self.ax.get_transform(wcs),
-                    levels=levels, zorder=zorder,
-                    linewidths=linewidths, **kwargs)
+            return super(MapPlotter, self).contour(data, 
+                    transform=self.ax.get_transform(wcs), levels=levels, 
+                    zorder=zorder, **kwargs)
         else:
-            return self.ax.contour(data, levels=levels, zorder=zorder, 
-                    extent=extent, linewidths=linewidths, **kwargs)
+            return super(MapPlotter, self).contour(data, levels=levels, 
+                    zorder=zorder, extent=extent, **kwargs)
 
     def recenter(self, r, position, wcs):
         if hasattr(position, 'ra'):
@@ -139,59 +145,11 @@ class MapPlotter(SinglePlotter):
 
     def plot_cbar(self, fig, label=None, ticks=None, ticklabels=None, 
             orientation='vertical', labelpad=10, lines=None):
-        if self.cbax is None:
-            print('WARNING: skipping color bar')
-            return
-        assert self.vmin is not None
-        assert self.vmax is not None
-
-        # Ticks
-        if ticks is None:
-            ticks = get_ticks(self.vmin, self.vmax, self.a, stretch=self.stretch)
-
-        # Create bar
-        cbar = fig.colorbar(self.im, ax=self.ax, cax=self.cbax,
-                    orientation=orientation, drawedges=False, ticks=ticks)
-        if lines is not None:
-            cbar.add_lines(lines)
-            # Tick Font properties
-            #print cbar.ax.get_yticklabels()[-1].get_fontsize()
-            #for label in cbax.get_xticklabels()+cbax.get_yticklabels():
-            #    label.set_fontsize(ax.xaxis.get_majorticklabels()[0].get_fontsize())
-            #    label.set_family(ax.xaxis.get_majorticklabels()[0].get_family())
-            #    label.set_fontname(ax.xaxis.get_majorticklabels()[0].get_fontname())
-
-        # Bar position
-        if orientation=='vertical':
-            cbar.ax.yaxis.set_ticks_position('right')
-            if ticklabels is not None:
-                cbar.ax.yaxis.set_ticklabels(ticklabels)
-        elif orientation=='horizontal':
-            cbar.ax.xaxis.set_ticks_position('top')
-            if ticklabels is not None:
-                cbar.ax.xaxis.set_ticklabels(ticklabels)
-
-        # Label
-        if label is not None:
-            if orientation=='vertical':
-                cbar.ax.yaxis.set_label_position('right')
-                cbar.set_label(label,
-                        fontsize=self.ax.yaxis.get_label().get_fontsize(),
-                        family=self.ax.yaxis.get_label().get_family(),
-                        fontname=self.ax.yaxis.get_label().get_fontname(),
-                        weight=self.ax.yaxis.get_label().get_weight(),
-                        labelpad=labelpad, verticalalignment='top')
-            elif orientation=='horizontal':
-                cbar.ax.xaxis.set_label_position('top')
-                cbar.set_label(label,
-                        fontsize=self.ax.xaxis.get_label().get_fontsize(),
-                        family=self.ax.xaxis.get_label().get_family(),
-                        fontname=self.ax.xaxis.get_label().get_fontname(),
-                        weight=self.ax.xaxis.get_label().get_weight())
-        for tlabel in cbar.ax.xaxis.get_ticklabels(which='both')+cbar.ax.yaxis.get_ticklabels(which='both'):
-            tlabel.set_fontsize(self.ax.xaxis.get_majorticklabels()[0].get_fontsize())
-            tlabel.set_family(self.ax.xaxis.get_majorticklabels()[0].get_family())
-            tlabel.set_fontname(self.ax.xaxis.get_majorticklabels()[0].get_fontname())
+        label = label or self.label
+        return super(MapPlotter, self).plot_cbar(fig, self.im, label=label,
+                vmin=self.vmin, vmax=self.vmax, a=self.a, stretch=self.stretch,
+                ticks=ticks, ticklabels=ticklabels, orientation=orientation,
+                labelpad=labelpad, lines=lines)
 
     def plot_beam(self, header, bmin=None, bmaj=None, bpa=0., dx=1,
             dy=1, pad=2, color='k', **kwargs):
@@ -225,7 +183,9 @@ class MapPlotter(SinglePlotter):
         self.ax.set_title(title)
 
     def scatter(self, x, y, **kwargs):
-        return self.ax.scatter(x, y, transform=self.ax.get_transform('world'), **kwargs)
+        #return self.ax.scatter(x, y, transform=self.ax.get_transform('world'), **kwargs)
+        return super(MapPlotter, self).scatter(x, y,
+                transform=self.ax.get_transform('world'), **kwargs)
 
     def circle(self, x, y, r, color='g', facecolor='none', zorder=0):
         cir = SphericalCircle((x, y), r, edgecolor=color, facecolor=facecolor,
@@ -259,15 +219,19 @@ class MapPlotter(SinglePlotter):
         #        color=color)
         #self.ax.add_artist(bar)
 
-    def plot_markers(self, markers, skip_label=False):
+    def plot_markers(self, markers, skip_label=False, zorder=3, **kwargs):
         for m in markers:
-            self.scatter(m['loc'].ra.degree, m['loc'].dec.degree, c=m['color'],
-                    marker=m['style'], zorder=2)
+            # Plot marker
+            mp = self.scatter(m['loc'].ra.degree, m['loc'].dec.degree, c=m['color'],
+                    marker=m['style'], label=m.get('legend'), zorder=zorder,
+                    **kwargs)
+
+            # Marker label
             if m.get('label') and not skip_label:
                 labloc = m['labloc'].ra.degree, m['labloc'].dec.degree
                 self.annotate(m['label'].strip(), xy=labloc, xytext=labloc,
                         xycoords=self.ax.get_transform('world'),
-                        color=m['color'], zorder=3)
+                        color=m['color'], zorder=zorder)
 
 class MapsPlotter(BasePlotter):
 
@@ -290,13 +254,20 @@ class MapsPlotter(BasePlotter):
             projection=None, include_cbar=None):
         axis, cbax = self.get_axis(loc, projection=projection,
                 include_cbar=include_cbar)
+        
+        # Get color stretch values
+        stretch = stretch or self.get_value('stretch', 'linear', loc)
+        vmin = vmin or float(self.get_value('vmin', vmin, loc))
+        vmax = vmax or float(self.get_value('vmax', vmax, loc))
+        a = a or float(self.get_value('a', 1000., loc))
 
+        # Get the axis
         self.axes[loc] = MapPlotter(axis, cbax, vmin=vmin, vmax=vmax, a=a,
-                stretch=stretch, config=self.config)
+                stretch=stretch)
 
         return self.axes[loc]
 
-    def auto_config(self, config=None, section='map_plot', **kwargs):
+    def auto_config(self, config=None, section='map_plot', legend=False, **kwargs):
         # Read new config if requested
         if config is not None:
             cfg = ConfigParser()
@@ -336,6 +307,13 @@ class MapsPlotter(BasePlotter):
             ax.config_map(xformat=xformat, yformat=yformat, xlabel=xlabel,
                     ylabel=ylabel, xticks=xticks, yticks=yticks, 
                     xpad=1., ypad=-0.7, tickscolor=tickscolor, xcoord='ra', ycoord='dec')
+
+            if (legend or self.config.getboolean('legend', fallback=False)) and loc==(0,0):
+                ax.legend(auto=True, loc=4, match_colors=True,
+                        fancybox=self.config.getboolean('fancybox', fallback=False),
+                        framealpha=self.config.getfloat('framealpha', fallback=None),
+                        facecolor=self.config.get('facecolor', fallback=None))
+
 
     def init_axis(self, loc, projection='rectilinear', include_cbar=None):
         super(MapsPlotter, self).init_axis(loc, projection, include_cbar)

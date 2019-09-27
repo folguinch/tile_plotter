@@ -1,10 +1,11 @@
-import os
+import os, warnings
 from configparser import ConfigParser
 from abc import ABCMeta, abstractmethod
 from builtins import map, range
         
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
 
 from functions import *
 
@@ -161,7 +162,7 @@ class BasePlotter(object):
             value = self.config[newkey]
         elif key in self.config:
             value = self.config[key]
-            if n:
+            if n is not None:
                 if sep!=' ':
                     value = value.split(sep)
                 else:
@@ -178,6 +179,11 @@ class BasePlotter(object):
                         value = default
         else:
             value = default
+
+        try:
+            value = value.strip()
+        except:
+            pass
 
         return value
 
@@ -196,6 +202,7 @@ class SinglePlotter(object):
         cbax (matplotlib colorbar): color bar axis.
         xscale (str): x axis scale (linear or log).
         yscale (str): y axis scale (linear or log).
+        pltd (dict): plotted objects.
     """
 
     def __init__(self, ax, cbaxis=None, xscale='linear', yscale='linear'):
@@ -213,6 +220,24 @@ class SinglePlotter(object):
         self.cbax = cbaxis
         self.xscale = xscale
         self.yscale = yscale
+        self.pltd = {}
+    
+    def _simple_plt(self, fn, *args, **kwargs):
+        return self.insert_plt(kwargs.get('label', None),
+                fn(*args, **kwargs))
+
+    def insert_plt(self, key, val):
+        if isinstance(val, mpl.contour.ContourSet):
+            color = tuple(val.collections[-1].get_color().tolist()[0])
+            handler = mlines.Line2D([], [], color=color, label=key)
+        else:
+            handler = val
+        if key is not None:
+            self.pltd[key] = handler
+        else:
+            pass
+
+        return val
 
     def config_plot(self, config=ConfigParser(), **kwargs):
         """Configure the plot.
@@ -297,7 +322,7 @@ class SinglePlotter(object):
             *args: data to plot.
             **kwargs: arguments for matplotlib.pyplot.plot().
         """
-        return self.ax.plot(*args, **kwargs)
+        return self._simple_plt(self.ax.plot, *args, **kwargs)
 
     def axhline(self, *args, **kwargs):
         """Plot horizontal line
@@ -315,7 +340,7 @@ class SinglePlotter(object):
             *args: data to plot.
             **kwargs: arguments for matplotlib.pyplot.errorbar().
         """
-        return self.ax.errorbar(*args, **kwargs)
+        return self._simple_plt(self.ax.errorbar, *args, **kwargs)
     
     def annotate(self, *args, **kwargs):
         """Annotate the axis.
@@ -328,7 +353,8 @@ class SinglePlotter(object):
         """
         self.ax.annotate(*args, **kwargs)
 
-    def legend(self, handles=None, labels=None, loc=0, **kwargs):
+    def legend(self, handles=None, labels=None, loc=0, auto=False,
+            match_colors=False, **kwargs):
         """Plot the legend.
 
         Args:
@@ -336,33 +362,59 @@ class SinglePlotter(object):
                 See matplotlib.pyplot.lengend() documentation for available
                 values and positions (default 0, i.e. best location).
         """
+        # Get handles from plotted data
+        if auto:
+            handles = self.pltd.values()
+            labels = self.pltd.keys()
+
+        # Frame
+        kwargs.setdefault('frameon', kwargs.get('fancybox'))
+
+        # Plot legend
         if handles and labels:
-            self.ax.legend(handles, labels, loc=loc, frameon=False, **kwargs)
+            leg = self.ax.legend(handles, labels, loc=loc, **kwargs)
         else:
-            self.ax.legend(loc=loc, frameon=False, **kwargs)
+            leg = self.ax.legend(loc=loc, **kwargs)
+
+        # Match text and artist colors
+        if match_colors:
+            for artist, text in zip(leg.legendHandles, leg.get_texts()):
+                try:
+                    col = artist.get_color()
+                except:
+                    col = artist.get_facecolor()
+                if isinstance(col, np.ndarray):
+                    col = col[0]
+                text.set_color(col)
 
     def scatter(self, *args, **kwargs):
-        return self.ax.scatter(*args, **kwargs)
+        return self._simple_plt(self.ax.scatter, *args, **kwargs)
 
     def clabel(self, *args, **kwargs):
         self.ax.clabel(*args, **kwargs)
 
     def contour(self, *args, **kwargs):
-        return self.ax.contour(*args, **kwargs)
+        return self._simple_plt(self.ax.contour, *args, **kwargs)
 
     def tricontour(self, x, y, *args, **kwargs):
         triangulation = mpl.tri.Triangulation(x, y)
-        return self.ax.tricontour(triangulation, *args, **kwargs)
+        return self._simple_plt(self.ax.tricontour, triangulation, *args, **kwargs)
 
-    def plot_cbar(self, fig, cs, label=None, ticks=None, ticklabels=None, 
+    def plot_cbar(self, fig, cs, label=None, vmin=None, vmax=None, a=None,
+            stretch='linear', ticks=None, ticklabels=None, 
             orientation='vertical', labelpad=10, lines=None):
+        # Check if cbax exists
+        if self.cbax is None:
+            print('WARNING: skipping color bar')
+            return
+
         # Ticks
-        #if ticks is None:
-        #    ticks = get_ticks(self.vmin, self.vmax, self.a, stretch=self.stretch)
+        if ticks is None and vmin and vmax and a:
+            ticks = get_ticks(vmin, vmax, a, stretch=stretch)
 
         # Create bar
         cbar = fig.colorbar(cs, ax=self.ax, cax=self.cbax,
-                    orientation=orientation, drawedges=False)
+                    orientation=orientation, drawedges=False, ticks=ticks)
         if lines is not None:
             cbar.add_lines(lines)
             # Tick Font properties
@@ -398,8 +450,11 @@ class SinglePlotter(object):
                         fontsize=self.ax.xaxis.get_label().get_fontsize(),
                         family=self.ax.xaxis.get_label().get_family(),
                         fontname=self.ax.xaxis.get_label().get_fontname(),
-                        weight=self.ax.xaxis.get_label().get_weight())
+                        weight=self.ax.xaxis.get_label().get_weight(),
+                        labelpad=labelpad)
         for tlabel in cbar.ax.xaxis.get_ticklabels(which='both')+cbar.ax.yaxis.get_ticklabels(which='both'):
             tlabel.set_fontsize(self.ax.xaxis.get_majorticklabels()[0].get_fontsize())
             tlabel.set_family(self.ax.xaxis.get_majorticklabels()[0].get_family())
             tlabel.set_fontname(self.ax.xaxis.get_majorticklabels()[0].get_fontname())
+
+        return cbar
