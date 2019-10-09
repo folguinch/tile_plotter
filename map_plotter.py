@@ -223,7 +223,8 @@ class MapPlotter(SinglePlotter):
         for m in markers:
             # Plot marker
             mp = self.scatter(m['loc'].ra.degree, m['loc'].dec.degree, c=m['color'],
-                    marker=m['style'], label=m.get('legend'), zorder=zorder,
+                    marker=m['style'], label=m.get('legend'),
+                    s=m.get('size'), zorder=zorder,
                     **kwargs)
 
             # Marker label
@@ -286,6 +287,9 @@ class MapsPlotter(BasePlotter):
 
         # Config
         for i,(loc,ax) in enumerate(self.axes.items()):
+            if not self.is_init(loc):
+                break
+
             # Labels and ticks
             xlabel = not self.sharex or \
                     (self.sharex and loc[1]==0 and loc[0]==self.shape[0]-1)
