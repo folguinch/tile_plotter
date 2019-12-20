@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 
 from functions import *
-from utils import get_logger
+import logger
 
 class BasePlotter(object):
 
@@ -21,8 +21,9 @@ class BasePlotter(object):
     """
 
     __metaclass__ = ABCMeta
-    defconfig = os.path.join(os.path.realpath(__file__), 'configs/default.cfg')
-    logger = get_logger(__name__)
+    defconfig = os.path.join(os.path.dirname(os.path.realpath(__file__)), 
+            'configs/default.cfg')
+    log = logger.get_logger(__name__)
 
     def __init__(self, config=None, section='single', **kwargs):
         # Close plt if still open
@@ -48,7 +49,7 @@ class BasePlotter(object):
 
         # Get axes
         self.figsize, self.axes, self.cbaxes = get_geometry(opts, section=section)
-        self.logger.info('Figure size: width=%.1f in height=%.1f in', *self.figsize)
+        self.log.info('Figure size: width=%.1f in height=%.1f in', *self.figsize)
 
         # Create figure
         self.fig = plt.figure(figsize=self.figsize)
@@ -89,17 +90,17 @@ class BasePlotter(object):
             projection = self.projection
 
         if self.is_init(ij):
-            self.logger.info('Axis %r already initialized', ij)
+            self.log.info('Axis %r already initialized', ij)
             pass
         else:
-            self.logger.info('Initializing axis: %r', ij)
+            self.log.info('Initializing axis: %r', ij)
             self.axes[ij].scalex(1./self.figsize[0])
             self.axes[ij].scaley(1./self.figsize[1])
             self.axes[ij] = self.fig.add_axes(self.axes[ij].axis, 
                     projection=projection)
 
         if include_cbar:
-            self.logger.info('Initializing color bar: %r', ij)
+            self.log.info('Initializing color bar: %r', ij)
             self.init_cbar(ij)
 
         return 
@@ -149,6 +150,19 @@ class BasePlotter(object):
 
         return include_cbar
 
+    def has_axlabels(self, loc):
+        xlabel = not self.sharex or \
+                (self.sharex and loc[1]==0 and loc[0]==self.shape[0]-1)
+        ylabel = not self.sharey or \
+                (self.sharey and loc[1]==0 and loc[0]==self.shape[0]-1)
+        return xlabel, ylabel
+
+    def has_ticks(self, loc):
+        xticks = not self.sharex or \
+                (self.sharex and loc[0]==self.shape[0]-1)
+        yticks = not self.sharey or (self.sharey and loc[1]==0)
+        return xticks, yticks
+
     def get_axis(self, loc, projection=None, include_cbar=None):
         # Set projection
         if projection is None:
@@ -159,9 +173,9 @@ class BasePlotter(object):
 
         # Verify include_cbar
         if include_cbar is None:
-            self.logger.debug('Include color bar?')
+            self.log.debug('Include color bar?')
             include_cbar = self.has_cbar(ij)
-            self.logger.debug('Include color bar: %r', include_cbar)
+            self.log.debug('Include color bar: %r', include_cbar)
 
         # Initialize axis if needed
         if not self.is_init(ij):
@@ -204,6 +218,9 @@ class BasePlotter(object):
 
         return value
 
+    def set_title(self, title, **kwargs):
+        self.fig.suptitle(title, **kwargs)
+
     def savefig(self, fname, **kwargs):
         self.fig.savefig(fname, **kwargs)
 
@@ -238,6 +255,16 @@ class SinglePlotter(object):
         self.xscale = xscale
         self.yscale = yscale
         self.pltd = {}
+
+    @property
+    def xlim(self):
+        """Get x axis limits"""
+        return self.ax.get_xlim()
+    
+    @property
+    def ylim(self):
+        """Get y axis limits"""
+        return self.ax.get_ylim()
     
     def _simple_plt(self, fn, *args, **kwargs):
         return self.insert_plt(kwargs.get('label', None),
@@ -256,7 +283,7 @@ class SinglePlotter(object):
 
         return val
 
-    def config_plot(self, config=ConfigParser(), **kwargs):
+    def config_plot(self, **kwargs):
         """Configure the plot.
 
         Configures several aspects of the axes: limits, scales, labels and
@@ -286,14 +313,12 @@ class SinglePlotter(object):
                 False.
         """
         # Limits
-        if 'xlim' in kwargs or 'xlim' in config:
-            xlim = kwargs.get('xlim') or map(float,config.get('xlim').split(','))
-            self.ax.set_xlim(*xlim)
-        if 'ylim' in kwargs or 'ylim' in config:
-            ylim = kwargs.get('ylim') or map(float,config.get('ylim').split(','))
-            self.ax.set_ylim(*ylim)
+        if 'xlim' in kwargs:
+            self.set_xlim(*kwargs.get('xlim'))
+        if 'ylim' in kwargs:
+            self.set_ylim(*kwargs.get('ylim'))
 
-        # Coordinate scales
+        # Axis scales
         if kwargs.get('xscale', self.xscale)=='log':
             self.ax.set_xscale('log')
             self.ax.xaxis.set_major_formatter(formatter('log'))
