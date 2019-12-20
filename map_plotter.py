@@ -39,7 +39,7 @@ class MapPlotter(SinglePlotter):
 
     def plot_map(self, data, wcs=None, label=None, r=None, position=None, 
             extent=None, self_contours=False, levels=None, colors='w', 
-            linewidths=None, nlevels=10, mask=False, **kwargs):
+            linewidths=None, mask=False, rms=None, nsigma=5., **kwargs):
 
         # Define default values for vmin and vmax
         if self.vmin is None:
@@ -68,17 +68,14 @@ class MapPlotter(SinglePlotter):
 
         # Plot contours
         if self_contours:
-            if levels is None:
-                levels = auto_levels(data, n=nlevels, stretch=self.stretch, 
-                        vmin=self.vmin, vmax=self.vmax)
-            self.plot_contours(data, levels, wcs=wcs, extent=extent, 
-                    colors=colors, zorder=2, linewidths=linewidths)
-            return levels
-        else:
-            return None
+            self.plot_contours(data, levels=levels, rms=rms, nsigma=nsigma,
+                    wcs=wcs, extent=extent, colors=colors, zorder=2, 
+                    linewidths=linewidths)
 
-    def plot_contours(self, data, levels, wcs=None, extent=None, colors='g', 
-            zorder=0, **kwargs):
+    def plot_contours(self, data, levels=None, rms=None, nsigma=5., wcs=None, 
+            extent=None, colors='g', zorder=0, **kwargs):
+        if levels is None:
+            levels = auto_levels(data, rms=rms, nsigma=nsigma)
         if 'cmap' not in kwargs:
             kwargs['colors'] = colors
         elif 'norm' not in kwargs:
@@ -291,13 +288,8 @@ class MapsPlotter(BasePlotter):
                 break
 
             # Labels and ticks
-            xlabel = not self.sharex or \
-                    (self.sharex and loc[1]==0 and loc[0]==self.shape[0]-1)
-            xticks = not self.sharex or \
-                    (self.sharex and loc[0]==self.shape[0]-1)
-            ylabel = not self.sharey or \
-                    (self.sharey and loc[1]==0 and loc[0]==self.shape[0]-1)
-            yticks = not self.sharey or (self.sharey and loc[1]==0)
+            xlabel, ylabel = self.has_axlabels(loc)
+            xticks, yticks = self.has_ticks(loc)
             
             # Ticks color
             if len(tickscolors) == 1:
@@ -317,7 +309,6 @@ class MapsPlotter(BasePlotter):
                         fancybox=self.config.getboolean('fancybox', fallback=False),
                         framealpha=self.config.getfloat('framealpha', fallback=None),
                         facecolor=self.config.get('facecolor', fallback=None))
-
 
     def init_axis(self, loc, projection='rectilinear', include_cbar=None):
         super(MapsPlotter, self).init_axis(loc, projection, include_cbar)
