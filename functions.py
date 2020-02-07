@@ -147,6 +147,17 @@ def get_ticks(vmin, vmax, a=1000, n=5, stretch='log'):
     else:
         return np.linspace(vmin, vmax, n)
 
+def map_to_dict(x, sep=' '):
+    aux = x.split(sep)
+    res = {}
+    for item in aux:
+        key, val = item.split(':')
+        try:
+            res[key] = float(val)
+        except ValueError:
+            res[key] = val
+    return res
+
 #def get_axes(axgeom, cbargeom, rows, cols, width, height, cbar_orientation):
 #    factorx = 1./width
 #    factory = 1./height

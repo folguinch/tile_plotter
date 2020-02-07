@@ -10,6 +10,7 @@ import matplotlib
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 from matplotlib.patches import Rectangle, Ellipse
 
+import normalizations as mynorms
 from .base_plotter import BasePlotter, SinglePlotter
 from .functions import get_ticks
 from .utils import auto_vmin, auto_vmax, auto_levels
@@ -33,6 +34,10 @@ class MapPlotter(SinglePlotter):
         if self.stretch=='log':
             return ImageNormalize(vmin=self.vmin, vmax=self.vmax, 
                     stretch=LogStretch(a=self.a))
+        elif self.stretch=='midnorm':
+            #return ImageNormalize(vmin=self.vmin, vmax=self.vmax,
+            #        stretch=mynorms.MidpointStretch())
+            return mynorms.MidpointNormalize(vmin=self.vmin, vmax=self.vmax)
         else:
             return ImageNormalize(vmin=self.vmin, vmax=self.vmax, 
                     stretch=LinearStretch())
@@ -95,8 +100,11 @@ class MapPlotter(SinglePlotter):
         if hasattr(position, 'ra'):
             ra = position.ra.degree
             dec = position.dec.degree
-        else:
+        elif len(position)==2:
             ra, dec = position
+        else:
+            print('WARN: Could not recenter plot')
+            return
         x, y = wcs.all_world2pix([[ra,dec]], 0)[0]
         cdelt = np.mean(np.abs(wcs.wcs.cdelt))*u.deg
         if hasattr(r, 'unit'):
@@ -170,12 +178,6 @@ class MapPlotter(SinglePlotter):
         #ax.add_patch(rect)
         self.ax.add_patch(beam)
 
-    def set_xlim(self, xmin=None, xmax=None):
-        self.ax.set_xlim(xmin, xmax)
-
-    def set_ylim(self, ymin=None, ymax=None):
-        self.ax.set_ylim(ymin, ymax)
-
     def set_title(self, title):
         self.ax.set_title(title)
 
@@ -231,6 +233,9 @@ class MapPlotter(SinglePlotter):
                         xycoords=self.ax.get_transform('world'),
                         color=m['color'], zorder=zorder)
 
+    def set_aspect(self, *args):
+        self.ax.set_aspect(*args)
+
 class MapsPlotter(BasePlotter):
 
     def __init__(self, config=None, section='map_plot', projection=None, 
@@ -265,7 +270,8 @@ class MapsPlotter(BasePlotter):
 
         return self.axes[loc]
 
-    def auto_config(self, config=None, section='map_plot', legend=False, **kwargs):
+    def auto_config(self, config=None, section='map_plot', legend=False,
+            dtype='intensity', **kwargs):
         # Read new config if requested
         if config is not None:
             cfg = ConfigParser()
@@ -300,15 +306,40 @@ class MapsPlotter(BasePlotter):
                 except IndexError:
                     tickscolor = tickscolors[0]
 
-            ax.config_map(xformat=xformat, yformat=yformat, xlabel=xlabel,
-                    ylabel=ylabel, xticks=xticks, yticks=yticks, 
-                    xpad=1., ypad=-0.7, tickscolor=tickscolor, xcoord='ra', ycoord='dec')
+            if self.config.getfloat('xsize')==self.config.getfloat('ysize'):
+                self.log.info('Setting equal axis aspect ratio')
+                ax.set_aspect(1./ax.ax.get_data_ratio())
+
+            if dtype=='pvmap':
+                try:
+                    xlim = map(float, self.get_value('xlim', (None,None), loc,
+                        sep=',').split())
+                except (TypeError, AttributeError):
+                    xlim = (None, None)
+                try:
+                    ylim = map(float, self.get_value('ylim', (None,None), loc,
+                        sep=',').split())
+                except (TypeError, AttributeError):
+                    ylim = (None, None)
+                xlabel = 'Offset (arcsec)' if xlabel else ''
+                ylabel = 'Velocity (km s$^{-1}$)' if ylabel else ''
+                ax.config_plot(xlim=tuple(xlim), xlabel=xlabel, 
+                        unset_xticks=not xticks,
+                        ylim=tuple(ylim), ylabel=ylabel, 
+                        unset_yticks=not yticks, 
+                        tickscolor=tickscolor)
+
+            else:
+                ax.config_map(xformat=xformat, yformat=yformat, xlabel=xlabel,
+                        ylabel=ylabel, xticks=xticks, yticks=yticks, 
+                        xpad=1., ypad=-0.7, tickscolor=tickscolor, xcoord='ra', ycoord='dec')
 
             if (legend or self.config.getboolean('legend', fallback=False)) and loc==(0,0):
                 ax.legend(auto=True, loc=4, match_colors=True,
                         fancybox=self.config.getboolean('fancybox', fallback=False),
                         framealpha=self.config.getfloat('framealpha', fallback=None),
                         facecolor=self.config.get('facecolor', fallback=None))
+
 
     def init_axis(self, loc, projection='rectilinear', include_cbar=None):
         super(MapsPlotter, self).init_axis(loc, projection, include_cbar)

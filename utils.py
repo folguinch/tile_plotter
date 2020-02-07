@@ -9,7 +9,7 @@ def auto_vminmax(data, dtype='intensity', **kwargs):
     return auto_vmin(data, dtype=dtype, **kwargs), auto_vmax(data, dtype=dtype)
 
 def auto_vmin(data, rms=None, nrms=2., vfrac=1.02, dtype='intensity'):
-    if dtype=='intensity':
+    if dtype in ['intensity', 'pvmap']:
         if rms is None:
             rms = maths.quick_rms(data)
             LOG.debug('Quick rms = %.3e', rms)
@@ -25,7 +25,7 @@ def auto_vmin(data, rms=None, nrms=2., vfrac=1.02, dtype='intensity'):
     return vmin
 
 def auto_vmax(data, frac=0.8, vfrac=0.98, dtype='intensity'):
-    if dtype=='intensity':
+    if dtype in ['intensity', 'pvmap']:
         vmax = np.nanmax(data)*frac
     elif dtype=='velocity':
         vmax = np.nanmax(data)*vfrac

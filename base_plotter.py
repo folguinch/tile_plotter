@@ -6,6 +6,7 @@ from builtins import map, range
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
+import numpy as np
 
 from functions import *
 import logger
@@ -224,6 +225,20 @@ class BasePlotter(object):
     def savefig(self, fname, **kwargs):
         self.fig.savefig(fname, **kwargs)
 
+    def auto_plot(self):
+        for loc, ax in self.axes.items():
+            # Arrows
+            # Specified as PA or (x y PA) or (PA len) or (x y PA len)
+            arrow = self.get_value('arrow', ax=loc, sep=',')
+            if arrow:
+                self.log.info('Plotting arrow')
+                defarrow = 'arrowstyle:-> fc:k ec:k ls:- lw:1'
+                arrowprops = map_to_dict(self.get_value('arrowprops', defarrow, 
+                    loc, sep=','))
+                ax.arrow(arrow, arrowprops=arrowprops)
+
+            # Line segment
+
 class SinglePlotter(object):
 
     """Container for axes of a single plot.
@@ -346,6 +361,9 @@ class SinglePlotter(object):
             self.ax.set_yticklabels(['']*len(self.ax.get_yticks()))
         if 'minor_yticks' in kwargs:
             self.ax.set_yticks(kwargs['minor_yticks'], minor=True)
+
+        # Ticks colors
+        self.ax.tick_params('both', color=kwargs.get('tickscolor','w'))
 
     def set_xlim(self, xmin=None, xmax=None):
         """Set the axis x limits"""
@@ -500,3 +518,34 @@ class SinglePlotter(object):
             tlabel.set_fontname(self.ax.xaxis.get_majorticklabels()[0].get_fontname())
 
         return cbar
+
+    def arrow(self, arrow, **kwargs):
+        # Arrow specified as PA or (x y PA) or (PA len) or (x y PA len)
+        arrow = list(map(float, arrow.split()))
+        x0, y0, l = 0.5, 0.5, 0.5
+        if len(arrow)==1:
+            pa = arrow[0]
+        elif len(arrow)==2:
+            pa, l = arrow
+        elif len(arrow)==3:
+            x0, y0, pa = arrow
+        elif len(arrow)==4:
+            x0, y0, pa, l = arrow
+        else:
+            raise ValueError('Cannot configure arrow: %s' % arrow)
+        l = l*0.5
+        pa = pa + 90.
+
+        # Locations
+        dx = l * np.cos(np.radians(pa))
+        dy = l * np.sin(np.radians(pa))
+        xy = (x0+dx, y0+dy)
+        xytext = (x0-dx, y0-dy)
+
+        # Draw
+        arrowprops = kwargs.get('arrowprops', {'arrowstyle':'->', 'fc':'k', 
+            'ec':'k', 'ls':'-', 'lw':2})
+        color = kwargs.get('color', arrowprops['fc'])
+        self.annotate('', xy=xy, xytext=xytext, xycoords='axes fraction',
+                arrowprops=arrowprops, color=color, zorder=10)
+
