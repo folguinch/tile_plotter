@@ -189,7 +189,7 @@ class BasePlotter(object):
         if ax is not None and ax in self.axes:
             n = self.axes.keys().index(ax)
 
-        if n and (key + str(n)) in self.config:
+        if n is not None and (key + str(n)) in self.config:
             newkey = key + str(n)
             value = self.config[newkey]
         elif key in self.config:

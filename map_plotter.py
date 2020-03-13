@@ -44,7 +44,8 @@ class MapPlotter(SinglePlotter):
 
     def plot_map(self, data, wcs=None, label=None, r=None, position=None, 
             extent=None, self_contours=False, levels=None, colors='w', 
-            linewidths=None, mask=False, rms=None, nsigma=5., **kwargs):
+            linewidths=None, mask=False, rms=None, nsigma=5., nsigmalevel=None, 
+            **kwargs):
 
         # Define default values for vmin and vmax
         if self.vmin is None:
@@ -75,12 +76,13 @@ class MapPlotter(SinglePlotter):
         if self_contours:
             self.plot_contours(data, levels=levels, rms=rms, nsigma=nsigma,
                     wcs=wcs, extent=extent, colors=colors, zorder=2, 
-                    linewidths=linewidths)
+                    linewidths=linewidths, nsigmalevel=nsigmalevel)
 
     def plot_contours(self, data, levels=None, rms=None, nsigma=5., wcs=None, 
-            extent=None, colors='g', zorder=0, **kwargs):
+            extent=None, colors='g', zorder=0, nsigmalevel=None, **kwargs):
         if levels is None:
-            levels = auto_levels(data, rms=rms, nsigma=nsigma)
+            levels = auto_levels(data, rms=rms, nsigma=nsigma,
+                    nsigmalevel=nsigmalevel)
         if 'cmap' not in kwargs:
             kwargs['colors'] = colors
         elif 'norm' not in kwargs:

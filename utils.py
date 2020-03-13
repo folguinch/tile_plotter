@@ -8,7 +8,7 @@ LOG = logger.get_logger(__name__)
 def auto_vminmax(data, dtype='intensity', **kwargs):
     return auto_vmin(data, dtype=dtype, **kwargs), auto_vmax(data, dtype=dtype)
 
-def auto_vmin(data, rms=None, nrms=2., vfrac=1.02, dtype='intensity'):
+def auto_vmin(data, rms=None, nrms=1., vfrac=1.02, dtype='intensity'):
     if dtype in ['intensity', 'pvmap']:
         if rms is None:
             rms = maths.quick_rms(data)
@@ -35,7 +35,7 @@ def auto_vmax(data, frac=0.8, vfrac=0.98, dtype='intensity'):
     return vmax
 
 def auto_levels(data=None, rms=None, nsigma=5., base=2, nlevels=None,
-        minnlevels=5):
+        minnlevels=5, nsigmalevel=None):
     # Determine rms
     LOG.info('Determining levels from data:')
     if rms is None and data is not None:
@@ -47,6 +47,13 @@ def auto_levels(data=None, rms=None, nsigma=5., base=2, nlevels=None,
     rms = maths.to_sigfig(rms)
     LOG.info('Getting levels for rms = %f', rms)
 
+    # One level at nsigmalevel
+    if nsigmalevel is not None:
+        LOG.info('Setting only one level at %i sigma', nsigmalevel)
+        levels = [nsigmalevel*rms]
+        LOG.info('Levels = %r', levels)
+        return levels
+
     # Limits
     if data is not None:
         baselevel = rms*nsigma
@@ -55,7 +62,12 @@ def auto_levels(data=None, rms=None, nsigma=5., base=2, nlevels=None,
         if nlevels<minnlevels:
             LOG.warn('Minimum number of levels not achieved, refining base ...')
             base = maths.to_sigfig(np.exp(np.log(maxval/baselevel)/(minnlevels-1)))
-            LOG.info('New base = %f', base)
+            if base==1.0:
+                LOG.warn('New base = %f', base)
+                LOG.warn('Changing base to 1.01')
+                base = 1.01
+            else:
+                LOG.info('New base = %f', base)
             nlevels = int(np.floor(np.log(maxval/baselevel)/np.log(base)))+1
         LOG.info('Number of levels = %i', nlevels)
     else:
