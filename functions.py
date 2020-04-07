@@ -35,6 +35,9 @@ def get_geometry(opts, section='single'):
     vspace = opts[section].getfloat('vspace')
     sharex = opts[section].getboolean('sharex')
     sharey = opts[section].getboolean('sharey')
+    # Axes ratios
+    xratio = opts[section].get('xsize_ratio')
+    yratio = opts[section].get('ysize_ratio')
     # Colobar
     vcbar = opts[section].getboolean('vcbar')
     hcbar = opts[section].getboolean('hcbar')
@@ -44,6 +47,32 @@ def get_geometry(opts, section='single'):
         opts[section]['vcbarpos'].replace(',',' ').split()))
     hcbarpos = list(map(int, 
         opts[section]['hcbarpos'].replace(',',' ').split()))
+
+    # Validate options
+    if ncols<=0 or nrows<=0:
+        raise ValueError('ncols and nrows must be > 0')
+
+    # Validate ratios
+    xratio = list(map(float, xratio.split()))
+    if len(xratio) == 1:
+        if xratio[0] != 1:
+            print('WARNING: using ratio to change xsize')
+        if ncols>1:
+            xratio = xratio * ncols
+    elif len(xratio)!=ncols:
+        raise ValueError('xratio values must match ncols')
+    else:
+        pass
+    yratio = list(map(float, yratio.split()))
+    if len(yratio) == 1:
+        if yratio[0] != 1:
+            print('WARNING: using ratio to change ysize')
+        if nrows>1:
+            yratio = yratio * nrows
+    elif len(yratio)!=nrows:
+        raise ValueError('yratio values must match nrows')
+    else:
+        pass
 
     # Validate cbar
     # only allow cbar in 1 axis
@@ -65,6 +94,10 @@ def get_geometry(opts, section='single'):
         # Geometry
         axis = cp.copy(general)
         cbax = cp.copy(empty)
+
+        # Multiply by ratios
+        axis.xsize = axis.xsize * xratio[j]
+        axis.ysize = axis.ysize * yratio[i]
 
         # Left and bottom borders
         if i==nrows-1:

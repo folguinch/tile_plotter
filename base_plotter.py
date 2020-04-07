@@ -1,7 +1,11 @@
 import os, warnings
-from configparser import ConfigParser
 from abc import ABCMeta, abstractmethod
 from builtins import map, range
+try:
+    from myutils.myconfigparser import myConfigParser as ConfigParser
+    from configparser import ExtendedInterpolation
+except ImportError:
+    from configparser import ConfigParser, ExtendedInterpolation
         
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -34,22 +38,24 @@ class BasePlotter(object):
             pass
 
         # Update options
-        opts = ConfigParser()
-        opts.read(self.defconfig)
+        self._config = ConfigParser(interpolation=ExtendedInterpolation())
+        self._config.read(self.defconfig)
         if config is None:
             pass
         elif os.path.isfile(os.path.expanduser(config)):
-            opts.read(config)
+            self._config.read(config)
         else:
             raise IOError('File %s does not exist' % config)
-        opts.read_dict({section: kwargs})
-        self.config = opts[section]
+        self._config.read_dict({section: kwargs})
+        self.config = self._config[section]
 
         # Set plot styles
-        plt.style.use(opts.get(section, 'styles').replace(',',' ').split())
+        plt.style.use(self._config.get(section,'styles').replace(',',
+            ' ').split())
 
         # Get axes
-        self.figsize, self.axes, self.cbaxes = get_geometry(opts, section=section)
+        self.figsize, self.axes, self.cbaxes = get_geometry(self._config, 
+                section=section)
         self.log.info('Figure size: width=%.1f in height=%.1f in', *self.figsize)
 
         # Create figure
@@ -391,6 +397,13 @@ class SinglePlotter(object):
         """
         self.ax.axhline(*args,**kwargs)
 
+    def axvline(self, *args, **kwargs):
+        """Plot vertical line
+
+        Arguments are the same as for the matplotlib.pyplot.axvline function
+        """
+        self.ax.axvline(*args,**kwargs)
+
     def errorbar(self, *args, **kwargs):
         """Plot on the axis.
 
@@ -548,4 +561,8 @@ class SinglePlotter(object):
         color = kwargs.get('color', arrowprops['fc'])
         self.annotate('', xy=xy, xytext=xytext, xycoords='axes fraction',
                 arrowprops=arrowprops, color=color, zorder=10)
+
+    def label_axes(self, text, loc=(0.1, 0.9), **kwargs):
+        kwargs.setdefault('xycoords', 'axes fraction')
+        self.annotate(text, xy=loc, xytext=loc, **kwargs)
 

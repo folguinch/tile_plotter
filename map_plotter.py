@@ -14,6 +14,7 @@ import normalizations as mynorms
 from .base_plotter import BasePlotter, SinglePlotter
 from .functions import get_ticks
 from .utils import auto_vmin, auto_vmax, auto_levels
+from .maths import quick_rms
 
 __metaclass__ = type
 
@@ -237,6 +238,83 @@ class MapPlotter(SinglePlotter):
 
     def set_aspect(self, *args):
         self.ax.set_aspect(*args)
+
+    def auto_plot(self, data, config, hasxlabel, hasylabel, hasxticks, 
+            hasyticks, **kwargs):
+        """This function only works if myConfigParser is used
+        """
+        for img, wcs in data:
+            # From config
+            levels = config.getfloatlist('levels', fallback=None)
+            r = config.getquantity('radius', fallback=None)
+            position = config.getskycoord('center', fallback=None)
+            self_contours = config.getboolean('contours', fallback=False)
+            colors = config.get('contour_colors', fallback='w')
+            rms = config.getquantity('rms', fallback=None)
+            nsigma = config.getfloat('nsigma', fallback=5.)
+            
+            # Plot map
+            if config['type']=='map':
+                self.plot_map(np.squeeze(img.data), wcs=wcs, r=r,
+                        position=position, self_contours=self_contours,
+                        levels=levels, colors='w', mask=False, rms=rms,
+                        nsigma=nsigma, nsigmalevel=None)
+
+            # Beam
+            if config.getboolean('plot_beam', fallback=True):
+                self.plot_beam(img.header,
+                        color=config.get('beam_color',fallback='k'))
+
+        # Markers
+        iterover = config.getvalueiter('markers', sep=',', dtype='skycoord')
+        for i, marker in enumerate(iterover):
+            mcolor = config.getvalue('markers_color', n=i, fallback='g')
+            mfmt = config.getvalue('markers_fmt', n=i, fallback='+')
+            msize = config.getvalue('markers_size', n=i, fallback=100,
+                    dtype=float)
+            mzorder = config.getvalue('markers_zorder', n=i, fallback=2,
+                    dtype=int)
+            mk = self.scatter(marker.ra.degree, marker.dec.degree, c=mcolor,
+                    marker=mfmt, s=msize, zorder=mzorder)
+        
+        # Config
+        self.auto_config(config, hasxlabel, hasylabel, hasxticks, hasyticks, 
+                **kwargs)
+
+        # Label 
+        if 'label' in config:
+            self.label_axes(config['label'],
+                    backgroundcolor=config.get('label_background', None))
+
+    def auto_config(self, cfg, xlabel, ylabel, xticks, yticks, **kwargs):
+        # Config map options
+        xformat = kwargs.get('xformat', 
+                cfg.get('xformat', fallback="hh:mm:ss.s"))
+        yformat = kwargs.get('yformat', 
+                cfg.get('yformat', fallback="dd:mm:ss"))
+
+        # Ticks color
+        tickscolor = kwargs.get('tickscolor', 
+                cfg.get('tickscolor', fallback="k"))
+
+        # Apect ratio
+        self.set_aspect(1./self.ax.get_data_ratio())
+
+        # Config
+        if cfg['type']=='pvmap':
+            xlim = cfg.getfloatlist('xlim', fallback=(None,None))
+            ylim = cfg.getfloatlist('ylim', fallback=(None,None))
+            xlabel = 'Offset (arcsec)' if xlabel else ''
+            ylabel = 'Velocity (km s$^{-1}$)' if ylabel else ''
+            self.config_plot(xlim=tuple(xlim), xlabel=xlabel, 
+                    unset_xticks=not xticks,
+                    ylim=tuple(ylim), ylabel=ylabel, 
+                    unset_yticks=not yticks, 
+                    tickscolor=tickscolor)
+        else:
+            self.config_map(xformat=xformat, yformat=yformat, xlabel=xlabel,
+                    ylabel=ylabel, xticks=xticks, yticks=yticks, 
+                    xpad=1., ypad=-0.7, tickscolor=tickscolor, xcoord='ra', ycoord='dec')
 
 class MapsPlotter(BasePlotter):
 

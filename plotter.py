@@ -1,7 +1,150 @@
+import astropy.units as u
+
 from .base_plotter import BasePlotter, SinglePlotter
 
 class Plotter(SinglePlotter):
     pass
+
+class AdvancedPlotter(SinglePlotter):
+    def hvlines(self, hv, config=None, positions=None, unit=None,
+            restfreq=None, **kwargs):
+        # Find iterator
+        if positions is not None:
+            iterover = positions
+        elif config is not None and hv in config:
+            iterover = config.getvalueiter(hv, sep=',', dtype='quantity')
+        else:
+            return
+
+        # For spectral units
+        if restfreq is not None:
+            pass
+        elif 'restfreq' in config:
+            restfreq = config.getquantity('restfreq')
+        else:
+            restfreq = None
+
+        # Iterate over lines
+        for i, val in enumerate(iterover):
+            # Convert to unit
+            try:
+                val = val.to(unit)
+            except u.UnitConversionError:
+                val = val.to(unit, equivalencies=u.doppler_radio(restfreq))
+
+            # Line configuration
+            if config is not None:
+                kwargs = {'c': config.getvalue('%s_color' % hv, n=i,
+                        fallback='#6e6e6e'),
+                    'ls': config.getvalue('%s_style' % hv, n=i, fallback='--'),
+                    'zorder':kwargs.get('%s_zorder' % hv, 0)}
+
+            # Plot
+            if hv == 'hlines':
+                self.axhline(val.value, **kwargs)
+            else:
+                self.axvline(val.value, **kwargs)
+
+    def auto_plot(self, data, config, hasxlabel, hasylabel, hasxticks, 
+            hasyticks, **kwargs):
+        """This function only works if myConfigParser is used and data is
+        astropy quantity
+        """
+        # Axes labels
+        xlabel = kwargs.setdefault('xlabel', config.get('xlabel', fallback='x'))
+        ylabel = kwargs.setdefault('ylabel', config.get('ylabel', fallback='y'))
+
+        # Units
+        labelfmt = "{0} ({1.unit:latex_inline})"
+        try:
+            xunit = u.Unit(config.get('xunit'))
+            kwargs['xlabel'] = labelfmt.format(xlabel, 1.*xunit)
+        except:
+            xunit = None
+        try:
+            yunit = u.Unit(config.get('yunit'))
+            kwargs['ylabel'] = labelfmt.format(ylabel, 1.*yunit)
+        except:
+            yunit = None
+
+        # Iterate over data
+        xlim = None
+        for i,dt in enumerate(data):
+            # Default 
+            opts = {}
+            opts['color'] = config.getvalue('color', n=i, fallback='k')
+            opts['zorder'] = config.getvalue('zorder', n=i, fallback=1,
+                    dtype=int)
+            
+            # Plot data
+            if len(dt) == 1:
+                if yunit is None:
+                    yunit = dt[0].unit
+                    kwargs['ylabel'] = labelfmt.format(ylabel, 1*yunit)
+                y = dt[0].to(yunit)
+                self.plot(y, **opts)
+            elif len(dt) == 2:
+                if xunit is None:
+                    xunit = dt[0].unit
+                    kwargs['xlabel'] = labelfmt.format(xlabel, 1*xunit)
+                if yunit is None:
+                    yunit = dt[1].unit
+                    kwargs['ylabel'] = labelfmt.format(ylabel, 1*yunit)
+                x = dt[0].to(xunit)
+                y = dt[1].to(yunit)
+                if xlim is None and  'xlim_index' in config:
+                    xlimind = config.getintlist('xlim_index')
+                    xlim = kwargs.setdefault('xlim', 
+                            (x[xlimind[0]].value, x[xlimind[1]].value))
+                self.plot(x, y, **opts)
+            elif len(dt) == 3:
+                if xunit is None:
+                    xunit = dt[0].unit
+                    kwargs['xlabel'] = labelfmt.format(xlabel, 1*xunit)
+                if yunit is None:
+                    yunit = dt[1].unit
+                    kwargs['ylabel'] = labelfmt.format(ylabel, 1*yunit)
+                x = dt[0].to(xunit)
+                y = dt[1].to(yunit)
+                yerr = dt[2].to(yunit)
+                if xlim is None and  'xlim_index' in config:
+                    xlimind = config.getintlist('xlim_index')
+                    xlim = kwargs.setdefault('xlim', 
+                            (x[xlimind[0]].value, x[xlimind[1]].value))
+                self.errorbar(x, y, yerr, **opts)
+
+        # Limits
+        if xlim is None and 'xlim' in config:
+            kwargs['xlim'] = config.getfloatlist('xlim')
+        if 'ylim' in config:
+            kwargs['ylim'] = config.getfloatlist('ylim')
+
+        # Axes labels
+        if not hasxlabel:
+            kwargs['xlabel'] = ''
+        if not hasylabel:
+            kwargs['ylabel'] = ''
+
+        # Ticks
+        kwargs['unset_xticks'] = not hasxticks
+        kwargs['unset_yticks'] = not hasyticks
+        kwargs.setdefault('tickscolor', config.get('tickscolor', fallback='k'))
+        self.config_plot(**kwargs)
+
+        # Plot vertical/horizontal lines
+        self.hvlines('vlines', config=config, unit=xunit)
+        self.hvlines('hlines', config=config, unit=yunit)
+
+        # Label 
+        if 'label' in config:
+            kwargslab = {}
+            if 'label_background' in config:
+                kwargslab['backgroundcolor'] = config['label_background']
+            if 'label_loc' in config:
+                kwargslab['loc'] = config.getfloatlist('label_loc')
+            if 'label_color' in config:
+                kwargslab['color'] = config.get('label_color')
+            self.label_axes(config['label'], **kwargslab)
 
 class NPlotter(BasePlotter):
 
