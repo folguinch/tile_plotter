@@ -1,7 +1,7 @@
 import os, logging
 import logging.handlers
 
-def get_logger(name, file_name='tile_plotter.log'):
+def get_logger(name, file_name='debug.log', **kwargs):
     """Creates a new logger.
 
     Parameters:
@@ -20,22 +20,23 @@ def get_logger(name, file_name='tile_plotter.log'):
     # Create logger
     logger = logging.getLogger(name)
     if not len(logger.handlers):
-        logger.setLevel(logging.DEBUG)
+        logger.setLevel(kwargs.get('filelevel', logging.DEBUG))
 
         # File handler
         file_name = os.path.expanduser(file_name)
         filefmt = '%(asctime)s [%(levelname)s] - %(filename)s '+\
                 '(%(funcName)s:%(lineno)s): %(message)s'
         fh = logging.handlers.RotatingFileHandler(file_name,
-                maxBytes=5242880, backupCount=5)
-        fh.setLevel(logging.DEBUG)
-        fh.setFormatter(logging.Formatter(filefmt))
+                maxBytes=kwargs.get('maxBytes',5242880),
+                backupCount=kwargs.get('backupCount',5))
+        fh.setLevel(kwargs.get('filelevel', logging.DEBUG))
+        fh.setFormatter(logging.Formatter(kwargs.get('filefmt', filefmt)))
 
         # Stream handler
         sh = logging.StreamHandler()
-        sh.setLevel(logging.INFO)
-        streamfmt = '%(levelname)s: %(message)s'
-        sh.setFormatter(logging.Formatter(streamfmt))
+        sh.setLevel(kwargs.get('stdoutlevel', logging.INFO))
+        sh.setFormatter(logging.Formatter(kwargs.get('stdoutfmt', 
+            '%(levelname)s: %(message)s')))
 
         # Register handlers
         logger.addHandler(fh)
