@@ -82,8 +82,11 @@ class MapPlotter(SinglePlotter):
     def plot_contours(self, data, levels=None, rms=None, nsigma=5., wcs=None, 
             extent=None, colors='g', zorder=0, nsigmalevel=None, **kwargs):
         if levels is None:
-            levels = auto_levels(data, rms=rms, nsigma=nsigma,
-                    nsigmalevel=nsigmalevel)
+            try:
+                levels = auto_levels(data, rms=rms, nsigma=nsigma,
+                        nsigmalevel=nsigmalevel)
+            except ValueError:
+                return None
         if 'cmap' not in kwargs:
             kwargs['colors'] = colors
         elif 'norm' not in kwargs:
@@ -239,7 +242,7 @@ class MapPlotter(SinglePlotter):
     def set_aspect(self, *args):
         self.ax.set_aspect(*args)
 
-    def auto_plot(self, data, config, hasxlabel, hasylabel, hasxticks, 
+    def auto_plot(self, data, config, fig, hasxlabel, hasylabel, hasxticks, 
             hasyticks, **kwargs):
         """This function only works if myConfigParser is used
         """
@@ -249,33 +252,51 @@ class MapPlotter(SinglePlotter):
             r = config.getquantity('radius', fallback=None)
             position = config.getskycoord('center', fallback=None)
             self_contours = config.getboolean('contours', fallback=False)
-            colors = config.get('contour_colors', fallback='w')
+            colors = config.get('contours_color', fallback='w')
             rms = config.getquantity('rms', fallback=None)
             nsigma = config.getfloat('nsigma', fallback=5.)
+            try:
+                bunit = u.Unit(img.header['BUNIT'])
+            except KeyError:
+                bunit = None
             
             # Plot map
-            if config['type']=='map':
+            if 'add_style' in config:
+                with matplotlib.pyplot.style.context(config['add_style']):
+                    self.plot_map(np.squeeze(img.data), wcs=wcs, r=r,
+                            position=position, self_contours=self_contours,
+                            levels=levels, colors=colors, mask=False, rms=rms,
+                            nsigma=nsigma, nsigmalevel=None)
+            else:
                 self.plot_map(np.squeeze(img.data), wcs=wcs, r=r,
                         position=position, self_contours=self_contours,
-                        levels=levels, colors='w', mask=False, rms=rms,
+                        levels=levels, colors=colors, mask=False, rms=rms,
                         nsigma=nsigma, nsigmalevel=None)
 
             # Beam
             if config.getboolean('plot_beam', fallback=True):
-                self.plot_beam(img.header,
-                        color=config.get('beam_color',fallback='k'))
+                try:
+                    self.plot_beam(img.header,
+                            color=config.get('beam_color',fallback='k'))
+                except TypeError:
+                    pass
+                    #if 'BMIN' not in img.header:
+                    #    self.log.warn('Beam information not in header')
+            
+            # Colorbar
+            if fig is not None:
+                cbarlabel = config.get('cbarlabel', fallback='Intensity')
+                if bunit:
+                    cbarlabel += ' (%s)' % (bunit.to_string('latex_inline'),)
+                if config.getboolean('vcbar', fallback=False):
+                    orientation = 'vertical'
+                else:
+                    orientation = 'horizontal'
+                self.plot_cbar(fig, orientation=orientation, label=cbarlabel,
+                        labelpad=config.getfloat('labelpad', fallback=10))
 
-        # Markers
-        iterover = config.getvalueiter('markers', sep=',', dtype='skycoord')
-        for i, marker in enumerate(iterover):
-            mcolor = config.getvalue('markers_color', n=i, fallback='g')
-            mfmt = config.getvalue('markers_fmt', n=i, fallback='+')
-            msize = config.getvalue('markers_size', n=i, fallback=100,
-                    dtype=float)
-            mzorder = config.getvalue('markers_zorder', n=i, fallback=2,
-                    dtype=int)
-            mk = self.scatter(marker.ra.degree, marker.dec.degree, c=mcolor,
-                    marker=mfmt, s=msize, zorder=mzorder)
+        # Artists
+        self.auto_artists(config)
         
         # Config
         self.auto_config(config, hasxlabel, hasylabel, hasxticks, hasyticks, 
@@ -285,6 +306,50 @@ class MapPlotter(SinglePlotter):
         if 'label' in config:
             self.label_axes(config['label'],
                     backgroundcolor=config.get('label_background', None))
+
+    def auto_artists(self, cfg, artists=['markers', 'arcs', 'texts']):
+        for artist in artists:
+            if artist=='texts':
+                iterover = cfg.getvalueiter(artist, sep=',')
+            else:
+                iterover = cfg.getvalueiter(artist, sep=',', dtype='skycoord')
+            for i, art in enumerate(iterover):
+                color = cfg.getvalue('%s_color' % artist, n=i, fallback='g')
+                zorder = cfg.getvalue('%s_zorder' % artist, n=i, fallback=2,
+                        dtype=int)
+                if artist=='markers':
+                    fmt = cfg.getvalue('%s_fmt' % artist, n=i, fallback='+')
+                    size = cfg.getvalue('%s_size' % artist, n=i, fallback=100,
+                            dtype=float)
+                    mk = self.scatter(art.ra.degree, art.dec.degree, c=color,
+                            marker=fmt, s=size, zorder=zorder)
+                elif artist=='arcs':
+                    width = cfg.getvalue('%s_width' % artist, n=i, dtype=float)
+                    height = cfg.getvalue('%s_height' % artist, n=i,
+                            dtype=float)
+                    if width is None or height is None:
+                        print('Arc artist requires width and height')
+                        continue
+                    kwargs = {'angle':0.0, 'theta1':0.0, 'theta2':360.0,
+                            'linewidth':1, 'linestyle':'-'}
+                    textopts = ['linestyle']
+                    for opt in kwargs:
+                        if opt in textopts:
+                            kwargs[opt] = cfg.getvalue('%s_%s' % (artist, opt),
+                                    n=i, fallback=kwargs[opt])
+                            continue
+                        kwargs[opt] = cfg.getvalue('%s_%s' % (artist, opt),
+                                n=i, fallback=kwargs[opt], dtype=float)
+                    mk = self.arc((art.ra.degree, art.dec.degree), width,
+                            height, color=color, zorder=zorder,
+                            transform=self.ax.get_transform('world'), **kwargs)
+                elif artist=='texts':
+                    loc = cfg.getvalue('%s_loc' % artist, n=i, sep=',')
+                    if r'\n' in art:
+                        art = art.replace(r'\n', '\n')
+                    loc = map(float, loc.split())
+                    self.label_axes(str(art), loc=loc, color=color, zorder=zorder)
+
 
     def auto_config(self, cfg, xlabel, ylabel, xticks, yticks, **kwargs):
         # Config map options

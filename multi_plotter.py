@@ -20,7 +20,7 @@ class MultiPlotter(BasePlotter):
 
     def get_plotter(self, axis, cbax):
         dtype = self.config['type']
-        if dtype.lower() in ['map', 'map_contour']:
+        if dtype.lower() in ['map', 'map_contour', 'moment']:
             # Get color stretch values
             stretch = self.config.get('stretch', fallback='linear')
             try:
@@ -78,8 +78,12 @@ class MultiPlotter(BasePlotter):
             # Plot
             if not hasattr(self.axes[loc], 'auto_plot'):
                 self.axes[loc] = self.get_plotter(axis, cbax)
+            if include_cbar:
+                fig = self.fig
+            else:
+                fig = None
             self.log.info('Plotting data')
-            self.axes[loc].auto_plot(data, self.config, 
+            self.axes[loc].auto_plot(data, self.config, fig,
                     *self.get_axes_config(loc))
 
 

@@ -45,7 +45,7 @@ class AdvancedPlotter(SinglePlotter):
             else:
                 self.axvline(val.value, **kwargs)
 
-    def auto_plot(self, data, config, hasxlabel, hasylabel, hasxticks, 
+    def auto_plot(self, data, config, fig, hasxlabel, hasylabel, hasxticks, 
             hasyticks, **kwargs):
         """This function only works if myConfigParser is used and data is
         astropy quantity
