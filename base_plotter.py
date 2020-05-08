@@ -10,6 +10,7 @@ except ImportError:
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
+from matplotlib import patches
 import numpy as np
 
 from functions import *
@@ -565,4 +566,9 @@ class SinglePlotter(object):
     def label_axes(self, text, loc=(0.1, 0.9), **kwargs):
         kwargs.setdefault('xycoords', 'axes fraction')
         self.annotate(text, xy=loc, xytext=loc, **kwargs)
+
+    def arc(self, *args, **kwargs):
+        # Arc specified as patches.Arc
+        arcpatch = patches.Arc(*args, **kwargs)
+        self.ax.add_patch(arcpatch)
 
