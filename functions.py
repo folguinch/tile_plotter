@@ -38,6 +38,8 @@ def get_geometry(opts, section='single'):
     # Axes ratios
     xratio = opts[section].get('xsize_ratio')
     yratio = opts[section].get('ysize_ratio')
+    xratio_col = opts[section].get('xsize_ratio_col')
+    yratio_row = opts[section].get('ysize_ratio_row')
     # Colobar
     vcbar = opts[section].getboolean('vcbar')
     hcbar = opts[section].getboolean('hcbar')
@@ -53,26 +55,30 @@ def get_geometry(opts, section='single'):
         raise ValueError('ncols and nrows must be > 0')
 
     # Validate ratios
-    xratio = list(map(float, xratio.split()))
-    if len(xratio) == 1:
-        if xratio[0] != 1:
-            print('WARNING: using ratio to change xsize')
-        if ncols>1:
-            xratio = xratio * ncols
-    elif len(xratio)!=ncols:
-        raise ValueError('xratio values must match ncols')
-    else:
-        pass
-    yratio = list(map(float, yratio.split()))
-    if len(yratio) == 1:
-        if yratio[0] != 1:
-            print('WARNING: using ratio to change ysize')
-        if nrows>1:
-            yratio = yratio * nrows
-    elif len(yratio)!=nrows:
-        raise ValueError('yratio values must match nrows')
-    else:
-        pass
+    xratio = get_ratio(xratio, ncols, 'x')
+    yratio = get_ratio(yratio, nrows, 'y')
+    xratio_col = get_ratio(xratio_col, nrows, 'x')
+    yratio_row = get_ratio(yratio_row, ncols, 'y')
+    #xratio = list(map(float, xratio.split()))
+    #if len(xratio) == 1:
+    #    if xratio[0] != 1:
+    #        print('WARNING: using ratio to change xsize')
+    #    if ncols>1:
+    #        xratio = xratio * ncols
+    #elif len(xratio)!=ncols:
+    #    raise ValueError('xratio values must match ncols')
+    #else:
+    #    pass
+    #yratio = list(map(float, yratio.split()))
+    #if len(yratio) == 1:
+    #    if yratio[0] != 1:
+    #        print('WARNING: using ratio to change ysize')
+    #    if nrows>1:
+    #        yratio = yratio * nrows
+    #elif len(yratio)!=nrows:
+    #    raise ValueError('yratio values must match nrows')
+    #else:
+    #    pass
 
     # Validate cbar
     # only allow cbar in 1 axis
@@ -96,20 +102,35 @@ def get_geometry(opts, section='single'):
         cbax = cp.copy(empty)
 
         # Multiply by ratios
-        axis.xsize = axis.xsize * xratio[j]
-        axis.ysize = axis.ysize * yratio[i]
+        axis.xsize = axis.xsize * xratio[j] * xratio_col[i]
+        axis.ysize = axis.ysize * yratio[i] * yratio_row[j]
+
+        # Recenter
+        if xratio_col[i] != max(xratio_col):
+            # Search the maximum
+            xsizemax = axis.xsize * xratio[j] * max(xratio_col)
+            dleft = abs(axis.xsize - xsizemax) / 2.
+        else:
+            dleft = 0
+        if yratio_row[j] != max(yratio_row):
+            # Search the maximum
+            ysizemax = axis.ysize * yratio[i] * yratio_row[j]
+            dbottom = abs(axis.ysize - ysizemax) / 2.
+        else:
+            dbottom = 0
+
 
         # Left and bottom borders
         if i==nrows-1:
-            pass
+            axis.bottom = axis.bottom + dbottom
         elif not sharex:
-            axis.bottom = bottom + vspace
+            axis.bottom = bottom + vspace + dbottom
         else:
             axis.bottom = vspace
         if j==0:
-            pass
+            axis.left = axis.left + dleft
         elif not sharey:
-            axis.left = left + hspace
+            axis.left = left + hspace + dleft
         else:
             axis.left = hspace
 
@@ -170,6 +191,19 @@ def get_geometry(opts, section='single'):
         cbaxes[(i,j)] = cp.copy(cbax)
 
     return (xdim, ydim), OrderedDict(sorted(axes.items())), OrderedDict(sorted(cbaxes.items()))
+
+def get_ratio(val, length, axis):
+    ratio = list(map(float, val.split()))
+    if len(ratio) == 1:
+        if ratio[0] != 1:
+            print('WARNING: using ratio to change %ssize' % axis)
+        if length>1:
+            ratio = ratio * length
+    elif len(ratio)!=length:
+        raise ValueError('ratio values must have %i values' % axis)
+    else:
+        pass
+    return ratio
 
 def get_ticks(vmin, vmax, a=1000, n=5, stretch='log'):
     if stretch=='log':

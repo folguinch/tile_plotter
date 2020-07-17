@@ -20,7 +20,7 @@ class MultiPlotter(BasePlotter):
 
     def get_plotter(self, axis, cbax):
         dtype = self.config['type']
-        if dtype.lower() in ['map', 'map_contour', 'moment']:
+        if dtype.lower() in ['map', 'contour_map', 'moment']:
             # Get color stretch values
             stretch = self.config.get('stretch', fallback='linear')
             try:

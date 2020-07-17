@@ -560,6 +560,9 @@ class SinglePlotter(object):
         arrowprops = kwargs.get('arrowprops', {'arrowstyle':'->', 'fc':'k', 
             'ec':'k', 'ls':'-', 'lw':2})
         color = kwargs.get('color', arrowprops['fc'])
+        if color != arrowprops['fc']:
+            arrowprops['fc'] = color
+            arrowprops['ec'] = color
         self.annotate('', xy=xy, xytext=xytext, xycoords='axes fraction',
                 arrowprops=arrowprops, color=color, zorder=10)
 

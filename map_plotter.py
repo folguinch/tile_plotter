@@ -248,6 +248,7 @@ class MapPlotter(SinglePlotter):
         """
         for img, wcs in data:
             # From config
+            dtype = config['type'].lower()
             levels = config.getfloatlist('levels', fallback=None)
             r = config.getquantity('radius', fallback=None)
             position = config.getskycoord('center', fallback=None)
@@ -260,8 +261,11 @@ class MapPlotter(SinglePlotter):
             except KeyError:
                 bunit = None
             
-            # Plot map
-            if 'add_style' in config:
+            # Plot contours or map
+            if dtype == 'contour_map':
+                self.plot_contours(np.squeeze(img.data), rms=rms,
+                        nsigma=nsigma, wcs=wcs, colors=colors, zorder=2)
+            elif 'add_style' in config:
                 with matplotlib.pyplot.style.context(config['add_style']):
                     self.plot_map(np.squeeze(img.data), wcs=wcs, r=r,
                             position=position, self_contours=self_contours,
@@ -284,7 +288,7 @@ class MapPlotter(SinglePlotter):
                     #    self.log.warn('Beam information not in header')
             
             # Colorbar
-            if fig is not None:
+            if fig is not None and dtype != 'contour_map':
                 cbarlabel = config.get('cbarlabel', fallback='Intensity')
                 if bunit:
                     cbarlabel += ' (%s)' % (bunit.to_string('latex_inline'),)
@@ -307,9 +311,11 @@ class MapPlotter(SinglePlotter):
             self.label_axes(config['label'],
                     backgroundcolor=config.get('label_background', None))
 
-    def auto_artists(self, cfg, artists=['markers', 'arcs', 'texts']):
+    def auto_artists(self, cfg, artists=['markers', 'arcs', 'texts', 'arrows']):
         for artist in artists:
-            if artist=='texts':
+            if artist not in cfg:
+                continue
+            if artist=='texts' or artist=='arrows':
                 iterover = cfg.getvalueiter(artist, sep=',')
             else:
                 iterover = cfg.getvalueiter(artist, sep=',', dtype='skycoord')
@@ -349,7 +355,8 @@ class MapPlotter(SinglePlotter):
                         art = art.replace(r'\n', '\n')
                     loc = map(float, loc.split())
                     self.label_axes(str(art), loc=loc, color=color, zorder=zorder)
-
+                elif artist=='arrows':
+                    self.arrow(art, color=color)
 
     def auto_config(self, cfg, xlabel, ylabel, xticks, yticks, **kwargs):
         # Config map options
