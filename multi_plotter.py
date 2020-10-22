@@ -18,9 +18,9 @@ class MultiPlotter(BasePlotter):
     def init_axis(self, loc, projection='rectilinear', include_cbar=None):
         super(MultiPlotter, self).init_axis(loc, projection, include_cbar)
 
-    def get_plotter(self, axis, cbax):
+    def get_plotter(self, axis, cbax, projection):
         dtype = self.config['type']
-        if dtype.lower() in ['map', 'map_contour']:
+        if dtype.lower() in ['map', 'contour_map', 'moment']:
             # Get color stretch values
             stretch = self.config.get('stretch', fallback='linear')
             try:
@@ -36,9 +36,16 @@ class MultiPlotter(BasePlotter):
             except:
                 a = 1000.
 
+            # Radesys
+            radesys = '' 
+            if projection is not None:
+                aux = projection.to_header()
+                if 'RADESYS' in aux:
+                    radesys = aux['RADESYS']
+
             # Get the axis
             plotter = MapPlotter(axis, cbax, vmin=vmin, vmax=vmax, a=a,
-                    stretch=stretch)
+                    stretch=stretch, radesys=radesys)
         elif dtype.lower() in ['data', 'spectrum']:
             xscale = self.config.get('xscale', fallback='linear')
             yscale = self.config.get('yscale', fallback='linear')
@@ -77,9 +84,13 @@ class MultiPlotter(BasePlotter):
 
             # Plot
             if not hasattr(self.axes[loc], 'auto_plot'):
-                self.axes[loc] = self.get_plotter(axis, cbax)
+                self.axes[loc] = self.get_plotter(axis, cbax, projection)
+            if include_cbar:
+                fig = self.fig
+            else:
+                fig = None
             self.log.info('Plotting data')
-            self.axes[loc].auto_plot(data, self.config, 
+            self.axes[loc].auto_plot(data, self.config, fig,
                     *self.get_axes_config(loc))
 
 

@@ -21,7 +21,7 @@ __metaclass__ = type
 class MapPlotter(SinglePlotter):
 
     def __init__(self, ax, cbax=None, vmin=None, vmax=None, a=1000.,
-            stretch='linear'):
+            stretch='linear', radesys=''):
         super(MapPlotter, self).__init__(ax, cbaxis=cbax)
         self.im = None
         self.label = None
@@ -29,6 +29,10 @@ class MapPlotter(SinglePlotter):
         self.vmin = vmin #or config.get('vmin', fallback=None)
         self.vmax = vmax #or config.get('vmax', fallback=None)
         self.stretch = stretch #or config.get('stretch', fallback='linear')
+        self.radesys = radesys.lower()
+        if radesys == 'J2000':
+            self.radesys = 'fk5'
+        self.log.info('Using RADESYS: %s', self.radesys)
 
     @property
     def normalization(self):
@@ -45,8 +49,8 @@ class MapPlotter(SinglePlotter):
 
     def plot_map(self, data, wcs=None, label=None, r=None, position=None, 
             extent=None, self_contours=False, levels=None, colors='w', 
-            linewidths=None, mask=False, rms=None, nsigma=5., nsigmalevel=None, 
-            **kwargs):
+            linewidths=None, mask=False, rms=None, nsigma=5., nsigmalevel=None,
+            negative_rms_factor=None, **kwargs):
 
         # Define default values for vmin and vmax
         if self.vmin is None:
@@ -77,13 +81,19 @@ class MapPlotter(SinglePlotter):
         if self_contours:
             self.plot_contours(data, levels=levels, rms=rms, nsigma=nsigma,
                     wcs=wcs, extent=extent, colors=colors, zorder=2, 
-                    linewidths=linewidths, nsigmalevel=nsigmalevel)
+                    linewidths=linewidths, nsigmalevel=nsigmalevel,
+                    negative_rms_factor=negative_rms_factor)
 
     def plot_contours(self, data, levels=None, rms=None, nsigma=5., wcs=None, 
-            extent=None, colors='g', zorder=0, nsigmalevel=None, **kwargs):
+            extent=None, colors='g', zorder=0, nsigmalevel=None,
+            negative_rms_factor=None, **kwargs):
         if levels is None:
-            levels = auto_levels(data, rms=rms, nsigma=nsigma,
-                    nsigmalevel=nsigmalevel)
+            try:
+                levels = auto_levels(data, rms=rms, nsigma=nsigma,
+                        nsigmalevel=nsigmalevel,
+                        negative_rms_factor=negative_rms_factor)
+            except ValueError:
+                return None
         if 'cmap' not in kwargs:
             kwargs['colors'] = colors
         elif 'norm' not in kwargs:
@@ -124,11 +134,17 @@ class MapPlotter(SinglePlotter):
         ra, dec = self.ax.coords[xcoord], self.ax.coords[ycoord]
 
         # Axes labels
-        ra.set_axislabel('RA (J2000)' if xlabel else '', 
+        if self.radesys == 'icrs':
+            system = '(%s)' % self.radesys.upper()
+        elif self.radesys == 'fk5':
+            system = '(J2000)'
+        else:
+            system = ''
+        ra.set_axislabel('RA %s' % system if xlabel else '', 
                 size=self.ax.xaxis.get_label().get_fontsize(),
                 family=self.ax.xaxis.get_label().get_family(),
                 fontname=self.ax.xaxis.get_label().get_fontname(), minpad=xpad)
-        dec.set_axislabel('Dec (J2000)' if ylabel else '',
+        dec.set_axislabel('Dec %s' % system if ylabel else '',
                 size=self.ax.xaxis.get_label().get_fontsize(),
                 family=self.ax.xaxis.get_label().get_family(),
                 fontname=self.ax.xaxis.get_label().get_fontname(), minpad=ypad)
@@ -187,11 +203,11 @@ class MapPlotter(SinglePlotter):
     def scatter(self, x, y, **kwargs):
         #return self.ax.scatter(x, y, transform=self.ax.get_transform('world'), **kwargs)
         return super(MapPlotter, self).scatter(x, y,
-                transform=self.ax.get_transform('world'), **kwargs)
+                transform=self.ax.get_transform(self.radesys), **kwargs)
 
     def circle(self, x, y, r, color='g', facecolor='none', zorder=0):
         cir = SphericalCircle((x, y), r, edgecolor=color, facecolor=facecolor,
-                transform=self.ax.get_transform('fk5'), zorder=zorder)
+                transform=self.ax.get_transform('world'), zorder=zorder)
         self.ax.add_patch(cir)
 
     def rectangle(self, blc, width, height, edgecolor='green',
@@ -201,7 +217,10 @@ class MapPlotter(SinglePlotter):
         self.ax.add_patch(r)
 
     def plot(self, *args, **kwargs):
-        kwargs['transform'] = self.ax.get_transform('world')
+        try:
+            kwargs['transform'] = self.ax.get_transform('world')
+        except TypeError:
+            pass
         self.ax.plot(*args, **kwargs)
 
     def plot_scale(self, size, r, distance, x=0.1, y=0.1, dy=0.01, color='g', zorder=10,
@@ -210,6 +229,7 @@ class MapPlotter(SinglePlotter):
         label = distance.to(u.pc) * size.to(u.arcsec)
         label = label.value * u.au
         label = "%s" % label.to(unit)
+        label = label.lower()
         self.annotate('', xy=(x,y), xytext=(x+length.value, y),
                 xycoords='axes fraction', arrowprops=dict(arrowstyle="|-|", 
                     facecolor=color),
@@ -221,10 +241,31 @@ class MapPlotter(SinglePlotter):
         #        color=color)
         #self.ax.add_artist(bar)
 
+    def phys_scale(self, xstart, ystart, dy, label, color='w', zorder=10):
+        self.log.info('Plotting physical scale')
+        self.plot([xstart, xstart], [ystart, ystart+dy], color=color, ls='-',
+                lw=1, marker='_', zorder=zorder)
+        try:
+            xycoords = self.ax.get_transform('world')
+        except TypeError:
+            xycoords = 'data'
+        self.annotate(label, xy=[xstart, ystart],
+                xytext=[xstart, ystart], color=color,
+                horizontalalignment='right',
+                xycoords=xycoords, zorder=zorder)
+
     def plot_markers(self, markers, skip_label=False, zorder=3, **kwargs):
+        self.log.info('Plotting markers')
+        self.log.info('Converting markers to %s system', self.radesys)
         for m in markers:
             # Plot marker
-            mp = self.scatter(m['loc'].ra.degree, m['loc'].dec.degree, c=m['color'],
+            if self.radesys == 'icrs':
+                mark = m['loc'].icrs
+            elif self.radesys == 'fk5':
+                mark = m['loc'].fk5
+            else:
+                mark = m['loc']
+            mp = self.scatter(mark.ra.degree, mark.dec.degree, c=m['color'],
                     marker=m['style'], label=m.get('legend'),
                     s=m.get('size'), zorder=zorder,
                     **kwargs)
@@ -234,48 +275,118 @@ class MapPlotter(SinglePlotter):
                 labloc = m['labloc'].ra.degree, m['labloc'].dec.degree
                 self.annotate(m['label'].strip(), xy=labloc, xytext=labloc,
                         xycoords=self.ax.get_transform('world'),
-                        color=m['color'], zorder=zorder)
+                        color=m['color'], zorder=zorder,
+                        fontweight=m['font_weight'])
 
     def set_aspect(self, *args):
         self.ax.set_aspect(*args)
 
-    def auto_plot(self, data, config, hasxlabel, hasylabel, hasxticks, 
+    def auto_plot(self, data, config, fig, hasxlabel, hasylabel, hasxticks, 
             hasyticks, **kwargs):
         """This function only works if myConfigParser is used
         """
         for img, wcs in data:
+            self.log.info('-'*80)
             # From config
+            dtype = config['type'].lower()
             levels = config.getfloatlist('levels', fallback=None)
             r = config.getquantity('radius', fallback=None)
             position = config.getskycoord('center', fallback=None)
             self_contours = config.getboolean('contours', fallback=False)
-            colors = config.get('contour_colors', fallback='w')
+            colors = config.get('contours_color', fallback='w')
             rms = config.getquantity('rms', fallback=None)
             nsigma = config.getfloat('nsigma', fallback=5.)
+            nsigmalevel = config.getfloat('nsigmalevel', fallback=None)
+            negative_rms_factor = config.getfloat('negative_rms_factor', fallback=None)
+            linewidth = config.getfloat('linewidth', fallback=None)
+            try:
+                bunit = u.Unit(img.header['BUNIT'])
+            except KeyError:
+                bunit = None
             
-            # Plot map
-            if config['type']=='map':
+            # Plot contours or map
+            if dtype == 'contour_map':
+                self.plot_contours(np.squeeze(img.data), rms=rms,
+                        nsigma=nsigma, wcs=wcs, colors=colors, zorder=2,
+                        linewidths=linewidth)
+            elif 'add_style' in config:
+                with matplotlib.pyplot.style.context(config['add_style']):
+                    self.plot_map(np.squeeze(img.data), wcs=wcs, r=r,
+                            position=position, self_contours=self_contours,
+                            levels=levels, colors=colors, mask=False, rms=rms,
+                            nsigma=nsigma, nsigmalevel=nsigmalevel,
+                            linewidths=linewidth,
+                            negative_rms_factor=negative_rms_factor)
+            else:
                 self.plot_map(np.squeeze(img.data), wcs=wcs, r=r,
                         position=position, self_contours=self_contours,
-                        levels=levels, colors='w', mask=False, rms=rms,
-                        nsigma=nsigma, nsigmalevel=None)
+                        levels=levels, colors=colors, mask=False, rms=rms,
+                        nsigma=nsigma, nsigmalevel=nsigmalevel,
+                        linewidths=linewidth,
+                        negative_rms_factor=negative_rms_factor)
 
             # Beam
             if config.getboolean('plot_beam', fallback=True):
-                self.plot_beam(img.header,
-                        color=config.get('beam_color',fallback='k'))
+                try:
+                    self.plot_beam(img.header,
+                            color=config.get('beam_color',fallback='k'))
+                except TypeError:
+                    pass
+                    #if 'BMIN' not in img.header:
+                    #    self.log.warn('Beam information not in header')
+            
+            # Colorbar
+            if fig is not None and dtype != 'contour_map':
+                # Color bar label
+                cbarlabel = config.get('cbarlabel', fallback='Intensity')
+                if dtype == 'moment' and 'cbarlabel' not in config:
+                    moment = config.getint('moment', fallback=0)
+                    if moment==1:
+                        cbarlabel = 'Velocity'
+                    elif moment==2:
+                        cbarlabel = 'Velocity dispersion'
+                    else:
+                        cbarlabel = 'Intensity'
+                else:
+                    cbarlabel = config.get('cbarlabel', fallback='Intensity')
 
-        # Markers
-        iterover = config.getvalueiter('markers', sep=',', dtype='skycoord')
-        for i, marker in enumerate(iterover):
-            mcolor = config.getvalue('markers_color', n=i, fallback='g')
-            mfmt = config.getvalue('markers_fmt', n=i, fallback='+')
-            msize = config.getvalue('markers_size', n=i, fallback=100,
-                    dtype=float)
-            mzorder = config.getvalue('markers_zorder', n=i, fallback=2,
-                    dtype=int)
-            mk = self.scatter(marker.ra.degree, marker.dec.degree, c=mcolor,
-                    marker=mfmt, s=msize, zorder=mzorder)
+                # Color bar unit
+                if bunit:
+                    cbarlabel += ' (%s)' % (bunit.to_string('latex_inline'),)
+                if config.getboolean('vcbar', fallback=False):
+                    orientation = 'vertical'
+                else:
+                    orientation = 'horizontal'
+
+                self.plot_cbar(fig, orientation=orientation, label=cbarlabel,
+                        labelpad=config.getfloat('labelpad', fallback=10))
+
+            # Title
+            if 'title' in config:
+                self.title(config['title'])
+
+            # Scale
+            if 'scale_position' in config:
+                # From config
+                scale_pos = config.getskycoord('scale_position')
+                distance = config.getquantity('distance').to(u.pc)
+                length = config.getquantity('scale_length', 
+                        fallback=1*u.arcsec).to(u.arcsec)
+                scalecolor = config.get('scale_color', fallback='w')
+
+                # Scale label
+                label = distance * length
+                label = label.value * u.au
+                label = '{0.value:.0f} {0.unit:latex_inline}  '.format(label)
+                label = label.lower()
+                
+                # Plot scale
+                self.phys_scale(scale_pos.ra.degree, scale_pos.dec.degree,
+                        length.to(u.degree).value, label,
+                        color=scalecolor)
+
+        # Artists
+        self.auto_artists(config)
         
         # Config
         self.auto_config(config, hasxlabel, hasylabel, hasxticks, hasyticks, 
@@ -285,6 +396,72 @@ class MapPlotter(SinglePlotter):
         if 'label' in config:
             self.label_axes(config['label'],
                     backgroundcolor=config.get('label_background', None))
+
+    def auto_artists(self, cfg, artists=['markers', 'arcs', 'texts', 'arrows']):
+        for artist in artists:
+            if artist not in cfg:
+                continue
+            if artist=='texts' or artist=='arrows':
+                iterover = cfg.getvalueiter(artist, sep=',')
+            else:
+                iterover = cfg.getvalueiter(artist, sep=',', dtype='skycoord')
+            for i, art in enumerate(iterover):
+                color = cfg.getvalue('%s_color' % artist, n=i, fallback='g')
+                facecolor = cfg.getvalue('%s_facecolor' % artist, n=i,
+                        fallback=color)
+                edgecolor = cfg.getvalue('%s_edgecolor' % artist, n=i,
+                        fallback=color)
+                zorder = cfg.getvalue('%s_zorder' % artist, n=i, fallback=2,
+                        dtype=int)
+                if artist=='markers':
+                    fmt = cfg.getvalue('%s_fmt' % artist, n=i, fallback='+')
+                    size = cfg.getvalue('%s_size' % artist, n=i, fallback=100,
+                            dtype=float)
+                    if self.radesys == 'icrs':
+                        markra = art.icrs.ra.degree
+                        markdec = art.icrs.dec.degree
+                    elif self.radesys == 'fk5':
+                        markra = art.fk5.ra.degree
+                        markdec = art.fk5.dec.degree
+                    else:
+                        markra = art.ra.degree
+                        markdec = art.dec.degree
+                    mk = self.scatter(markra, markdec, 
+                            edgecolors=edgecolor, facecolors=facecolor,
+                            marker=fmt, s=size, zorder=zorder)
+                elif artist=='arcs':
+                    width = cfg.getvalue('%s_width' % artist, n=i, dtype=float)
+                    height = cfg.getvalue('%s_height' % artist, n=i,
+                            dtype=float)
+                    if width is None or height is None:
+                        print('Arc artist requires width and height')
+                        continue
+                    kwargs = {'angle':0.0, 'theta1':0.0, 'theta2':360.0,
+                            'linewidth':1, 'linestyle':'-'}
+                    textopts = ['linestyle']
+                    for opt in kwargs:
+                        if opt in textopts:
+                            kwargs[opt] = cfg.getvalue('%s_%s' % (artist, opt),
+                                    n=i, fallback=kwargs[opt])
+                            continue
+                        kwargs[opt] = cfg.getvalue('%s_%s' % (artist, opt),
+                                n=i, fallback=kwargs[opt], dtype=float)
+                    mk = self.arc((art.ra.degree, art.dec.degree), width,
+                            height, color=color, zorder=zorder,
+                            transform=self.ax.get_transform('world'), **kwargs)
+                elif artist=='texts':
+                    loc = cfg.getvalue('%s_loc' % artist, n=i, sep=',')
+                    if r'\n' in art:
+                        art = art.replace(r'\n', '\n')
+                    kwargs = {'weight':'normal'}
+                    for opt in kwargs:
+                        kwargs[opt] = cfg.getvalue('%s_%s' % (artist, opt),
+                                n=i, fallback=kwargs[opt])
+                    loc = map(float, loc.split())
+                    self.label_axes(str(art), loc=loc, color=color,
+                            zorder=zorder, **kwargs)
+                elif artist=='arrows':
+                    self.arrow(art, color=color)
 
     def auto_config(self, cfg, xlabel, ylabel, xticks, yticks, **kwargs):
         # Config map options
@@ -337,6 +514,18 @@ class MapsPlotter(BasePlotter):
             projection=None, include_cbar=None):
         axis, cbax = self.get_axis(loc, projection=projection,
                 include_cbar=include_cbar)
+
+        # Projection system
+        radesys = ''
+        if projection is None:
+            projection = self.projection
+        if projection is not None:
+            try:
+                aux = projection.to_header()
+                if 'RADESYS' in aux:
+                    radesys = aux['RADESYS']
+            except AttributeError:
+                pass
         
         # Get color stretch values
         stretch = stretch or self.get_value('stretch', 'linear', loc)
@@ -346,7 +535,7 @@ class MapsPlotter(BasePlotter):
 
         # Get the axis
         self.axes[loc] = MapPlotter(axis, cbax, vmin=vmin, vmax=vmax, a=a,
-                stretch=stretch)
+                stretch=stretch, radesys=radesys)
 
         return self.axes[loc]
 
@@ -401,8 +590,10 @@ class MapsPlotter(BasePlotter):
                         sep=',').split())
                 except (TypeError, AttributeError):
                     ylim = (None, None)
-                xlabel = 'Offset (arcsec)' if xlabel else ''
-                ylabel = 'Velocity (km s$^{-1}$)' if ylabel else ''
+                #xlabel = 'Offset (arcsec)' if xlabel else ''
+                #ylabel = 'Velocity (km s$^{-1}$)' if ylabel else ''
+                ylabel = 'Offset (arcsec)' if xlabel else ''
+                xlabel = 'Velocity (km s$^{-1}$)' if ylabel else ''
                 ax.config_plot(xlim=tuple(xlim), xlabel=xlabel, 
                         unset_xticks=not xticks,
                         ylim=tuple(ylim), ylabel=ylabel, 
@@ -414,12 +605,33 @@ class MapsPlotter(BasePlotter):
                         ylabel=ylabel, xticks=xticks, yticks=yticks, 
                         xpad=1., ypad=-0.7, tickscolor=tickscolor, xcoord='ra', ycoord='dec')
 
+            # Scale
+            if 'scale_position' in self.config:
+                # From config
+                scale_pos = self.config.getskycoord('scale_position')
+                distance = self.config.getquantity('distance').to(u.pc)
+                length = self.config.getquantity('scale_length', 
+                        fallback=1*u.arcsec).to(u.arcsec)
+                labeldy = self.config.getquantity('scale_label_dy',
+                        fallback=1*u.arcsec).to(u.deg)
+                scalecolor = self.config.get('scale_color', fallback='w')
+
+                # Scale label
+                label = distance * length
+                label = label.value * u.au
+                label = '{0.value:.0f} {0.unit:latex_inline}  '.format(label)
+                
+                # Plot scale
+                ax.phys_scale(scale_pos.ra.degree, scale_pos.dec.degree,
+                        length.to(u.degree).value, label, 
+                        color=scalecolor)
+
+            # Legend
             if (legend or self.config.getboolean('legend', fallback=False)) and loc==(0,0):
                 ax.legend(auto=True, loc=4, match_colors=True,
                         fancybox=self.config.getboolean('fancybox', fallback=False),
                         framealpha=self.config.getfloat('framealpha', fallback=None),
                         facecolor=self.config.get('facecolor', fallback=None))
-
 
     def init_axis(self, loc, projection='rectilinear', include_cbar=None):
         super(MapsPlotter, self).init_axis(loc, projection, include_cbar)

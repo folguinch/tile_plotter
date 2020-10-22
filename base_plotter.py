@@ -10,6 +10,7 @@ except ImportError:
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
+from matplotlib import patches
 import numpy as np
 
 from functions import *
@@ -276,6 +277,7 @@ class SinglePlotter(object):
         self.xscale = xscale
         self.yscale = yscale
         self.pltd = {}
+        self.log = logger.get_logger(__name__)
 
     @property
     def xlim(self):
@@ -404,6 +406,12 @@ class SinglePlotter(object):
         """
         self.ax.axvline(*args,**kwargs)
 
+    def axvspan(self, *args, **kwargs):
+        self.ax.axvspan(*args, **kwargs)
+
+    def axhspan(self, *args, **kwargs):
+        self.ax.axhspan(*args, **kwargs)
+
     def errorbar(self, *args, **kwargs):
         """Plot on the axis.
 
@@ -414,6 +422,9 @@ class SinglePlotter(object):
             **kwargs: arguments for matplotlib.pyplot.errorbar().
         """
         return self._simple_plt(self.ax.errorbar, *args, **kwargs)
+
+    def title(self, text, **kwargs):
+        self.ax.set_title(text, **kwargs)
     
     def annotate(self, *args, **kwargs):
         """Annotate the axis.
@@ -559,10 +570,18 @@ class SinglePlotter(object):
         arrowprops = kwargs.get('arrowprops', {'arrowstyle':'->', 'fc':'k', 
             'ec':'k', 'ls':'-', 'lw':2})
         color = kwargs.get('color', arrowprops['fc'])
+        if color != arrowprops['fc']:
+            arrowprops['fc'] = color
+            arrowprops['ec'] = color
         self.annotate('', xy=xy, xytext=xytext, xycoords='axes fraction',
                 arrowprops=arrowprops, color=color, zorder=10)
 
     def label_axes(self, text, loc=(0.1, 0.9), **kwargs):
         kwargs.setdefault('xycoords', 'axes fraction')
         self.annotate(text, xy=loc, xytext=loc, **kwargs)
+
+    def arc(self, *args, **kwargs):
+        # Arc specified as patches.Arc
+        arcpatch = patches.Arc(*args, **kwargs)
+        self.ax.add_patch(arcpatch)
 
