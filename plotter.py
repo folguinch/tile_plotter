@@ -45,6 +45,47 @@ class AdvancedPlotter(SinglePlotter):
             else:
                 self.axvline(val.value, **kwargs)
 
+    def hvspans(self, hv, config=None, positions=None, unit=None,
+            restfreq=None, **kwargs):
+        # Find iterator
+        if positions is not None:
+            iterover = positions
+        elif config is not None and hv in config:
+            iterover = config.getvalueiter(hv, sep=',', dtype='quantity')
+        else:
+            return
+
+        # For spectral units
+        if restfreq is not None:
+            pass
+        elif 'restfreq' in config:
+            restfreq = config.getquantity('restfreq')
+        else:
+            restfreq = None
+
+        # Iterate over lines
+        for i, val in enumerate(iterover):
+            # Convert to unit
+            try:
+                val = val.to(unit)
+            except u.UnitConversionError:
+                val = val.to(unit, equivalencies=u.doppler_radio(restfreq))
+
+            # Line configuration
+            if config is not None:
+                kwargs = {'color': config.getvalue('%s_color' % hv, n=i,
+                        fallback='#6e6e6e'),
+                    'ls': config.getvalue('%s_style' % hv, n=i, fallback='--'),
+                    'zorder':kwargs.get('%s_zorder' % hv, 0),
+                    'alpha':config.getvalue('%s_alpha' % hv, n=i, fallback=1,
+                        dtype=float)}
+
+            # Plot
+            if hv == 'hspans':
+                self.axhspan(*val.value, **kwargs)
+            else:
+                self.axvspan(*val.value, **kwargs)
+
     def auto_plot(self, data, config, fig, hasxlabel, hasylabel, hasxticks, 
             hasyticks, **kwargs):
         """This function only works if myConfigParser is used and data is
@@ -75,6 +116,8 @@ class AdvancedPlotter(SinglePlotter):
             opts['color'] = config.getvalue('color', n=i, fallback='k')
             opts['zorder'] = config.getvalue('zorder', n=i, fallback=1,
                     dtype=int)
+            if 'drawstyle' in config:
+                opts['drawstyle'] = config.getvalue('drawstyle', n=i)
             
             # Plot data
             if len(dt) == 1:
@@ -134,6 +177,10 @@ class AdvancedPlotter(SinglePlotter):
         # Plot vertical/horizontal lines
         self.hvlines('vlines', config=config, unit=xunit)
         self.hvlines('hlines', config=config, unit=yunit)
+
+        # Plot spans
+        self.hvspans('vspans', config=config, unit=xunit)
+        self.hvspans('hspans', config=config, unit=yunit)
 
         # Label 
         if 'label' in config:

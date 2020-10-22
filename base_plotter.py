@@ -277,6 +277,7 @@ class SinglePlotter(object):
         self.xscale = xscale
         self.yscale = yscale
         self.pltd = {}
+        self.log = logger.get_logger(__name__)
 
     @property
     def xlim(self):
@@ -405,6 +406,12 @@ class SinglePlotter(object):
         """
         self.ax.axvline(*args,**kwargs)
 
+    def axvspan(self, *args, **kwargs):
+        self.ax.axvspan(*args, **kwargs)
+
+    def axhspan(self, *args, **kwargs):
+        self.ax.axhspan(*args, **kwargs)
+
     def errorbar(self, *args, **kwargs):
         """Plot on the axis.
 
@@ -415,6 +422,9 @@ class SinglePlotter(object):
             **kwargs: arguments for matplotlib.pyplot.errorbar().
         """
         return self._simple_plt(self.ax.errorbar, *args, **kwargs)
+
+    def title(self, text, **kwargs):
+        self.ax.set_title(text, **kwargs)
     
     def annotate(self, *args, **kwargs):
         """Annotate the axis.

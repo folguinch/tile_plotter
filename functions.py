@@ -57,8 +57,8 @@ def get_geometry(opts, section='single'):
     # Validate ratios
     xratio = get_ratio(xratio, ncols, 'x')
     yratio = get_ratio(yratio, nrows, 'y')
-    xratio_col = get_ratio(xratio_col, nrows, 'x')
-    yratio_row = get_ratio(yratio_row, ncols, 'y')
+    xratio_col = get_ratio(xratio_col, nrows, 'x', shape=(nrows,ncols))
+    yratio_row = get_ratio(yratio_row, ncols, 'y', shape=(nrows,ncols))
     #xratio = list(map(float, xratio.split()))
     #if len(xratio) == 1:
     #    if xratio[0] != 1:
@@ -102,23 +102,30 @@ def get_geometry(opts, section='single'):
         cbax = cp.copy(empty)
 
         # Multiply by ratios
-        axis.xsize = axis.xsize * xratio[j] * xratio_col[i]
-        axis.ysize = axis.ysize * yratio[i] * yratio_row[j]
+        if hasattr(xratio_col[0], 'index'):
+            aux_xratio_col = xratio_col[j]
+        else:
+            aux_xratio_col = xratio_col
+        if hasattr(yratio_row[0], 'index'):
+            aux_yratio_row = yratio_row[i]
+        else:
+            aux_yratio_row = yratio_row
+        axis.xsize = axis.xsize * xratio[j] * aux_xratio_col[i]
+        axis.ysize = axis.ysize * yratio[i] * aux_yratio_row[j]
 
         # Recenter
-        if xratio_col[i] != max(xratio_col):
+        if aux_xratio_col[i] != max(aux_xratio_col):
             # Search the maximum
-            xsizemax = axis.xsize * xratio[j] * max(xratio_col)
+            xsizemax = general.xsize * xratio[j] * max(aux_xratio_col)
             dleft = abs(axis.xsize - xsizemax) / 2.
         else:
             dleft = 0
-        if yratio_row[j] != max(yratio_row):
+        if aux_yratio_row[j] != max(aux_yratio_row):
             # Search the maximum
-            ysizemax = axis.ysize * yratio[i] * yratio_row[j]
+            ysizemax = general.ysize * yratio[i] * aux_yratio_row[j]
             dbottom = abs(axis.ysize - ysizemax) / 2.
         else:
             dbottom = 0
-
 
         # Left and bottom borders
         if i==nrows-1:
@@ -185,20 +192,33 @@ def get_geometry(opts, section='single'):
             else:
                 ydim = cumy + axis.height + hcbar_height
         else:
-            cumx += axis.width + hspace + vcbar_width
+            cumx += axis.width + dleft + hspace + vcbar_width
 
         axes[(i,j)] = cp.copy(axis)
         cbaxes[(i,j)] = cp.copy(cbax)
 
     return (xdim, ydim), OrderedDict(sorted(axes.items())), OrderedDict(sorted(cbaxes.items()))
 
-def get_ratio(val, length, axis):
+def get_ratio(val, length, axis, shape=None):
     ratio = list(map(float, val.split()))
+    if shape is not None and len(shape)==2:
+        size = shape[0]*shape[1]
+        if length not in shape:
+            raise ValueError('Length not in shape')
+    else:
+        size = None
     if len(ratio) == 1:
         if ratio[0] != 1:
             print('WARNING: using ratio to change %ssize' % axis)
         if length>1:
             ratio = ratio * length
+    elif size and len(ratio)==size:
+        aux = []
+        for i in range(size):
+            if i%length == 0:
+                aux += [[]]
+            aux[-1] += [ratio[i]]
+        ratio = aux
     elif len(ratio)!=length:
         raise ValueError('ratio values must have %i values' % axis)
     else:
