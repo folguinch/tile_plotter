@@ -1,13 +1,12 @@
-from configparser import ConfigParser
+from configparseradv import ConfigParserAdv
 from abc import ABCMeta, abstractmethod
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from functions import *
+from .functions import get_geometry
 
-class BasePlotter(object):
-
+class BasePlotter(metaclass=ABCMeta):
     """Figure axes collection.
 
     Keeps track of the Figure axes, whether they have been initialized or not.
@@ -16,13 +15,14 @@ class BasePlotter(object):
         cbaxes (list): list of the colorbar axes.
     """
 
-    __metaclass__ = ABCMeta
-
-    def __init__(self, styles=[], rows=1, cols=1, nxcbar=0, nycbar=0,
-            xsize=4.5, ysize=4.5, left=1.0, right=0.15, bottom=0.6, top=0.15,
-            wspace=0.2, hspace=0.2, cbar_width=0.2, cbar_spacing=0.1,
-            sharex=False, sharey=False, projection='rectilinear',
-            share_cbar=False):
+    def __init__(self, styles: list = [], rows: int = 1, cols: int = 1, 
+            nxcbar: int = 0, nycbar: int = 0,  xsize: float = 4.5, 
+            ysize: float = 4.5, left: float = 1.0, right: float = 0.15, 
+            bottom: float = 0.6, top: float = 0.15, wspace: float = 0.2, 
+            hspace: float = 0.2, cbar_width: float = 0.2, 
+            cbar_spacing: float = 0.1, sharex: bool = False, 
+            sharey: bool = False, projection: str = 'rectilinear',
+            share_cbar: bool = False):
         try:
             plt.close()
         except:
@@ -39,10 +39,6 @@ class BasePlotter(object):
         self.nycbar = nycbar
         
         # Determine figure size
-        #if rows==nycbar or cols==nxcbar:
-        #    share_cbar = False
-        #else:
-        #    share_cbar = True
         figgeom, cbargeom = get_geometry(rows, cols, nxcbar, nycbar, xsize, 
                 ysize, left, right, bottom, top, wspace, hspace, cbar_width, 
                 cbar_spacing, sharex, sharey, share_cbar=share_cbar)

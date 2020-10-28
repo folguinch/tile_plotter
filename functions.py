@@ -16,18 +16,16 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.ticker import FuncFormatter
 from matplotlib.patches import Rectangle, Ellipse
-#from RadModelling.Objects import Source, Profile
-#from RadModelling.Configuration.config_main import config_main
 from matplotlib.ticker import FuncFormatter 
-#from hyperion.model import ModelOutput
 
+from .geometry import FigGeometry
 
-from geometry import FigGeometry
-
-def get_geometry(rows, cols, nxcbar=0, nycbar=0, xsize=4.5, ysize=4.5, left=1.0,
-        right=.15, bottom=0.6, top=0.15, wspace=0.2, hspace=0.2, 
-        cbar_width=0.2, cbar_spacing=0.1, sharex=False, sharey=False, 
-        share_cbar=False):
+def get_geometry(rows: int, cols: int, nxcbar: int = 0, nycbar: int = 0, 
+        xsize: float = 4.5, ysize: float = 4.5, left: float = 1.0,
+        right: float = 0.15, bottom: float = 0.6, top: float = 0.15, 
+        wspace: float = 0.2, hspace: float = 0.2, cbar_width: float = 0.2, 
+        cbar_spacing: float = 0.1, sharex: bool = False, sharey: bool = False,
+        share_cbar: bool = False):
 
     # Determine width and height
     geoms_ax = []
@@ -39,18 +37,6 @@ def get_geometry(rows, cols, nxcbar=0, nycbar=0, xsize=4.5, ysize=4.5, left=1.0,
             newbottom = bottom
         elif sharex:
             newbottom = 0.
-
-        #if (not share_cbar and nycbar>=1) or (nycbar==1 and i==0):
-        #    newtop = cbar_spacing
-        #    if i==0:
-        #        coltop = top
-        #    else:
-        #        coltop = top+hspace
-        #    geom_cbar = FigGeometry(xsize, cbar_width, bottom=0, top=coltop)
-        #elif rows>1 and sharex:
-        #    newtop = hspace
-        #else:
-        #    newtop = top 
 
         for j in range(cols):
             if (not share_cbar and nycbar>=1) or (nycbar==1 and i==0):
@@ -173,25 +159,6 @@ def get_source(name):
     conf = config_main(name)
     source = Source(name, config=conf)
     return source
-
-# THIS SHOULD NOT BE HERE
-#def get_hyperion_model(fname):
-#    return ModelOutput(fname)
-
-def setup_env(script, name, conf_file='config.cfg'):
-    THIS = os.path.dirname(os.path.realpath(script))
-    EUROPA = '/mnt/Europa/pyfao'
-    FIGS = os.path.realpath(os.path.join(THIS,'../Figs'))
-    #figname = script.replace('.py', '.png')
-    try:
-        os.makedirs(FIGS)
-    except:
-        pass
-    config = ConfigParser()
-    config.read(conf_file)
-    logger = None
-
-    return EUROPA, FIGS, logger, config
 
 def get_data(name, position=None):
     img = fits.open(name)[0]
