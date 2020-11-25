@@ -149,23 +149,29 @@ class MapPlotter(SinglePlotter):
                 family=self.ax.xaxis.get_label().get_family(),
                 fontname=self.ax.xaxis.get_label().get_fontname(), minpad=ypad)
 
-        # Ticks labels
-        ra.set_major_formatter(xformat)
-        ra.set_ticklabel_visible(xticks)
-        dec.set_major_formatter(yformat)
-        dec.set_ticklabel_visible(yticks)
-        ra.set_ticks(color=tickscolor, exclude_overlapping=True)
-        dec.set_ticks(color=tickscolor)
-
         # Ticks
-        ra.set_ticklabel(size=self.ax.xaxis.get_majorticklabels()[0].get_fontsize(),
-                family=self.ax.xaxis.get_majorticklabels()[0].get_family(),
-                fontname=self.ax.xaxis.get_majorticklabels()[0].get_fontname())
-        dec.set_ticklabel(size=self.ax.yaxis.get_majorticklabels()[0].get_fontsize(),
-                family=self.ax.yaxis.get_majorticklabels()[0].get_family(),
-                fontname=self.ax.yaxis.get_majorticklabels()[0].get_fontname())
-        ra.display_minor_ticks(True)
-        dec.display_minor_ticks(True)
+        if matplotlib.rcParams['ytick.left']:
+            dec.set_major_formatter(yformat)
+            dec.set_ticklabel_visible(yticks)
+            dec.set_ticks(color=tickscolor)
+            dec.set_ticklabel(size=self.ax.yaxis.get_majorticklabels()[0].get_fontsize(),
+                    family=self.ax.yaxis.get_majorticklabels()[0].get_family(),
+                    fontname=self.ax.yaxis.get_majorticklabels()[0].get_fontname())
+            dec.display_minor_ticks(True)
+        else:
+            dec.set_ticklabel_visible(False)
+            dec.set_ticks_visible(False)
+        if matplotlib.rcParams['xtick.bottom']:
+            ra.set_major_formatter(xformat)
+            ra.set_ticklabel_visible(xticks)
+            ra.set_ticks(color=tickscolor, exclude_overlapping=True)
+            ra.set_ticklabel(size=self.ax.xaxis.get_majorticklabels()[0].get_fontsize(),
+                    family=self.ax.xaxis.get_majorticklabels()[0].get_family(),
+                    fontname=self.ax.xaxis.get_majorticklabels()[0].get_fontname())
+            ra.display_minor_ticks(True)
+        else:
+            ra.set_ticklabel_visible(False)
+            ra.set_ticks_visible(False)
 
     def plot_cbar(self, fig, label=None, ticks=None, ticklabels=None, 
             orientation='vertical', labelpad=10, lines=None):
@@ -489,9 +495,10 @@ class MapPlotter(SinglePlotter):
                     unset_yticks=not yticks, 
                     tickscolor=tickscolor)
         else:
+            ypad = cfg.getfloat('axis_ypad', fallback=-0.7)
             self.config_map(xformat=xformat, yformat=yformat, xlabel=xlabel,
                     ylabel=ylabel, xticks=xticks, yticks=yticks, 
-                    xpad=1., ypad=-0.7, tickscolor=tickscolor, xcoord='ra', ycoord='dec')
+                    xpad=1., ypad=ypad, tickscolor=tickscolor, xcoord='ra', ycoord='dec')
 
 class MapsPlotter(BasePlotter):
 
@@ -620,6 +627,7 @@ class MapsPlotter(BasePlotter):
                 label = distance * length
                 label = label.value * u.au
                 label = '{0.value:.0f} {0.unit:latex_inline}  '.format(label)
+                label = label.lower()
                 
                 # Plot scale
                 ax.phys_scale(scale_pos.ra.degree, scale_pos.dec.degree,

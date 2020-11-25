@@ -159,6 +159,8 @@ class BasePlotter(object):
         return include_cbar
 
     def has_axlabels(self, loc):
+        if self.config.getboolean('unset_axes_labels', fallback=False):
+            return False, False
         xlabel = not self.sharex or \
                 (self.sharex and loc[1]==0 and loc[0]==self.shape[0]-1)
         ylabel = not self.sharey or \
@@ -166,6 +168,8 @@ class BasePlotter(object):
         return xlabel, ylabel
 
     def has_ticks(self, loc):
+        if self.config.getboolean('unset_tick_labels', fallback=False):
+            return False, False
         xticks = not self.sharex or \
                 (self.sharex and loc[0]==self.shape[0]-1)
         yticks = not self.sharey or (self.sharey and loc[1]==0)
