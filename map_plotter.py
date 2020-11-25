@@ -11,27 +11,30 @@ from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 from matplotlib.patches import Rectangle, Ellipse
 
 import normalizations as mynorms
-from .base_plotter import BasePlotter, SinglePlotter
+from .base_plotter import BasePlotter
 from .functions import get_ticks
-from .utils import auto_vmin, auto_vmax, auto_levels
 from .maths import quick_rms
+from .plot_handler import PhysPlotHandler
+from .utils import auto_vmin, auto_vmax, auto_levels
 
 __metaclass__ = type
 
-class MapPlotter(SinglePlotter):
+class MapPlotter(PhysPlotHandler):
 
-    def __init__(self, ax, cbax=None, vmin=None, vmax=None, a=1000.,
-            stretch='linear', radesys=''):
-        super(MapPlotter, self).__init__(ax, cbaxis=cbax)
+    def __init__(self, axis, cbaxis=None, vmin: float = None, 
+            vmax: float = None, a: float = 1000., stretch: str = 'linear', 
+            radesys: str = '', flux_unit: 'astropy.unit' = None):
+        super(MapPlotter, self).__init__(axis, cbaxis=cbaxis, xname='RA',
+                yname='Dec', xunit=u.degr, yunit=u.degr)
         self.im = None
-        self.label = None
-        self.a = a #or config.get('a', fallback=100)
-        self.vmin = vmin #or config.get('vmin', fallback=None)
-        self.vmax = vmax #or config.get('vmax', fallback=None)
-        self.stretch = stretch #or config.get('stretch', fallback='linear')
+        self.a = a
+        self.vmin = vmin
+        self.vmax = vmax
+        self.stretch = stretch
         self.radesys = radesys.lower()
-        if radesys == 'J2000':
+        if radesys.upper() == 'J2000':
             self.radesys = 'fk5'
+        self.log.info('Creating map plot')
         self.log.info('Using RADESYS: %s', self.radesys)
 
     @property

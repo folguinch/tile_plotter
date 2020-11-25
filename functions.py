@@ -7,7 +7,14 @@ import numpy as np
 
 from .geometry import FigGeometry
 
+log = logger.get_logger(__name__)
+
 def get_geometry(opts, section='DEFAULT'):
+    # Key list
+    int_keys = ['nrows', 'ncols']
+    margin_keys = ['left', 'right', 'top', 'bottom']
+    space_keys = ['xsize', 'ysize', 'hspace', 'vspace']
+
     # Geometry
     ncols = opts[section].getint('ncols')
     nrows = opts[section].getint('nrows')
