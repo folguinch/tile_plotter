@@ -1,44 +1,86 @@
 import os
 from configparser import ConfigParser
 
-import numpy as np
-import astropy.units as u
 from astropy.visualization import LogStretch, LinearStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.visualization.wcsaxes import SphericalCircle
-import matplotlib
 from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 from matplotlib.patches import Rectangle, Ellipse
+from matplotlib import cm
+import astropy.units as u
+import astropy.visualization as vis
+import astropy.wcs as apl_wcs
+import matplotlib as mpl
+import numpy as np
 
 import normalizations as mynorms
+import utils
 from .base_plotter import BasePlotter
 from .functions import get_ticks
 from .maths import quick_rms
 from .plot_handler import PhysPlotHandler
-from .utils import auto_vmin, auto_vmax, auto_levels
 
-__metaclass__ = type
+# Type aliases
+Axes = TypeVar('Axes', mpl.axes.Axes)
+Artist = TypeVar('Artist')
+Limits = Union[None, Tuple[float, float], Dict[str, float]]
+Plot = TypeVar('Plot')
+Map = TypeVar('Map', u.Quantity, 'astropy.io.PrimaryHDU')
+Position = TypeVar('Position', 'astroppy.SkyCoord', u.Quantity,
+                   Tuple[u.Quantity, u.Quantity])
 
-class MapPlotter(PhysPlotHandler):
+class MapHandler(PhysPlotHandler):
+    """Container for a map single plot.
 
-    def __init__(self, axis, cbaxis=None, vmin: float = None, 
-            vmax: float = None, a: float = 1000., stretch: str = 'linear', 
-            radesys: str = '', flux_unit: 'astropy.unit' = None):
-        super(MapPlotter, self).__init__(axis, cbaxis=cbaxis, xname='RA',
-                yname='Dec', xunit=u.degr, yunit=u.degr)
+    Addtitional attributes:
+      im: image from plt.imshow.
+      bname: name of intensity axis.
+      bunit: intensity unit.
+      stretch: intensity scale stretch. Accepted values: log, midnorm, linear.
+      vscale: intensity scale parameters. Accepted values:
+        vmin: minimum intensity.
+        vmax: maximum intensity.
+        vcenter: central intensity for diverging normalization.
+        a: scaling for log normalization.
+      radesys: projection system.
+    """
+
+    def __init__(self, 
+                 axis: Axes, 
+                 cbaxis: Optional[Axes] = None, 
+                 bname: Optional[str] = 'Intensity',
+                 bunit: Optional[u.Unit] = None,
+                 stretch: str = 'linear',
+                 vmin: Optional[u.Quantity] = None,
+                 vmax: Optional[u.Quantity] = None, 
+                 vcenter: Optional[u.Quantity] = None, 
+                 a: Optional[float] = None, 
+                 radesys: str = ''):
+        """Initiate a map plot handler."""
+        super().__init__(axis, cbaxis=cbaxis, xname='RA', yname='Dec', 
+                         xunit=u.degr, yunit=u.degr)
+        # Units and stretch
+        self._log.info('Creating map plot')
         self.im = None
-        self.a = a
-        self.vmin = vmin
-        self.vmax = vmax
+        self.bname = bname
+        self.bunit = bunit
+        self._log.info(f'Setting bunit: {self.bunit}')
         self.stretch = stretch
-        self.radesys = radesys.lower()
-        if radesys.upper() == 'J2000':
-            self.radesys = 'fk5'
-        self.log.info('Creating map plot')
-        self.log.info('Using RADESYS: %s', self.radesys)
+        self._log.info(f'Setting stretch: {self.bunit}')
 
-    @property
-    def normalization(self):
+        # Intensity units
+        self.vscale = {'vmin': None, 'vmax': None, 'vcenter':None, 'a': 1000.}
+        if vmin is not None: self.vscale['vmin'] = vmin.to(bunit)
+        if vmax is not None: self.vscale['vmax'] = vmax.to(bunit)
+        if vcenter is not None: self.vscale['vcenter'] = vcenter.to(bunit)
+        self.vscale['a'] = a or self.vscale['a']
+
+        # Projection system
+        self.radesys = radesys.lower()
+        if radesys.upper() == 'J2000': self.radesys = 'fk5'
+        self._log.info(f'Setting RADESYS: {self.radesys}')
+
+    def get_normalization(self) -> cm:
         if self.stretch=='log':
             return ImageNormalize(vmin=self.vmin, vmax=self.vmax, 
                     stretch=LogStretch(a=self.a))
@@ -50,29 +92,91 @@ class MapPlotter(PhysPlotHandler):
             return ImageNormalize(vmin=self.vmin, vmax=self.vmax, 
                     stretch=LinearStretch())
 
-    def plot_map(self, data, wcs=None, label=None, r=None, position=None, 
-            extent=None, self_contours=False, levels=None, colors='w', 
-            linewidths=None, mask=False, rms=None, nsigma=5., nsigmalevel=None,
-            negative_rms_factor=None, **kwargs):
+    def _validate_data(self, data: Map, 
+                       wcs: apy_wcs.WCS) -> Tuple[u.Quantity, apy_wcs.WCS]:
+        """Validate input data.
 
-        # Define default values for vmin and vmax
-        if self.vmin is None:
-            self.vmin = auto_vmin(data)
-        if self.vmax is None:
-            self.vmax = auto_vmax(data)
+        Args:
+          data: input data.
+          wcs: WCS of the data.
+        """
+        if hasattr(data, 'unit'):
+            # Check bunit
+            if self.bunit is None:
+                self.bunit = data.bunit
+                self._log.info(f'Setting bunit to data unit: {self.bunit}')
+            valdata = data.to(self.bunit)
+
+            # Check wcs
+            if wcs is None: self._log.warn('WCS is None')
+
+        elif hasattr(data, 'header'):
+            # Check bunit
+            bunit = u.Unit(data.header.get('BUNIT', 1))
+            if self.bunit is None:
+                self.bunit = bunit
+                self._log.info(f'Setting bunit to header unit: {self.bunit}')
+            valdata = np.squeeze(data.data) * bunit
+            valdata = valdata.to(self.bunit)
+
+            # Check wcs
+            if wcs is None: 
+                wcs = apy_wcs.WCS(data.header, naxis=['longitude', 'latitude'])
+        else:
+            self._log.warn(f'Cannot convert input data to {self.bunit},' + 
+                           'using as is ...')
+        
+        return valdata, wcs
+
+    def _validate_vscale(self, data: Map, 
+                         rms: Optional[u.Quantity] = None) -> None:
+        """Validate and set vscale.
+
+        Args:
+          data: to determine the intensity limits.
+          rms: optional; use this rms to determine the intensity limits.
+        """
+        if self.vscale['vmin'] is None:
+            self.vscale['vmin'] = utils.auto_vmin(data, rms=rms)
+            self._log.info(f"Setting vmin from data: {self.vscale['vmin']")
+        if self.vscale['vmax'] is None:
+            self.vscale['vmax'] = utils.auto_vmax(data, rms=rms)
+            self._log.info(f"Setting vmax from data: {self.vscale['vmax']")
+
+    def plot_map(self, 
+                 data: Map, 
+                 wcs: Optional[apy_wcs.WCS] = None, 
+                 extent: Optional[Tuple[u.Quantity, u.Quantity]] = None, 
+                 rms: Optional[u.Quantity] = None, 
+                 mask_bad: bool = False,
+                 mask_color: str = 'w', 
+                 radius: Optional[u.Quantity] = None, 
+                 position: Optional[Position] = None,
+                 self_contours: bool = False, 
+                 contour_levels: Optional[List[u.Quantity]] = None, 
+                 contour_colors: str = 'w',
+                 contour_linewidths: Optional[float] = None, 
+                 contour_nsigma: float = 5., 
+                 contour_nsigmalevel: Optional[float] = None,
+                 contour_negative_rms_factor: Optional[float] = None, 
+                 **kwargs) -> None:
+        """
+        """
+        # Validate data
+        valdata, valwcs = self._validate_data(data, wcs)
+
+        # Check vscale and get normalization
+        self._validate_vscale(valdata, rms=rms)
+        norm = self.get_normalization()
 
         # Check wcs and re-centre the image
         if wcs is not None and r is not None and position is not None:
             self.recenter(r, position, wcs)
 
-        # Normalisation
-        norm = self.normalization
-
         # Plot data
-        self.label = label
-        if mask:
-            cmap = matplotlib.cm.get_cmap()
-            cmap.set_bad('w',1.0)
+        if mask_bad:
+            cmap = cm.get_cmap()
+            cmap.set_bad(mask_color, 1.0)
             maskdata = np.ma.array(data, mask=np.isnan(data))
             self.im = self.ax.imshow(maskdata, norm=norm, zorder=1,
                     extent=extent, **kwargs)
@@ -122,7 +226,7 @@ class MapPlotter(PhysPlotHandler):
             print('WARN: Could not recenter plot')
             return
         x, y = wcs.all_world2pix([[ra,dec]], 0)[0]
-        cdelt = np.mean(np.abs(wcs.wcs.cdelt))*u.deg
+        cdelt = np.mean(np.abs(wcs.wcs.cdelt)) * u.deg
         if hasattr(r, 'unit'):
             radius = r.to(u.deg) / cdelt
         else:

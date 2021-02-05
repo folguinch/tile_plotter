@@ -1,12 +1,28 @@
-from typing import List
-from itertools import product
-from collections import OrderedDict
+from typing import List, Optional, Union, Tuple
+import collections
+import itertools
 # Future update for Python 3.7+
 # from dataclasses import dataclass
 
+# Type Aliases
+Position = List[float, float]
+Location = Tuple[int, int]
+
 #@dataclass
-class BaseGeometry(object):
-    """Figure geometry class"""
+class BaseGeometry:
+    """Figure geometry class.
+    
+    Stores the dimesions and position of an axis.
+    
+    Attributes:
+      xsize: x axis size.
+      ysize: y axis size.
+      left: left margin.
+      right: right margin.
+      bottom: bottom margin.
+      top: top margin.
+      position: axis position within figure.
+    """
     # Future update for Python 3.7+
     #xsize: float
     #ysize: float
@@ -14,33 +30,41 @@ class BaseGeometry(object):
     #right: float = 0
     #top: float = 0
     #bottom: float = 0
-    #location: List[float] = [0, 0]
+    #position: Position = [0, 0]
 
     # To be remove in Python 3.7+
-    def __init__(self, xsize: float, ysize: float, left: float = 0, 
-            right: float = 0, bottom: float = 0, top: float = 0, 
-            location: List[float] = [0, 0]):
+    def __init__(self, 
+                 xsize: float, 
+                 ysize: float, 
+                 left: float = 0, 
+                 right: float = 0, 
+                 bottom: float = 0, 
+                 top: float = 0,
+                 position: Position = [0., 0.]) -> None:
+        """Initiate geometry with input parameters."""
         self.xsize = xsize
         self.ysize = ysize
         self.left = left
         self.right = right
         self.bottom = bottom
         self.top = top
-        self.location = location
+        self.position = position
 
     # To be remove in Python 3.7+
-    def __repr__(self):
-        text = f'x size: {self.xsize}\n'
-        text += f'y size: {self.ysize}\n'
-        text += f'left margin: {self.left}\n'
-        text += f'right margin: {self.rigth}\n'
-        text += f'bottom margin: {self.bottom}\n'
-        text += f'top margin: {self.top}\n'
-        text += f'axis location: {self.location}\n'
+    def __repr__(self) -> str:
+        text = [f'x size: {self.xsize}']
+        text.append(f'y size: {self.ysize}')
+        text.append(f'left margin: {self.left}')
+        text.append(f'right margin: {self.rigth}')
+        text.append(f'bottom margin: {self.bottom}')
+        text.append(f'top margin: {self.top}')
+        text.append(f'axis position: {self.position}')
 
-        return text
+        return '\n'.join(text)
 
-    def __setitem__(self, key, val):
+    def __setitem__(self, 
+                    key: str, 
+                    val: Union[float, Location]) -> None:
         if key == 'xsize':
             self.xsize = val
         elif key == 'ysize':
@@ -53,30 +77,37 @@ class BaseGeometry(object):
             self.bottom = val
         elif key == 'top':
             self.top = val
-        elif key == 'location':
-            self.location = val
+        elif key == 'position':
+            self.position = val
         else:
             raise KeyError(f'Cannot set {key}')
 
     @property
-    def height(self):
+    def height(self) -> float:
         return self.bottom + self.ysize + self.top
 
     @property
-    def width(self):
+    def width(self) -> float:
         return self.left + self.xsize + self.right
 
     @property
-    def pyplot_axis(self):
-        return [self.location[0]+self.left, self.location[1]+self.bottom, self.xsize, self.ysize]
+    def pyplot_axis(self) -> List[float]:
+        return [self.position[0]+self.left, self.position[1]+self.bottom,
+                self.xsize, self.ysize]
 
-    def scale_xaxis(self, factor: float, original: float = None) -> float:
-        """Scale the x axis and keep the axis centered
+    def scale_xaxis(self, 
+                    factor: float, 
+                    original: Optional[float] = None) -> float:
+        """Scale the x axis and keep the axis centered.
         
-        Parameters:
-            factor: scaling factor
-            original: original size for recentering. If None then the current
-                size is used
+        Args:
+          factor: scaling factor.
+          original: optional; original size for recentering. If None then the 
+            current size is used.
+
+        Returns:
+          Amount of shift applied to the axis in order to center in relation to
+          the other axes in the horizontal direction.
         """
         # Shifts
         newsize = factor * self.xsize
@@ -91,13 +122,19 @@ class BaseGeometry(object):
 
         return dleft
 
-    def scale_yaxis(self, factor: float, original: float = None) -> float:
-        """Scale the y axis and keep the axis centered
+    def scale_yaxis(self, 
+                    factor: float, 
+                    original: Optional[float] = None) -> float:
+        """Scale the y axis and keep the axis centered.
         
-        Parameters:
-            factor: scaling factor
-            original: original size for recentering. If None then the current
-                size is used
+        Args:
+          factor: scaling factor.
+          original: optional; original size for recentering. If None then the 
+            current size is used.
+
+        Returns:
+          Amount of shift applied to the axis in order to center in relation to
+          the other axes in the vertical direction.
         """
         # Shifts
         newsize = factor * self.ysize
@@ -112,26 +149,40 @@ class BaseGeometry(object):
 
         return dbottom
 
-    def scalex(self, factor: float):
-        """Scale all the horizontal variables by factor"""
+    def scalex(self, factor: float) -> None:
+        """Scale all the horizontal variables by factor."""
         self.xsize = self.xsize * factor
         self.left = self.left * factor
         self.right = self.right * factor
-        self.location[0] = self.location[0]*factor
+        self.position[0] = self.position[0]*factor
 
-    def scaley(self, factor: float):
-        """Scale all the vertical variables by factor"""
+    def scaley(self, factor: float) -> None:
+        """Scale all the vertical variables by factor."""
         self.ysize = self.ysize*factor
         self.bottom = self.bottom*factor
         self.top = self.top*factor
-        self.location[1] = self.location[1]*factor
+        self.position[1] = self.position[1]*factor
 
-    def is_empty(self):
-        return self.xsize==self.ysize==self.left==self.right==self.bottom==self.top==0
+    def is_empty(self) -> bool:
+        """In the geometry empty?"""
+        condition1 = self.xsize == self.ysize == self.left == self.right
+        condition2 = self.bottom == self.top == 0
+        return condition1 == condition2
 
-class FigGeometry(object):
+class FigGeometry:
+    """Stores the axes of a plot.
+    
+    Attributes:
+      axis: main axis.
+      cbaxis: colorbar axis.
+      cborientation: orientation of the colorbar.
+    """
 
-    def __init__(self, axis=None, cbaxis=None, cbar_orientation=None):
+    def __init__(self, 
+                 axis: Optional[BaseGeometry] = None, 
+                 cbaxis: Optional[BaseGeometry] = None, 
+                 cbar_orientation: Optional[str] = None) -> None:
+        """Initiate the figure geometry."""
         self.axis = axis
         self.cbaxis = cbaxis
         self.cborientation = None
@@ -139,7 +190,8 @@ class FigGeometry(object):
             self.set_cbar(cbar_orientation)
     
     @property
-    def width(self):
+    def width(self) -> float:
+        """Returns the total width."""
         if self.axis is not None:
             width = self.axis.width
         else:
@@ -149,7 +201,8 @@ class FigGeometry(object):
         return width
 
     @property
-    def height(self):
+    def height(self) -> float:
+        """Return the total height."""
         if self.axis is not None:
             height = self.axis.height
         else:
@@ -159,11 +212,19 @@ class FigGeometry(object):
         return height
 
     @property
-    def dimensions(self):
+    def dimensions(self) -> Tuple[float, float]:
+        """The total width and height of the geometry."""
         return self.width, self.height
 
-    def set_cbar(self, orientation):
-        """Validate color bar value"""
+    def set_cbar(self, orientation: Union[None, str]) -> None:
+        """Validate color bar value.
+        
+        Args:
+          orientation: orientation of the color bar.
+          
+        Raises:
+            ValueError: if orientation not in [None, vertical, horizontal].
+        """
         if orientation is not None:
             if orientation.lower() not in ['vertical', 'horizontal']:
                 raise ValueError('Colorbar orientation not recognized')
@@ -171,8 +232,15 @@ class FigGeometry(object):
         else:
             self.cborientation = orientation
 
-    def unset_cbar(self, sharex: bool = False, sharey: bool = False):
-        """Delete color bar axis"""
+    def unset_cbar(self, 
+                   sharex: bool = False, 
+                   sharey: bool = False) -> None:
+        """Delete color bar axis.
+        
+        Args:
+          sharex: optional; is the x-axis shared?
+          sharey: optional; is the y-axis shared?
+        """
         if self.has_vertical_cbar():
             if sharey:
                 self.axis.right = 0
@@ -195,29 +263,55 @@ class FigGeometry(object):
     def has_horizontal_cbar(self) -> bool:
         return self.has_cbar() and self.cborientation.lower() == 'horizontal'
 
-    def init_geometry(self, xsize: float, ysize: float, left: float, 
-            right: float, top: float, bottom: float, 
-            cbar_orientation: str = None, cbar_width: float = None, 
-            cbar_spacing: float = None, location: List[float] = [0, 0]) -> None:
-        """Initialize axes from input values"""
+    def init_geometry(self, 
+                      xsize: float, 
+                      ysize: float, 
+                      left: float, 
+                      right: float, 
+                      top: float, 
+                      bottom: float, 
+                      cbar_orientation: Optional[str] = None, 
+                      cbar_width: Optional[float] = None, 
+                      cbar_spacing: Optional[float] = None, 
+                      position: Position = [0., 0.]) -> None:
+        """Initialize axes with a BaseGeometry from input values.
+        
+        Args:
+          xsize: x axis size.
+          ysize: y axis size.
+          left: left margin.
+          right: right margin.
+          top: top margin.
+          bottom: margin.
+          cbar_orientation: optional; color bar orientation.
+          cbar_width: optional; color bar width.
+          cbar_spacing: optional; separation between main axis and color bar.
+          position: optional; position of the axis.
+        """
 
         # Main axis
         self.axis = BaseGeometry(xsize, ysize, left, right, bottom, top,
-                location)
+                                 position)
 
         # Color bar
         self.set_cbar(cbar_orientation)
         if self.has_vertical_cbar():
-            self.cbaxis = BaseGeometry(cbar_width, ysize, cbar_spacing, right,
-                    bottom, top, [self.axis.width, location[1]])
+            self.cbaxis = BaseGeometry(cbar_width, ysize, cbar_spacing, 
+                                       right, bottom, top, 
+                                       [self.axis.width, position[1]])
             self.axis.right = 0
         elif self.has_horizontal_cbar():
             self.cbaxis = BaseGeometry(xsize, cbar_width, left, right,
-                    cbar_spacing, top, [location[0], self.axis.height])
+                                       cbar_spacing, top, 
+                                       [position[0], self.axis.height])
             self.axis.top = 0
 
-    def geometry_from_config(self, config: 'configparseradv proxy') -> None:
-        """Initialize axes from config file"""
+    def geometry_from_config(self, config: 'configparseradv') -> None:
+        """Initialize axes from config file.
+        
+        Args:
+          config: configuration parser proxy.
+        """
         # Keys
         space_keys = ['xsize', 'ysize']
         axis_keys = ['left', 'right', 'top', 'bottom']
@@ -243,13 +337,26 @@ class FigGeometry(object):
         
         # Generate geometries
         self.init_geometry(xsize, ysize, left, right, top,
-                bottom, cbar_orientation=cbar_orientation,
-                cbar_width=cbar_width, cbar_spacing=cbar_spacing)
+                           bottom, cbar_orientation=cbar_orientation,
+                           cbar_width=cbar_width, cbar_spacing=cbar_spacing)
 
-    def set_spacing(self, left_spacing: float = 0, bottom_spacing: float = 0,
-            sharex: bool = False, sharey: bool = False, is_top: bool = False,
-            is_right: bool = False) -> None:
-        """Update geometries for a shared axis"""
+    def set_spacing(self, 
+                    left_spacing: float = 0, 
+                    bottom_spacing: float = 0,
+                    sharex: bool = False, 
+                    sharey: bool = False, 
+                    is_top: bool = False,
+                    is_right: bool = False) -> None:
+        """Update geometries for a shared axis.
+        
+        Args:
+          left_spacing: space between axes in the horizontal direction.
+          bottom_spacing: space between axes in the vertical direction.
+          sharex: is the x axis shared?
+          sharey: is the y axis shared?
+          is_top: is the axis at the topmost row of the figure?
+          is_right: is the axis at the rightmost column of the figure?
+        """
         # Check shared axes
         if sharex:
             self.axis.bottom = bottom_spacing
@@ -268,23 +375,38 @@ class FigGeometry(object):
         if self.has_vertical_cbar():
             self.cbaxis.bottom = self.axis.bottom
             self.cbaxis.top = self.axis.top
-            cbax.location[0] = self.axis.width
+            cbax.position[0] = self.axis.width
         elif self.has_horizontal_cbar():
             self.cbaxis.left = self.axis.left
             self.cbaxis.right = self.axis.right
-            cbax.location[1] = self.axis.height
+            cbax.position[1] = self.axis.height
 
-    def shift_location(self, xshift: float = 0, yshift: float = 0) -> None:
-        """Shift the locations of the axes"""
-        self.axis.location = [self.axis.location[0] + xshift,
-                self.axis.location[1] + yshift]
+    def shift_position(self, xshift: float = 0., yshift: float = 0.) -> None:
+        """Shift the positions of the axes.
+        
+        Args:
+          xshift: shift for the x position.
+          yshift: shift for the y position.
+        """
+        self.axis.position = [self.axis.position[0] + xshift,
+                              self.axis.position[1] + yshift]
         if self.has_cbar():
-            self.cbaxis.location = [self.cbaxis.location[0] + xshift,
-                    self.cbaxis.location[1] + yshift]
+            self.cbaxis.position = [self.cbaxis.position[0] + xshift,
+                                    self.cbaxis.position[1] + yshift]
 
-    def scale_axes(self, xfactor: float = 1, yfactor: float = 1, 
-            xoriginal: float = None, yoriginal: float = None) -> None:
-        """Scale the axes"""
+    def scale_axes(self, 
+                   xfactor: float = 1., 
+                   yfactor: float = 1., 
+                   xoriginal: Optional[float] = None, 
+                   yoriginal: Optional[float] = None) -> None:
+        """Scale the axes.
+        
+        Args:
+          xfactor: x axis scaling factor.
+          yfactor: y axis scaling factor.
+          xoriginal: optional; original x axis width for recentering.
+          yoriginal: optional; original y axis height for recentering.
+        """
         # Scale axis
         dleft = self.axis.scale_xaxis(xfactor, original=xoriginal)
         dbottom = self.axis.scale_yaxis(yfactor, original=yoriginal)
@@ -295,30 +417,42 @@ class FigGeometry(object):
             self.cbax.top = self.axis.top
             self.cbax.bottom = self.axis.bottom
             self.cbax.right += dleft
-            self.cbax.location[0] += dleft
+            self.cbax.position[0] += dleft
             self.axis.right = 0
         elif self.has_horizontal_cbar():
             self.cbax.xsize = self.axis.xsize
             self.cbax.left = self.axis.left
             self.cbax.right = self.axis.right
             self.cbax.top += dbottom
-            self.cbax.location[1] += dbottom
+            self.cbax.position[1] += dbottom
             self.axis.top = 0
         else:
             pass
 
-class GeometryHandler(OrderedDict):
+class GeometryHandler(collections.OrderedDict):
+    """Manage the geometries in a figure.
+
+    Attributes:
+      nrows: number of rows.
+      ncols: number of columns.
+      sharex: are x axes shared?
+      sharey: are y axes shared?
+      vspace: vertical spacing between axes.
+      hspace: horizontal spacing between axes.
+      vcbarpos: vertical color bar positions.
+      hcbarpos: horizontal color bar positions.
+    """
     nrows: int = 0
     ncols: int = 0
     sharex: bool = False
     sharey: bool = False
     vspace: int = 0
     hspace: int = 0
-    vcbarpos = None
-    hcbarpos = None
-    single_dimensions = None
+    vcbarpos: Optional[Tuple[int]] = None
+    hcbarpos: Optional[Tuple[int]] = None
+    #single_dimensions = None
 
-    def __setitiem__(self, key, value):
+    def __setitiem__(self, key: List[int, int], value: 'axis') -> None:
         if len(key) != 2:
             raise KeyError(f'Key length {len(key)} != 2')
         elif key[0] >= self.nrows:
@@ -328,14 +462,14 @@ class GeometryHandler(OrderedDict):
         super().__setitiem__(key, value)
 
     def keys_from_shape(self, rows: int, cols: int) -> None:
-        """Fill the handler with an empty geometry"""
+        """Fill the handler with an empty geometry."""
         self.nrows = rows
         self.ncols = cols
-        for loc in product(range(rows, 0, -1), range(cols)):
+        for loc in itertools.product(range(rows, 0, -1), range(cols)):
             self[loc] = FigGeometry(0, 0)
 
     def from_config(self, config: 'configparseradv') -> None:
-        """Initiate spatial values"""
+        """Initiate spatial values from configuration parser."""
         # Useful values
         self.nrows, self.ncols = config.getintkeys(['nrows', 'ncols'])
         self.vspace, self.hspace = config.getfloatkeys(['vspace', 'hspace'])
@@ -344,16 +478,16 @@ class GeometryHandler(OrderedDict):
 
         # Colorbar positions
         if vcbarpos == '*':
-            self.vcbarpos = list(range(self.ncols))
+            self.vcbarpos = tuple(range(self.ncols))
         else:
-            self.vcbarpos = list(map(int, vcbarpos.replace(',',' ').split()))
+            self.vcbarpos = tuple(map(int, vcbarpos.replace(',',' ').split()))
         if hcbarpos == '*':
-            self.hcbarpos = list(range(self.nrows))
+            self.hcbarpos = tuple(range(self.nrows))
         else:
-            self.hcbarpos = list(map(int, hcbarpos.replace(',',' ').split()))
+            self.hcbarpos = tuple(map(int, hcbarpos.replace(',',' ').split()))
 
     def fill_from_config(self, config: 'configparseradv') -> None:
-        """Fill the dictionary with FigGeometry from config"""
+        """Fill the dictionary with FigGeometry from configuration parser."""
         # Update stored values
         self.from_config(config)
 
@@ -361,7 +495,7 @@ class GeometryHandler(OrderedDict):
         cumx, cumy = 0, 0
         xdim = None
         # Star from the last row to accumulate the value of bottom
-        for loc in product(range(self.nrows-1,0,-1), range(self.ncols)):
+        for loc in itertools.product(range(self.nrows-1,0,-1), range(self.ncols)):
             # Initialize and get dimensions
             width, height = self.init_loc(loc, config, cumx, cumy)
 
@@ -378,15 +512,28 @@ class GeometryHandler(OrderedDict):
                 cumx += self[loc].width
         return xdim, ydim
 
-    def init_loc(self, loc: tuple, config: 'configparseradv', 
-            xshift: float = 0, yshift: float = 0) -> None:
-        """Initiate a single FigGeometry at given location"""
+    def init_loc(self, 
+                 loc: Location, 
+                 config: 'configparseradv', 
+                 xshift: float = 0, 
+                 yshift: float = 0) -> Tuple[float, float]:
+        """Initiate a single FigGeometry at given location from configuration.
+        
+        Args:
+          loc: location of the axis.
+          config: configuration parser proxy.
+          xshift: optional; shift of the x axis location.
+          yshift: optional; shift of the y axis location.
+
+        Returns:
+          The dimensions of the axis.
+        """
         # Initial value
         self[loc] = FigGeometry()
         self[loc].geometry_from_config(config)
 
         # Scale axis
-        options = [f'{loc[0]}*', f'*{loc[1]}', '{}{}'.format(*loc)]
+        options = [f'{loc[0]}*', f'*{loc[1]}', ''.join(loc)]
         xfactor, yfactor = None, None
         for opt in options:
             key1 = f'xsize_factor{opt}'
@@ -404,14 +551,14 @@ class GeometryHandler(OrderedDict):
         # Unset cbar
         self.remove_cbar(loc)
 
-        # Shift location
-        self[loc].shift_location(xshift=xshift, yshift=yshift)
+        # Shift position
+        self[loc].shift_position(xshift=xshift, yshift=yshift)
 
         # Return dimensions
         return self[loc].dimensions
 
-    def set_spacing(self, loc):
-        """Set the space between axes"""
+    def set_spacing(self, loc: Location) -> None:
+        """Set the space between axes."""
         if loc[0] == self.nrows-1:
             bottom_spacing = 0
             sharex = False
@@ -426,12 +573,12 @@ class GeometryHandler(OrderedDict):
             sharey = self.sharey
 
         self[loc].set_spacing(left_spacing=left_spacing, 
-                bottom_spacing=bottom_spacing, sharex=self.sharex, 
-                sharey=self.sharey, is_top=loc[0]==0,
-                is_right=loc[1]==self.ncols-1)
+                              bottom_spacing=bottom_spacing, 
+                              sharex=self.sharex, sharey=self.sharey, 
+                              is_top=loc[0]==0, is_right=loc[1]==self.ncols-1)
 
-    def remove_cbar(self, loc):
-        """Remove color bar and adjust spacing"""
+    def remove_cbar(self, loc: Location) -> None:
+        """Remove color bar and adjust spacing."""
         # Base case
         if not self[loc].has_cbar():
             return
@@ -440,11 +587,11 @@ class GeometryHandler(OrderedDict):
         new_right = 0
         new_top = 0
         if self[loc].has_vertical_cbar():
-            has_cbar = loc[1] in self.vcbarpos or \
-                    loc[1]-self.ncols in self.vcbarpos
+            has_cbar = (loc[1] in self.vcbarpos or 
+                        loc[1]-self.ncols in self.vcbarpos)
         elif self[loc].has_horizontal_cbar():
-            has_cbar = loc[0] in self.hcbarpos or \
-                    loc[0]-self.nrows in self.hcbarpos
+            has_cbar = (loc[0] in self.hcbarpos or
+                        loc[0]-self.nrows in self.hcbarpos)
         else:
             has_cbar = False
         if not has_cbar:

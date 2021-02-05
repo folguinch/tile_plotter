@@ -197,15 +197,6 @@ def get_ratio(val, length, axis, shape=None):
         pass
     return ratio
 
-def get_ticks(vmin, vmax, a=1000, n=5, stretch='log'):
-    if stretch=='log':
-        x = lambda y: (10.**(y*np.log10(a+1.))-1.)/a
-        y = np.linspace(0.,1.,n)
-        x = x(y)
-        return x*(vmax-vmin) + vmin
-    else:
-        return np.linspace(vmin, vmax, n)
-
 def map_to_dict(x, sep=' '):
     aux = x.split(sep)
     res = {}
