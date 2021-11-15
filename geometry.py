@@ -1,11 +1,11 @@
-from typing import List, Optional, Union, Tuple
+from typing import List, Optional, Sequence, Union, Tuple
 import collections
 import itertools
 # Future update for Python 3.7+
 # from dataclasses import dataclass
 
 # Type Aliases
-Position = List[float, float]
+Position = Tuple[float, float]
 Location = Tuple[int, int]
 
 #@dataclass
@@ -40,7 +40,7 @@ class BaseGeometry:
                  right: float = 0, 
                  bottom: float = 0, 
                  top: float = 0,
-                 position: Position = [0., 0.]) -> None:
+                 position: Position = (0., 0.)) -> None:
         """Initiate geometry with input parameters."""
         self.xsize = xsize
         self.ysize = ysize
@@ -164,7 +164,7 @@ class BaseGeometry:
         self.position[1] = self.position[1]*factor
 
     def is_empty(self) -> bool:
-        """In the geometry empty?"""
+        """Is the geometry empty?"""
         condition1 = self.xsize == self.ysize == self.left == self.right
         condition2 = self.bottom == self.top == 0
         return condition1 == condition2
@@ -452,7 +452,7 @@ class GeometryHandler(collections.OrderedDict):
     hcbarpos: Optional[Tuple[int]] = None
     #single_dimensions = None
 
-    def __setitiem__(self, key: List[int, int], value: 'axis') -> None:
+    def __setitiem__(self, key: Sequence[int], value: 'axis') -> None:
         if len(key) != 2:
             raise KeyError(f'Key length {len(key)} != 2')
         elif key[0] >= self.nrows:

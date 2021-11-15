@@ -1,9 +1,10 @@
+"""Define the base plotter file for all the plotting tools."""
 from typing import Any, Optional, Tuple, TypeVar
 import abc
 import os
 import pathlib
         
-from logging_tools import logger
+from logging_tools import get_logger
 import configparseradv as cfgparser
 import matplotlib.pyplot as plt
 
@@ -11,12 +12,26 @@ import geometry
 
 # Type aliases
 Location = Tuple[int, int]
-Path = TypeVar('Path', pathlib.Path, str)
 
 class BasePlotter(metaclass=abc.ABCMeta):
     """Figure axes collection base class.
 
     Keeps track of the Figure axes, whether they have been initialized or not.
+
+    The `BasePlotter` opens and store the configuration file. The plot geometry
+    can be described in 1 or 2 configurations files:
+      
+    - 1 file: share the plot geometry information with the plot data
+      information in one configuration file.
+    - 2 files: the plot data information file defines a
+      `geometry_config` option with the file name of the geometry information
+      file. In this case, after reading the configuration in the data file, the
+      configuration is updated with the geometry file, i.e. any value in the
+      default of the data file may be replaced if it is in the geometry file.
+
+    The 2nd option is useful for cases where the same geometry is used to plot
+    different data. All the options for geometry configuration are available in
+    `configs/default.cfg`.
 
     Attributes:
       config: configuration parser proxy of the current section.
@@ -26,16 +41,16 @@ class BasePlotter(metaclass=abc.ABCMeta):
     """
 
     _defconfig = (pathlib.Path(__file__).resolve().parent / 
-                 pathlib.Path('configs/default.cfg'))
-    _log = logger.get_logger(__name__)
+                  pathlib.Path('configs/default.cfg'))
+    _log = get_logger(__name__)
 
-    def __init__(self, config: Path = None, section: str = 'DEFAULT', **kwargs):
+    def __init__(self, 
+                 config: Optional[pathlib.Path] = None, 
+                 section: str = 'DEFAULT', 
+                 **kwargs):
         """Create a new base plotter."""
         # Close plt if still open
-        try:
-            plt.close()
-        except:
-            pass
+        plt.close()
 
         # Update options
         self._config = cfgparser.ConfigParserAdv()
@@ -46,6 +61,10 @@ class BasePlotter(metaclass=abc.ABCMeta):
         else:
             self._config.read(config.expanduser().resolve())
         self._config.read_dict({section: kwargs})
+
+        # Read geometry configuration
+        if 'geometry_config' in self._config[section]:
+            self._config.read(self._config[section]['geometry_config'])
         self.config = self._config[section]
 
         # Set plot styles
@@ -56,12 +75,34 @@ class BasePlotter(metaclass=abc.ABCMeta):
         self.figsize = self.axes.get_geometry(self.config)
         self._log.info(f'Figure size: w={self.figsize[0]}, h={self.figsize[1]}')
 
+        # Set the configuration mapping loc and config keys
+        self._config_mapping = self._group_config_sections()
+
         # Create figure
         self.fig = plt.figure(figsize=self.figsize)
 
     def __iter__(self):
-        for ax in self.axes:
-            yield self.get_axis(*ax)
+        for loc in self._config_mapping.items():
+            yield loc
+
+    def _group_config_sections(self):
+        """Group config sections based on location of each section."""
+        mapping = {}
+        for section in self._config.sections():
+            loc = tuple(self._config.getintlist(section, 'loc'))
+            if loc in mapping:
+                mapping[loc] += [section]
+            else:
+                mapping[loc] = [section]
+        return mapping
+
+    @property
+    def loc(self):
+        return tuple(self.config.getintlist('loc'))
+
+    @property
+    def section(self):
+        return self.config.name
     
     @property
     def shape(self):
@@ -78,6 +119,20 @@ class BasePlotter(metaclass=abc.ABCMeta):
     @property
     def sharey(self):
         return self.axes.sharey
+
+    @abc.abstractmethod
+    def plot_all(self):
+        """Iterate over the configuration sections and plot each one."""
+        pass
+
+    @abc.abstractmethod
+    def apply_config(self):
+        """Apply the configuration of the axis."""
+        pass
+
+    def switch_to(self, section: str) -> None:
+        """Change the current `config` proxy."""
+        self.config = self._config[section]
 
     def is_init(self, loc: Location, cbaxis: bool = False) -> bool:
         """Check if an axis has been initialized.
@@ -97,7 +152,7 @@ class BasePlotter(metaclass=abc.ABCMeta):
                   handler: 'PlotHandler', 
                   projection: Optional[str] = None,
                   include_cbar: Optional[bool] = None, 
-                  **kwargs) -> None:
+                  **kwargs) -> 'PlotHandler':
         """Initialize axis by assigning a plot handler.
 
         If the axis is not initialized, it replaces the axis geometry
@@ -108,19 +163,22 @@ class BasePlotter(metaclass=abc.ABCMeta):
           handler: plot handler to replace the geometry.
           projection: optional; update axis projection.
           include_cbar: optional; initialize the color bar.
-          **kwargs: optional arguments for the handler.
+          kwargs: additional arguments for the handler.
         """
         # Check projection
         if projection is None:
-            projection = self.projection
+            projection = self.projection or 'rectilinear'
 
         # Verify include_cbar
         if include_cbar is None:
             include_cbar = self.has_cbar(loc)
         
         # Initialize axis if needed
-        if self.is_init(ij):
+        if self.is_init(loc):
             self._log.info(f'Axis {loc} already initialized')
+            if include_cbar:
+                cbaxis = self.init_cbar(loc)
+            return self.axes[loc]
         else:
             self._log.info(f'Initializing axis: {loc}')
             self.axes[loc].axis.scalex(1./self.figsize[0])
@@ -130,21 +188,21 @@ class BasePlotter(metaclass=abc.ABCMeta):
         
         # Color bar
         if include_cbar:
-            self._log.info(f'Initializing color bar: {loc}')
             cbaxis = self.init_cbar(loc)
         
         # Create plotter object
-        self.axes[loc] = handler(axis, cbaxis, **kwargs)
+        self.axes[loc] = handler.from_config(self.config, axis, cbaxis,
+                                             **kwargs)
 
-    @abc.abstractmethod
-    def auto_plot(self):
-        pass
+        return self.axes[loc]
 
     def init_cbar(self, loc: Location) -> None:
         """Initialize color bar."""
-        if not self.has_cbar(loc) or self.is_init(loc, cbaxis=True):
+        if self.is_init(loc, cbaxis=True) or not self.has_cbar(loc):
+            self._log.info(f'Color bar axis {loc} already initialized')
             pass
         else:
+            self._log.info(f'Initializing color bar: {loc}')
             self.axes[loc].cbaxis.scalex(1./self.figsize[0])
             self.axes[loc].cbaxis.scaley(1./self.figsize[1])
             self.cbaxes[loc] = self.fig.add_axes(
@@ -178,8 +236,8 @@ class BasePlotter(metaclass=abc.ABCMeta):
         Args:
           key: option in the configuration parser.
           loc: optional; axis location.
-          **kwargs: optional arguments for configparseradv.getvalue. 
-            See configparseradv documentation for a list of available kwargs.
+          kwargs: optional arguments for `configparseradv.getvalue`. 
+            See `configparseradv` documentation for a list of available kwargs.
         """
         # Convert location to index
         if loc is not None and loc in self.axes:
@@ -191,7 +249,7 @@ class BasePlotter(metaclass=abc.ABCMeta):
         """Set figure title."""
         self.fig.suptitle(title, **kwargs)
 
-    def savefig(self, filename: Path, **kwargs) ->None:
+    def savefig(self, filename: pathlib.Path, **kwargs) -> None:
         """Save figure."""
         self.fig.savefig(filename, **kwargs)
 

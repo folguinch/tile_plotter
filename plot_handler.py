@@ -1,6 +1,6 @@
-from typing import Any, Optional, Tuple, TypeVar, Callable, Dict, List
+from typing import Any, Optional, Tuple, TypeVar, Callable, Dict, List, Union
 
-from logging_tools import logger
+from logging_tools import get_logger
 from matplotlib import patches
 import astropy.units as u
 import astropy.visualization as vis
@@ -11,7 +11,7 @@ import numpy as np
 import utils
 
 # Type aliases
-Axes = TypeVar('Axes', mpl.axes.Axes)
+Axes = type(mpl.axes.Axes)
 Artist = TypeVar('Artist')
 Limits = Union[None, Tuple[float, float], Dict[str, float]]
 Plot = TypeVar('Plot')
@@ -33,7 +33,7 @@ class PlotHandler:
       yunit: y axis unit.
       pltd: plotted objects tracker.
     """
-    _log = logger.get_logger(__name__)
+    _log = get_logger(__name__)
 
     def __init__(self, 
                  axis: Axes, 
@@ -88,7 +88,7 @@ class PlotHandler:
         return self.insert_plt(kwargs.get('label', None),
                 fn(*args, **kwargs))
 
-    def insert_plt(self, key: Optional[str], val: Plot) -> Plot:
+    def insert_plt(self, key: str, val: Plot) -> Plot:
         """Store plotted object.
         
         Args:
@@ -220,7 +220,7 @@ class PlotHandler:
         """Set the axis x limits."""
         self.axis.set_xlim(left=xmin, right=xmax)
 
-    def set_ylim(self, ymin: Otional[float] = None, 
+    def set_ylim(self, ymin: Optional[float] = None, 
                  ymax: Optional[float] = None) -> None:
         """Set the axis y limits."""
         self.axis.set_ylim(bottom=ymin, top=ymax)
@@ -243,8 +243,8 @@ class PlotHandler:
         Arguments are the same as for the matplotlib.pyplot.plot() finction.
 
         Args:
-          *args: data to plot.
-          **kwargs: arguments for matplotlib.pyplot.plot().
+          args: data to plot.
+          kwargs: arguments for matplotlib.pyplot.plot().
         """
         return self._simple_plt(self.axis.plot, *args, **kwargs)
 
@@ -276,8 +276,8 @@ class PlotHandler:
         Arguments are the same as for the matplotlib.pyplot.errorbar() finction.
 
         Args:
-          *args: data to plot.
-          **kwargs: arguments for matplotlib.pyplot.errorbar().
+          args: data to plot.
+          kwargs: arguments for matplotlib.pyplot.errorbar().
         """
         return self._simple_plt(self.axis.errorbar, *args, **kwargs)
 
@@ -291,8 +291,8 @@ class PlotHandler:
         Arguments are the same as for the matplotlib.pyplot.annotate() finction.
 
         Args:
-          *args: data to plot.
-          **kwargs: arguments for matplotlib.pyplot.annotate().
+          args: data to plot.
+          kwargs: arguments for matplotlib.pyplot.annotate().
         """
         self.axis.annotate(*args, **kwargs)
 
@@ -472,7 +472,7 @@ class PlotHandler:
           arrow: arrow position, angle and/or legth.
           arrowprops: optional; arrow properties.
           color: optional; use the default arrowprops but replace the color. 
-          **kwargs: other arrow properties. See matplotlib.pyplot.annotate
+          kwargs: other arrow properties. See `matplotlib.pyplot.annotate`.
         """
         # Arrow specified as PA or (x y PA) or (PA len) or (x y PA len)
         try:
@@ -535,9 +535,8 @@ class PhysPlotHandler(PlotHandler):
     """Plot handler to manage plots with astropy.quantity objects.
 
     Attributes:
-      See PlotHandler. Redefined attributes:
-        xunit: astropy x axis unit.
-        yunit: astropy y axis unit.
+      xunit: `astropy.Unit` for x axis.
+      yunit: `astropy.Unit` for y axis.
     """
 
     def __init__(self, 
@@ -582,7 +581,8 @@ class PhysPlotHandler(PlotHandler):
           unit: unit to convert to.
 
         Returns:
-          The value of the quantity value converted to unit or None if value is None.
+          The value of the quantity value converted to unit or `None` if value
+          is `"None"`.
         """
         if value is None: return None
         return value.to(unit).value
@@ -603,7 +603,7 @@ class PhysPlotHandler(PlotHandler):
         super().set_xlim(xmin=self._check_unit(xmin, self.xunit), 
                          xmax=self._check_unit(xmax, self.xunit))
 
-    def set_ylim(self, ymin: Otional[u.Quantity] = None,
+    def set_ylim(self, ymin: Optional[u.Quantity] = None,
                  ymax: Optional[u.Quantity] = None) -> None:
         """Set the axis y limits."""
         super().set_ylim(ymin=self._check_unit(ymin, self.yunit), 

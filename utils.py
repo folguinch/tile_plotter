@@ -1,12 +1,8 @@
-from typing import Union, Optional
+from typing import Union, Optional, Callable, Tuple
 
 import astropy.stats as apystats
 import astropy.units as u
 import numpy as np
-
-import logger 
-
-LOG = logger.get_logger(__name__)
 
 # Type aliases
 Quantity = Union[u.Quantity, float, np.array]
@@ -30,8 +26,8 @@ def get_colorbar_ticks(vmin: u.Quantity,
                        a: float = 1000.,
                        n: int = 5, 
                        stretch: str = 'linear', 
-                       ndigits: Optional[int]: None
-                       sigfig: Optional[int]: None) -> Quantity:
+                       ndigits: Optional[int] = None,
+                       sigfig: Optional[int] = None) -> Quantity:
     """Calculate the tick values for the colorbar given the intensity stretch.
 
     Args:
@@ -85,7 +81,8 @@ def auto_vmin(data: u.Quantity,
               rms: Optional[u.Quantity] = None, 
               nrms: float = 0.8, 
               velocity_fraction: float = 0.98, 
-              map_type: str = 'intensity') -> u.Quantity:
+              map_type: str = 'intensity',
+              log: Callable = print) -> u.Quantity:
     """Determine vmin from the data.
 
     If data_type=intensity, it calculates the rms from the data if not given.
@@ -103,9 +100,9 @@ def auto_vmin(data: u.Quantity,
     if map_type.lower() in ['intensity', 'pvmap']:
         if rms is None:
             rms = quick_rms(data)
-            LOG.debug('Quick rms = %.3e', rms)
+            log(f'Quick rms = {rms:.3e}')
         else:
-            LOG.debug('Input rms = %.3e', rms)
+            log(f'Input rms = {rms:.3e}')
         vmin = nrms * rms
     elif map_type.lower() == 'velocity':
         vmin = np.nanmin(data) * vfrac
@@ -179,36 +176,37 @@ def auto_log_levels(data: Optional[u.Quantity] = None,
                     nlevels: Optional[int] = None,
                     min_nlevels: int = 1, 
                     negative_nsigma: Optional[float] = None,
-                    min_base: float = 1.1) -> u.Quantity:
+                    min_base: float = 1.1,
+                    log: Callable = print) -> u.Quantity:
     """
     """
     # Value checks
-    LOG.info('Calculating levels')
+    log('Calculating levels')
     if min_base > base:
-        LOG.warn('Minimum base < base, setting min_base = base')
+        log('Minimum base < base, setting min_base = base')
         min_base = base
     if nlevels and nlevels < min_nlevels:
-        LOG.warn('Minimum nlevels > nlevels, setting nlevels = min_nlevels')
+        log('Minimum nlevels > nlevels, setting nlevels = min_nlevels')
         nlevels = min_nlevels
     if data is not None and max_val is None:
         max_val = np.nanmax(data)
 
     # Determine rms
-    LOG.info('Determining levels from data:')
+    log('Determining levels from data:')
     if rms is None and data is not None:
-        LOG.info('Using automatic rms for levels')
+        log('Using automatic rms for levels')
         rms = quick_rms(data)
     elif ((rms is None and data is None) or
           (rms is not None and nlevels is None)):
         raise Exception('Could not determine levels')
     rms = to_sigfig(rms)
-    LOG.info(f'Getting levels from rms = {rms}')
+    log(f'Getting levels from rms = {rms}')
 
     # One level at nsigmalevel
     if nlevels and nlevels == 1:
-        LOG.info(f'Setting only one level at {nsigmalevel} sigma')
+        log(f'Setting only one level at {nsigmalevel} sigma')
         levels = np.array([nsigma * rms.value]) * rms.unit
-        LOG.info(f'Levels = {levels}')
+        log(f'Levels = {levels}')
         return levels
 
     # Limits
@@ -218,24 +216,24 @@ def auto_log_levels(data: Optional[u.Quantity] = None,
         if nlevels is None:
             nlevels = get_nlevels(max_val, base_level, 'log', base=base)
         if min_nlevels and nlevels < min_nlevels and base == min_base:
-            LOG.warn('Minimum number of levels not achieved with min_base')
-            LOG.warn(f'Setting min_nlevels value = {nlevels}')
+            log('Minimum number of levels not achieved with min_base')
+            log(f'Setting min_nlevels value = {nlevels}')
             min_nlevels = nlevels
         elif min_nlevels and nlevels < min_nlevels and base > min_base:
-            LOG.warn('Minimum number of levels not achieved, refining base')
+            log('Minimum number of levels not achieved, refining base')
             ratio = max_val.value / base_level.value
             new_base = to_sigfig(np.exp(np.log(ratio) / (min_nlevels-1)))
             if new_base < min_base:
-                LOG.warn(f'Estimated base {new_base} smaller than min_base')
-                LOG.warn(f'Changing base to {min_base}')
+                log(f'Estimated base {new_base} smaller than min_base')
+                log(f'Changing base to {min_base}')
                 base = min_base
             else:
-                LOG.info(f'New base = {new_base}')
+                log(f'New base = {new_base}')
                 base = new_base
             nlevels = get_nlevels(max_val, base_level, 'log', base=base)
-        LOG.info(f'Number of levels = {nlevels}')
+        log(f'Number of levels = {nlevels}')
     elif nlevels:
-        LOG.info(f'Using nlevels = {nlevels}')
+        log(f'Using nlevels = {nlevels}')
     else:
         raise ValueError('Could not determine nlevels')
 
@@ -248,8 +246,8 @@ def auto_log_levels(data: Optional[u.Quantity] = None,
             min_val = np.nanmin(data)
             loop = True
         elif min_val is None and data is None:
-            LOG.warn('Could not determine minimum value'
-            LOG.warn('Skipping negative levels')
+            log('Could not determine minimum value')
+            log('Skipping negative levels')
             loop = False
         else:
             loop = True
@@ -266,8 +264,8 @@ def auto_log_levels(data: Optional[u.Quantity] = None,
 
     # Levels    
     levels = np.array(aux) * rms
-    LOG.info('Levels/rms = %r', aux)
-    LOG.info('Levels = %r', levels)
+    log(f'Levels/rms = {aux}')
+    log(f'Levels = {levels}')
 
     return levels
 

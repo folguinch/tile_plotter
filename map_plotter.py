@@ -1,5 +1,4 @@
-import os
-from configparser import ConfigParser
+from configparser import ConfigParser, ExtendedInterpolation
 
 from astropy.visualization import LogStretch, LinearStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
@@ -23,62 +22,151 @@ from .plot_handler import PhysPlotHandler
 # Type aliases
 Axes = TypeVar('Axes', mpl.axes.Axes)
 Artist = TypeVar('Artist')
-Limits = Union[None, Tuple[float, float], Dict[str, float]]
+Limits = Union[None, Sequence[float, float], Dict[str, float]]
 Plot = TypeVar('Plot')
+Projection = TypeVar('Projection', apl_wcs.WCS, str)
 Map = TypeVar('Map', u.Quantity, 'astropy.io.PrimaryHDU')
 Position = TypeVar('Position', 'astroppy.SkyCoord', u.Quantity,
                    Tuple[u.Quantity, u.Quantity])
 
+def filter_config_data(config: ConfigParser, keys: Sequence,
+                       ignore: Sequence = ['image', 'contour']) -> Dict:
+    """Filter the data options in `config` present in `skeleton`.
+
+    Args:
+      config: input configuration.
+      keys: available keys.
+      ignore: optional; keys to ignore.
+
+    Returns:
+      A dictionary with the filtered values.
+    """
+    options = {}
+    for key in keys:
+        if key not in config or key in ignore:
+            continue
+        if key in ['center']:
+            options[key] = config.getskycoord(key)
+        elif key in ['radius', 'rms', 'levels']:
+            options[key] = config.getquantity(key)
+        elif key in ['self_contours']:
+            options[key] = config.getboolean(key)
+        elif key in ['nsigma', 'negative_nsigma', 'nsigma_level',
+                     'contour_linewidth']:
+            options[key] = config.getfloat(key)
+        else:
+            aux = config.get(key).split()
+            if len(aux) == 1:
+                options[key] = aux[0]
+            else:
+                options[key] = aux
+
 class MapHandler(PhysPlotHandler):
     """Container for a map single plot.
 
-    Addtitional attributes:
-      im: image from plt.imshow.
-      bname: name of intensity axis.
-      bunit: intensity unit.
-      stretch: intensity scale stretch. Accepted values: log, midnorm, linear.
-      vscale: intensity scale parameters. Accepted values:
-        vmin: minimum intensity.
-        vmax: maximum intensity.
-        vcenter: central intensity for diverging normalization.
-        a: scaling for log normalization.
+    Attributes:
+      im: Object from `plt.imshow`.
+      vscale: intensity scale parameters.
+      artists: artists to plot.
+      colors: replace style colors.
       radesys: projection system.
     """
+    _defconfig = (pathlib.Path(__file__).resolve().parent / 
+                  pathlib.Path('configs/map_default.cfg'))
+
+    # Read default skeleton
+    skeleton = ConfigParser(interpolation=ExtendedInterpolation)
+    skeleton.read(_defconfig)
 
     def __init__(self, 
                  axis: Axes, 
                  cbaxis: Optional[Axes] = None, 
-                 bname: Optional[str] = 'Intensity',
-                 bunit: Optional[u.Unit] = None,
-                 stretch: str = 'linear',
-                 vmin: Optional[u.Quantity] = None,
-                 vmax: Optional[u.Quantity] = None, 
-                 vcenter: Optional[u.Quantity] = None, 
-                 a: Optional[float] = None, 
-                 radesys: str = ''):
+                 radesys: str = '',
+                 units: Mapping = {},
+                 vscale: Mapping = {},
+                 colors: Mapping = {},
+                 artists: Mapping = {}):
         """Initiate a map plot handler."""
-        super().__init__(axis, cbaxis=cbaxis, xname='RA', yname='Dec', 
-                         xunit=u.degr, yunit=u.degr)
+        super().__init__(axis, cbaxis=cbaxis,
+                         xname=units.get('xname', 'RA'),
+                         yname=units.get('yname', 'Dec'),
+                         xunit=units.get('xunit', u.degr),
+                         yunit=units.get('yunit', u.degr))
+
         # Units and stretch
         self._log.info('Creating map plot')
         self.im = None
-        self.bname = bname
-        self.bunit = bunit
-        self._log.info(f'Setting bunit: {self.bunit}')
-        self.stretch = stretch
-        self._log.info(f'Setting stretch: {self.bunit}')
+        self.bname = units.get('bname', 'Intensity')
+        self.bunit = units.get('bunit', u.Unit(1))
+        self._log.info(f'Setting bunit ({self.bname}): {self.bunit}')
 
-        # Intensity units
-        self.vscale = {'vmin': None, 'vmax': None, 'vcenter':None, 'a': 1000.}
-        if vmin is not None: self.vscale['vmin'] = vmin.to(bunit)
-        if vmax is not None: self.vscale['vmax'] = vmax.to(bunit)
-        if vcenter is not None: self.vscale['vcenter'] = vcenter.to(bunit)
-        self.vscale['a'] = a or self.vscale['a']
+        # Store other options
+        self.vscale = vscale
+        self.colors = colors
+        self.artists = artists
 
         # Projection system
         self.radesys = radesys.lower()
-        if radesys.upper() == 'J2000': self.radesys = 'fk5'
+        if radesys.upper() == 'J2000':
+            self.radesys = 'fk5'
         self._log.info(f'Setting RADESYS: {self.radesys}')
+
+    @classmethod
+    def from_config(cls,
+                    config: ConfigParser,
+                    axis: Axes,
+                    cbaxis: Axes,
+                    radesys: str = '',
+                    **kwargs):
+        """Create a new MapHandler from a config proxy.
+
+        Args:
+          config: configuration parser proxy.
+          axis: matplotlib axis.
+          cbaxis: matplotlib color bar axis.
+          radesys: projection system.
+          kwargs: replace values in the config.
+        """
+        # Get units
+        units = {}
+        for opt in cls.skeleton.options('units'):
+            if opt in config or opt in kwargs:
+                val = config.get(opt, vars=kwargs)
+                if 'unit' in opt:
+                    units[opt] = u.Unit(val)
+                else:
+                    units[opt] = val
+
+        # Get vscale
+        vscale = {}
+        for opt in cls.skeleton.options('vscale'):
+            if opt not in config and opt not in kwargs:
+                continue
+            val = config.get(opt, vars=kwargs)
+            try:
+                split_val = val.split()
+                vscale[opt] = float(split_val[0]) * u.Unit(split_val[1])
+            except ValueError:
+                vscale[opt] = val
+            except IndexError:
+                vscale[opt] = float(val)
+
+        # Colors
+        colors = {}
+        for opt, val in cls.skeleton.items('artists'):
+            if opt not in config and opt not in kwargs:
+                continue
+            colors[opt] = config.get(opt, vars=kwargs)
+
+        # Artists
+        artists = {}
+        for opt, val in cls.skeleton.items('artists'):
+            if opt not in config and opt not in kwargs:
+                continue
+            artists[opt] = config.get(opt, vars=kwargs)
+
+        return cls(axis, cbaxis, radesys=radesys, units=units, vscale=vscale,
+                   colors=colors, artists=artists)
 
     def get_normalization(self) -> cm:
         if self.stretch=='log':
@@ -396,15 +484,6 @@ class MapHandler(PhysPlotHandler):
             self.log.info('-'*80)
             # From config
             dtype = config['type'].lower()
-            levels = config.getfloatlist('levels', fallback=None)
-            r = config.getquantity('radius', fallback=None)
-            position = config.getskycoord('center', fallback=None)
-            self_contours = config.getboolean('contours', fallback=False)
-            colors = config.get('contours_color', fallback='w')
-            rms = config.getquantity('rms', fallback=None)
-            nsigma = config.getfloat('nsigma', fallback=5.)
-            nsigmalevel = config.getfloat('nsigmalevel', fallback=None)
-            negative_rms_factor = config.getfloat('negative_rms_factor', fallback=None)
             linewidth = config.getfloat('linewidth', fallback=None)
             try:
                 bunit = u.Unit(img.header['BUNIT'])
@@ -601,26 +680,38 @@ class MapHandler(PhysPlotHandler):
                     xpad=1., ypad=-0.7, tickscolor=tickscolor, xcoord='ra', ycoord='dec')
 
 class MapsPlotter(BasePlotter):
+    """Plotter for managing 2-D maps."""
 
-    def __init__(self, config=None, section='map_plot', projection=None, 
-            **kwargs):
-        super(MapsPlotter, self).__init__(config=config, section=section, 
-                **kwargs)
-        self._projection = projection or self.config.get('projection')
+    def __init__(self,
+                 config: Optional[Path] = None,
+                 section: str = 'map_plot',
+                 projection: Projection = None, 
+                 **kwargs):
+        super().__init__(config=config, section=section, **kwargs)
+        self._projection = projection
 
     @property
     def projection(self):
         return self._projection
 
-    def __iter__(self):
-        for ax in self.axes:
-            axis, cbax = self.get_axis(ax)
-            yield MapPlotter(axis, cbax, config=self.config)
+    def init_axis(self,
+                  loc: Location,
+                  projection: Optional[Projection] = None,
+                  include_cbar: Optional[bool] = None) -> MapHandler:
+        """Initialize the axis.
 
-    def get_mapper(self, loc, vmin=None, vmax=None, a=None, stretch=None,
-            projection=None, include_cbar=None):
-        axis, cbax = self.get_axis(loc, projection=projection,
-                include_cbar=include_cbar)
+        Args:
+          loc: axis location (row, column).
+          projection: optional; map projection.
+          include_cbar: optional; include color bar?
+          kwargs: additional parameters for `MapHandler.from_config`.
+
+        Returns:
+          A `MapHandler`.
+        """
+        if self.is_init(loc):
+            self._log.info(f'Axis {loc} already initialized')
+            return self.axes[loc]
 
         # Projection system
         radesys = ''
@@ -634,19 +725,77 @@ class MapsPlotter(BasePlotter):
             except AttributeError:
                 pass
         
-        # Get color stretch values
-        stretch = stretch or self.get_value('stretch', 'linear', loc)
-        vmin = vmin or float(self.get_value('vmin', vmin, loc))
-        vmax = vmax or float(self.get_value('vmax', vmax, loc))
-        a = a or float(self.get_value('a', 1000., loc))
-
         # Get the axis
-        self.axes[loc] = MapPlotter(axis, cbax, vmin=vmin, vmax=vmax, a=a,
-                stretch=stretch, radesys=radesys)
+        ax = super().init_axis(loc, MapHandler, projection=projection,
+                               include_cbar=include_cbar, **kwargs)
 
-        return self.axes[loc]
+        return ax
 
-    def auto_config(self, config=None, section='map_plot', legend=False,
+    def plot(self, projection: Projection = None) -> None:
+        """Plot the current configuration section.
+
+        Args:
+          projection: optional; map projection.
+        """
+        # Load data
+        if 'image' in self.config:
+            image = Path(self.config['filename'])
+            image = fits.open(image)[0]
+        else:
+            image = None
+        if 'contour' in self.config:
+            contour = Path(self.config['contour'])
+            contour = fits.open(contour)[0]
+        else:
+            contour = None
+
+        # Check data
+        if projection is None:
+            try:
+                wcs = WCS(image.header).sub(['longitude', 'latitude'])
+            except:
+                wcs = WCS(contour.header).sub(['longitude', 'latitude'])
+            projection = wcs
+
+        # Get axis
+        ax = self.init_axis(self.loc, projection=projection)
+
+        # Plot data
+        options = filter_config_data(self.config,
+                                     ax.skeleton.options('data'))
+        ax.auto_plot(image=image, contour=contour, options=options)
+
+    def plot_loc(self, loc: Location, 
+                 projection: Optional[Projection] = None) -> None:
+        """Plot everythnig at a given location.
+        
+        Args:
+          loc: axis location.
+          projection: optional; map projection.
+        """
+        for section in self._config_mapping[loc]:
+            # Switch to section
+            self.switch_to(section)
+            self.plot(projection=projection)
+
+    def plot_all(self,
+                 skip_loc: Sequence[Location] = (),
+                 projections: Mapping = {},
+                 ) -> None:
+        """
+        """
+        for loc in self:
+            # Skip locations
+            if loc in skip_loc:
+                continue
+            
+            # Projection
+            projection = projections.get(loc, self.projection)
+
+            # Plot location
+            self.plot_loc(loc, projection=projection)
+
+    def apply_config(self, config=None, section='map_plot', legend=False,
             dtype='intensity', **kwargs):
         # Read new config if requested
         if config is not None:
@@ -739,7 +888,4 @@ class MapsPlotter(BasePlotter):
                         fancybox=self.config.getboolean('fancybox', fallback=False),
                         framealpha=self.config.getfloat('framealpha', fallback=None),
                         facecolor=self.config.get('facecolor', fallback=None))
-
-    def init_axis(self, loc, projection='rectilinear', include_cbar=None):
-        super(MapsPlotter, self).init_axis(loc, projection, include_cbar)
 

@@ -43,6 +43,3 @@ def get_logger(name, file_name='debug.log', **kwargs):
         logger.addHandler(sh)
 
     return logger
-
-def logger_from_config(file_name):
-   pass 
