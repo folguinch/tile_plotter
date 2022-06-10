@@ -5,7 +5,7 @@ import os
 import pathlib
         
 from logging_tools import get_logger
-import configparseradv as cfgparser
+import configparseradv.configparser as cfgparser
 import matplotlib.pyplot as plt
 
 import geometry
@@ -72,7 +72,7 @@ class BasePlotter(metaclass=abc.ABCMeta):
 
         # Get axes
         self.axes = geometry.GeometryHandler()
-        self.figsize = self.axes.get_geometry(self.config)
+        self.figsize = self.axes.fill_from_config(self.config)
         self._log.info(f'Figure size: w={self.figsize[0]}, h={self.figsize[1]}')
 
         # Set the configuration mapping loc and config keys
@@ -142,9 +142,11 @@ class BasePlotter(metaclass=abc.ABCMeta):
           cbaxis: whether to check for a colorbar axis instead.
         """
         if not cbaxis:
-            return hasattr(self.axes[ij].axis, 'plot')
+            #return hasattr(self.axes[loc].axis, 'plot')
+            return self.axes[loc].handler is not None
         else:
-            return hasattr(self.axes[ij].cbaxis, 'plot')
+            #return hasattr(self.axes[loc].cbaxis, 'plot')
+            return self.axes[loc].handler is not None
 
     @abc.abstractmethod
     def init_axis(self, 
@@ -156,7 +158,7 @@ class BasePlotter(metaclass=abc.ABCMeta):
         """Initialize axis by assigning a plot handler.
 
         If the axis is not initialized, it replaces the axis geometry
-        (FigGeometry) with a plot handler.
+        (`AxisHandler`) with a plot handler.
         
         Args:
           loc: axis location.
@@ -191,22 +193,23 @@ class BasePlotter(metaclass=abc.ABCMeta):
             cbaxis = self.init_cbar(loc)
         
         # Create plotter object
-        self.axes[loc] = handler.from_config(self.config, axis, cbaxis,
-                                             **kwargs)
+        self.axes[loc].set_handler(handler.from_config(self.config, axis,
+                                                       cbaxis, **kwargs))
 
-        return self.axes[loc]
+        return self.axes[loc].handler
 
     def init_cbar(self, loc: Location) -> None:
         """Initialize color bar."""
         if self.is_init(loc, cbaxis=True) or not self.has_cbar(loc):
             self._log.info(f'Color bar axis {loc} already initialized')
-            pass
         else:
             self._log.info(f'Initializing color bar: {loc}')
-            self.axes[loc].cbaxis.scalex(1./self.figsize[0])
-            self.axes[loc].cbaxis.scaley(1./self.figsize[1])
-            self.cbaxes[loc] = self.fig.add_axes(
+            self.axes[loc].cbaxis.scalex(1. / self.figsize[0])
+            self.axes[loc].cbaxis.scaley(1. / self.figsize[1])
+            self.axes[loc].cbaxis = self.fig.add_axes(
                 self.axes[loc].cbaxis.pyplot_axis)
+
+        return self.axes[loc].cbaxis
 
     def has_cbar(self, loc: Location) -> bool:
         """Shortcut for axes[loc].has_cbar()."""

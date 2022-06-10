@@ -1,96 +1,141 @@
-try:
-    from myutils.myconfigparser import myConfigParser as ConfigParser
-except ImportError:
-    from configparser import ConfigParser
+"""Manage different types of plots."""
+from typing import Optional, Sequence
 
-from base_plotter import BasePlotter
-from map_plotter import MapPlotter
-from plotter import AdvancedPlotter
+import configparseradv as cfgparser
 
-__metaclass__ = type
+from base_plotter import BasePlotter, Location
+from data_loaders import data_loader
+from handlers import get_handler
 
 class MultiPlotter(BasePlotter):
+    """Multiple plot manager.
 
-    def __init__(self, config=None, **kwargs):
-        super(MultiPlotter, self).__init__(config=config, section='DEFAULT',
-                **kwargs)
+    It determines the type of plot for each `section` of the input
+    configuration and initiates the appropriate handler.
 
-    def init_axis(self, loc, projection='rectilinear', include_cbar=None):
-        super(MultiPlotter, self).init_axis(loc, projection, include_cbar)
+    Attributes:
+      config: configuration parser proxy of the current section.
+      fig: matplotlib figure.
+      figsize: figure size.
+      axes: the figure axes.
+    """
 
-    def get_plotter(self, axis, cbax, projection):
-        dtype = self.config['type']
-        if dtype.lower() in ['map', 'contour_map', 'moment']:
-            # Get color stretch values
-            stretch = self.config.get('stretch', fallback='linear')
-            try:
-                vmin = float(self.config.get('vmin'))
-            except:
-                vmin = None
-            try:
-                vmax = float(self.config.get('vmax'))
-            except:
-                vmax = None
-            try:
-                a = float(self.config.get('a'))
-            except:
-                a = 1000.
+    def __init__(self, config: Optional['Path'] = None, **kwargs):
+        """Initialize plotter."""
+        super().__init__(config=config, section='DEFAULT', **kwargs)
 
-            # Radesys
-            radesys = '' 
-            if projection is not None:
-                aux = projection.to_header()
-                if 'RADESYS' in aux:
-                    radesys = aux['RADESYS']
+    @property
+    def plot_type(self):
+        """Type of plot."""
+        return self.config['type']
 
-            # Get the axis
-            plotter = MapPlotter(axis, cbax, vmin=vmin, vmax=vmax, a=a,
-                    stretch=stretch, radesys=radesys)
-        elif dtype.lower() in ['data', 'spectrum']:
-            xscale = self.config.get('xscale', fallback='linear')
-            yscale = self.config.get('yscale', fallback='linear')
-            plotter = AdvancedPlotter(axis, cbaxis=cbax, xscale=xscale, yscale=yscale)
-        else:
-            raise NotImplementedError('Plot type %s not implemented yet' % dtype)
+    # Implement abstract methods: init_axis, plot_all, apply_config
+    def init_axis(self,
+                  loc: Location,
+                  projection: Optional[str] = None,
+                  include_cbar: Optional[bool] = None,
+                  **kwargs) -> 'PlotHandler':
+        """Initialize axis by assigning a plot handler.
 
-        return plotter
+        If the axis is not initialized, it replaces the axis geometry
+        (`FigGeometry`) with a plot handler. The plot handler is determined by
+        the 
+        
+        Args:
+          loc: axis location.
+          projection: optional; update axis projection.
+          include_cbar: optional; initialize the color bar.
+          kwargs: additional arguments for the handler.
+        """
+        handler = get_handler(self.config)
+        axis = super().init_axis(loc, handler, projection=projection,
+                                 include_cbar=include_cbar)
 
-    def get_axes_config(self, loc):
-        xlabel, ylabel = self.has_axlabels(loc)
-        xticks, yticks = self.has_ticks(loc)
+        return axis
 
-        return xlabel, ylabel, xticks, yticks
+    def plot_all(self):
+        """Plot all the sections in config.
 
-    def auto_plot(self, loaders):
-        for section in self._config.sections():
+        Data is loaded based on the plot type.
+        """
+        for loc, sections in self:
+            self.plot_sections(sections, loc)
+
+    def apply_config(self):
+        pass
+
+    def plot_sections(self, sections: Sequence, loc: Location):
+        """Plot the requested sections in the requested location.
+        
+        Args:
+          sections: list of sections to plot.
+          loc: location where the sections are plotted.
+        """
+        color_bars = {}
+        for section in sections:
+            print('-' * 50)
             # Reset config
-            self.log.info('Plotting: %s', section)
-            self.config = self._config[section]
+            self._log.info('Plotting %s in (%i, %i)', section, *loc)
+            self.switch_to(section)
 
             # Load data
-            self.log.info('Loading data')
-            data, projection = loaders[section](self.config)
-
-            # Axis location
-            if 'loc' not in self.config:
-                raise KeyError('Location for %s not found' % section)
-            loc = tuple(self.config.getintlist('loc'))
+            data, projection, dtype = data_loader(self.config,
+                                                  log=self._log.info)
 
             # Get axis
-            include_cbar = self.config.getboolean('include_cbar',
-                    fallback=False)
-            axis, cbax = self.get_axis(tuple(loc), projection=projection,
-                    include_cbar=include_cbar)
+            handler = self.init_axis(loc, projection=projection)
 
             # Plot
-            if not hasattr(self.axes[loc], 'auto_plot'):
-                self.axes[loc] = self.get_plotter(axis, cbax, projection)
-            if include_cbar:
-                fig = self.fig
-            else:
-                fig = None
-            self.log.info('Plotting data')
-            self.axes[loc].auto_plot(data, self.config, fig,
-                    *self.get_axes_config(loc))
+            self._log.info('Plotting data')
+            handler.auto_plot(data, dtype, self.config)
 
+            # Plot color bar
+            if self.has_cbar(loc) and not color_bars.get(loc, False):
+                self._log.info('Setting color bar')
+                color_bars[loc] = True
+                handler.plot_cbar(self.fig,
+                                  orientation=self.axes[loc].cborientation)
 
+#    def get_plotter(self, axis, cbax, projection):
+#        dtype = self.config['type']
+#        if dtype.lower() in ['map', 'contour_map', 'moment']:
+#            # Get color stretch values
+#            stretch = self.config.get('stretch', fallback='linear')
+#            try:
+#                vmin = float(self.config.get('vmin'))
+#            except:
+#                vmin = None
+#            try:
+#                vmax = float(self.config.get('vmax'))
+#            except:
+#                vmax = None
+#            try:
+#                a = float(self.config.get('a'))
+#            except:
+#                a = 1000.
+#
+#            # Radesys
+#            radesys = '' 
+#            if projection is not None:
+#                aux = projection.to_header()
+#                if 'RADESYS' in aux:
+#                    radesys = aux['RADESYS']
+#
+#            # Get the axis
+#            plotter = MapPlotter(axis, cbax, vmin=vmin, vmax=vmax, a=a,
+#                    stretch=stretch, radesys=radesys)
+#        elif dtype.lower() in ['data', 'spectrum']:
+#            xscale = self.config.get('xscale', fallback='linear')
+#            yscale = self.config.get('yscale', fallback='linear')
+#            plotter = AdvancedPlotter(axis, cbaxis=cbax, xscale=xscale, yscale=yscale)
+#        else:
+#            raise NotImplementedError('Plot type %s not implemented yet' % dtype)
+#
+#        return plotter
+#
+#    def get_axes_config(self, loc):
+#        xlabel, ylabel = self.has_axlabels(loc)
+#        xticks, yticks = self.has_ticks(loc)
+#
+#        return xlabel, ylabel, xticks, yticks
+#

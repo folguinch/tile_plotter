@@ -1,8 +1,11 @@
+"""Objects to configure and manage plot geometries."""
 from typing import List, Optional, Sequence, Union, Tuple
 import collections
 import itertools
 # Future update for Python 3.7+
 # from dataclasses import dataclass
+
+import configparseradv.utils as cfgutils
 
 # Type Aliases
 Position = Tuple[float, float]
@@ -169,7 +172,7 @@ class BaseGeometry:
         condition2 = self.bottom == self.top == 0
         return condition1 == condition2
 
-class FigGeometry:
+class AxisHandler:
     """Stores the axes of a plot.
     
     Attributes:
@@ -181,13 +184,15 @@ class FigGeometry:
     def __init__(self, 
                  axis: Optional[BaseGeometry] = None, 
                  cbaxis: Optional[BaseGeometry] = None, 
-                 cbar_orientation: Optional[str] = None) -> None:
+                 cbar_orientation: Optional[str] = None,
+                 ) -> None:
         """Initiate the figure geometry."""
         self.axis = axis
         self.cbaxis = cbaxis
         self.cborientation = None
         if cbar_orientation is not None:
             self.set_cbar(cbar_orientation)
+        self._handler = None
     
     @property
     def width(self) -> float:
@@ -215,6 +220,10 @@ class FigGeometry:
     def dimensions(self) -> Tuple[float, float]:
         """The total width and height of the geometry."""
         return self.width, self.height
+
+    @property
+    def handler(self) -> 'PlotHandler':
+        return self._handler
 
     def set_cbar(self, orientation: Union[None, str]) -> None:
         """Validate color bar value.
@@ -262,6 +271,10 @@ class FigGeometry:
 
     def has_horizontal_cbar(self) -> bool:
         return self.has_cbar() and self.cborientation.lower() == 'horizontal'
+
+    def set_handler(self, handler: 'PlotHandler') -> None:
+        """Set the handler value."""
+        self._handler = handler
 
     def init_geometry(self, 
                       xsize: float, 
@@ -318,9 +331,9 @@ class FigGeometry:
         cbar_keys = ['cbar_width', 'cbar_spacing']
 
         # Values
-        xsize, ysize = config.getfloatkeys(space_keys)
-        left, right, top, bottom = config.getfloatkeys(axis_keys)
-        cbar_width, cbar_spacing = config.getbooleankeys(cbar_keys)
+        xsize, ysize = cfgutils.get_floatkeys(config, space_keys)
+        left, right, top, bottom = cfgutils.get_floatkeys(config, axis_keys)
+        cbar_width, cbar_spacing = cfgutils.get_floatkeys(config, cbar_keys)
 
         # Color bar
         vcbar = config.getboolean('vertical_cbar')
@@ -375,11 +388,11 @@ class FigGeometry:
         if self.has_vertical_cbar():
             self.cbaxis.bottom = self.axis.bottom
             self.cbaxis.top = self.axis.top
-            cbax.position[0] = self.axis.width
+            self.cbaxis.position[0] = self.axis.width
         elif self.has_horizontal_cbar():
             self.cbaxis.left = self.axis.left
             self.cbaxis.right = self.axis.right
-            cbax.position[1] = self.axis.height
+            self.cbaxis.position[1] = self.axis.height
 
     def shift_position(self, xshift: float = 0., yshift: float = 0.) -> None:
         """Shift the positions of the axes.
@@ -466,15 +479,19 @@ class GeometryHandler(collections.OrderedDict):
         self.nrows = rows
         self.ncols = cols
         for loc in itertools.product(range(rows, 0, -1), range(cols)):
-            self[loc] = FigGeometry(0, 0)
+            self[loc] = AxisHandler(0, 0)
 
     def from_config(self, config: 'configparseradv') -> None:
         """Initiate spatial values from configuration parser."""
         # Useful values
-        self.nrows, self.ncols = config.getintkeys(['nrows', 'ncols'])
-        self.vspace, self.hspace = config.getfloatkeys(['vspace', 'hspace'])
-        self.sharex, self.sharey = config.getbollkeys(['sharex', 'sharey'])
-        vcbarpos, hcbarpos = config.getkeys(['vcbarpos', 'hcbarpos'])
+        self.nrows, self.ncols = cfgutils.get_intkeys(config,
+                                                      ['nrows', 'ncols'])
+        self.vspace, self.hspace = cfgutils.get_floatkeys(config,
+                                                          ['vspace', 'hspace'])
+        self.sharex, self.sharey = cfgutils.get_boolkeys(config,
+                                                         ['sharex', 'sharey'])
+        vcbarpos, hcbarpos = cfgutils.get_keys(config,
+                                               ['vcbarpos', 'hcbarpos'])
 
         # Colorbar positions
         if vcbarpos == '*':
@@ -486,8 +503,8 @@ class GeometryHandler(collections.OrderedDict):
         else:
             self.hcbarpos = tuple(map(int, hcbarpos.replace(',',' ').split()))
 
-    def fill_from_config(self, config: 'configparseradv') -> None:
-        """Fill the dictionary with FigGeometry from configuration parser."""
+    def fill_from_config(self, config: 'ConfigParserAdv') -> None:
+        """Fill the dictionary with `AxisHandler` from configuration parser."""
         # Update stored values
         self.from_config(config)
 
@@ -495,12 +512,13 @@ class GeometryHandler(collections.OrderedDict):
         cumx, cumy = 0, 0
         xdim = None
         # Star from the last row to accumulate the value of bottom
-        for loc in itertools.product(range(self.nrows-1,0,-1), range(self.ncols)):
+        ranges = range(self.nrows - 1, -1, -1),  range(self.ncols)
+        for loc in itertools.product(*ranges):
             # Initialize and get dimensions
             width, height = self.init_loc(loc, config, cumx, cumy)
 
             # Cumulative sums
-            if loc[1] == self.ncols-1:
+            if loc[1] == self.ncols - 1:
                 if xdim is None:
                     xdim = cumx + self[loc].width
                 cumx = 0
@@ -514,10 +532,10 @@ class GeometryHandler(collections.OrderedDict):
 
     def init_loc(self, 
                  loc: Location, 
-                 config: 'configparseradv', 
+                 config: 'ConfigParserAdv', 
                  xshift: float = 0, 
                  yshift: float = 0) -> Tuple[float, float]:
-        """Initiate a single FigGeometry at given location from configuration.
+        """Initiate a single `AxisHandler` at given location from configuration.
         
         Args:
           loc: location of the axis.
@@ -529,11 +547,11 @@ class GeometryHandler(collections.OrderedDict):
           The dimensions of the axis.
         """
         # Initial value
-        self[loc] = FigGeometry()
+        self[loc] = AxisHandler()
         self[loc].geometry_from_config(config)
 
         # Scale axis
-        options = [f'{loc[0]}*', f'*{loc[1]}', ''.join(loc)]
+        options = [f'{loc[0]}*', f'*{loc[1]}', ''.join(map(str,loc))]
         xfactor, yfactor = None, None
         for opt in options:
             key1 = f'xsize_factor{opt}'

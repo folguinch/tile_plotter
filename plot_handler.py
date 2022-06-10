@@ -1,5 +1,9 @@
-from typing import Any, Optional, Tuple, TypeVar, Callable, Dict, List, Union
+"""Objects for handling all type of plots."""
+from typing import (Any, Optional, Tuple, TypeVar, Callable, Dict, List,
+                    Union, Sequence)
+import pathlib
 
+from configparseradv.configparser import ConfigParserAdv
 from logging_tools import get_logger
 from matplotlib import patches
 import astropy.units as u
@@ -33,7 +37,14 @@ class PlotHandler:
       yunit: y axis unit.
       pltd: plotted objects tracker.
     """
+    # Common class attributes
     _log = get_logger(__name__)
+    _defconfig = (pathlib.Path(__file__).resolve().parent / 
+                  pathlib.Path('configs/plot_default.cfg'))
+
+    # Read default skeleton
+    skeleton = ConfigParserAdv()
+    skeleton.read(_defconfig)
 
     def __init__(self, 
                  axis: Axes, 
@@ -86,7 +97,7 @@ class PlotHandler:
           The plotted object resulted from function.
         """
         return self.insert_plt(kwargs.get('label', None),
-                fn(*args, **kwargs))
+                               fn(*args, **kwargs))
 
     def insert_plt(self, key: str, val: Plot) -> Plot:
         """Store plotted object.
@@ -99,11 +110,12 @@ class PlotHandler:
           The plotted object in val.
         """
         # Store contours handler separatedly
-        if isinstance(val, mpl.contour.ContourSet):
-            color = tuple(val.collections[-1].get_color().tolist()[0])
-            handler = mlines.Line2D([], [], color=color, label=key)
-        else:
-            handler = val
+        #if isinstance(val, mpl.contour.ContourSet):
+        #    print(val.collections[-1].get_cmap())
+        #    color = tuple(val.collections[-1].get_cmap().tolist()[0])
+        #    handler = mlines.Line2D([], [], color=color, label=key)
+        #else:
+        handler = val
 
         # Store plotted
         if key is not None:
@@ -202,17 +214,13 @@ class PlotHandler:
     # Getters
     def get_xlabel(self, unit_fmt: str = '({})') -> str:
         """Return the xlabel from stored values."""
-        xlabel = [f'{self.xname}']
-        if self.xunit is not None: 
-            xlabel.append(unit_fmt.format(self.xunit))
-        return ' '.join(xlabel)
+        return utils.generate_label(self.xname, unit=self.xunit,
+                                    unit_fmt=unit_fmt)
 
     def get_ylabel(self, unit_fmt: str = '({})') -> str:
         """Return the ylabel from stored values."""
-        ylabel = [f'{self.yname}']
-        if self.yunit is not None: 
-            ylabel.append(unit_fmt.format(self.yunit))
-        return ' '.join(ylabel)
+        return utils.generate_label(self.yname, unit=self.yunit,
+                                    unit_fmt=unit_fmt)
 
     # Setters
     def set_xlim(self, xmin: Optional[float] = None, 
@@ -339,7 +347,7 @@ class PlotHandler:
 
     def scatter(self, *args, **kwargs) -> Plot:
         """Scatter plot."""
-        return self._simple_plt(self.axis.scatter, *args, **kwargs)
+        return self._simple_plt(self.axis.plot, *args, **kwargs)
 
     def clabel(self, *args, **kwargs) -> None:
         """Contour labels."""
@@ -359,21 +367,24 @@ class PlotHandler:
                   fig: mpl.figure.Figure, 
                   cs: mpl.colors.Colormap, 
                   label: Optional[str] = None, 
-                  ticks: Optional[List[float]] = None, 
+                  ticks: Optional[Sequence[float]] = None, 
                   nticks: int = 5,
                   vmin: Optional[float] = None, 
                   vmax: Optional[float] = None, 
                   a: float = 1000,
-                  stretch: str = 'linear', 
-                  ticklabels: Optional[List[str]] = None, 
+                  ticklabels: Optional[Sequence[str]] = None, 
+                  tickstretch: Optional[str] = None,
                   orientation: str = 'vertical', 
                   labelpad: float = 0, 
                   lines: Optional[Plot] = None,
-        ) -> Optional[mpl.colorbar.Colorbar]:
+                  label_cbar2: Optional[str] = None,
+                  ticks_cbar2: Optional[Sequence[float]] = None,
+                  norm_cbar2: Optional['Normalization'] = None,
+                  ) -> Optional[mpl.colorbar.Colorbar]:
         """Plot color bar.
 
-        if ticks are not given, they will be determined from the other
-        paramters (nticks, vmin, vmax, a, stretch, etc.) or use the defaults
+        If ticks are not given, they will be determined from the other
+        parameters (nticks, vmin, vmax, a, stretch, etc.) or use the defaults
         from matplotlib.
         
         Args:
@@ -385,20 +396,24 @@ class PlotHandler:
           vmin: optional; lower limit for auto ticks.
           vmax: optional; upper limit for auto ticks.
           a: optional; scaling for log stretch for auto ticks.
-          stretch: optional; plot stretch for auto ticks.
           ticklabels: optional; tick labels.
+          tickstretch: optional; stretch for the ticks.
           orientation: optional; color bar orientation.
           labelpad: optional; shift the color bar label.
           lines: optional; lines from contour plot to overplot.
+          label_cbar2: optional; label of the second axis of the color bar.
+          ticks_cbar2: optional; ticks of the second axis of the color bar.
         """
         # Check if cbax exists
         if self.cbaxis is None:
             self._log.warn('Skipping color bar')
             return None
+        self._log.info('Plotting color bar:')
 
         # Ticks
         if ticks is None and vmin and vmax:
-            ticks = utils.get_ticks(vmin, vmax, a=a, n=nticks, stretch=stretch)
+            ticks = utils.get_ticks(vmin, vmax, a=a, n=nticks, stretch=tickstretch)
+        self._log.info('Tick values: %s', ticks)
 
         # Create bar
         cbar = fig.colorbar(cs, ax=self.axis, cax=self.cbaxis,
@@ -412,10 +427,12 @@ class PlotHandler:
             cbar.ax.yaxis.set_ticks_position('right')
             if ticklabels is not None:
                 cbar.ax.yaxis.set_ticklabels(ticklabels)
+                self._log.info('Tick labels: %s', ticklabels)
         elif orientation == 'horizontal':
             cbar.ax.xaxis.set_ticks_position('top')
             if ticklabels is not None:
                 cbar.ax.xaxis.set_ticklabels(ticklabels)
+                self._log.info('Tick labels: %s', ticklabels)
 
         # Label
         if label is not None:
@@ -438,6 +455,33 @@ class PlotHandler:
                     fontname=self.ax.xaxis.get_label().get_fontname(),
                     weight=self.ax.xaxis.get_label().get_weight(),
                     labelpad=labelpad)
+
+        # Secondary bar axis
+        if ticks_cbar2 is not None:
+            self._log.info('Secondary bar ticks: %s', ticks_cbar2)
+            vmin_cbar2 = np.min(ticks_cbar2)
+            vmax_cbar2 = np.max(ticks_cbar2)
+            if orientation=='vertical':
+                cbar2 = cbar.ax.twinx()
+                cbar2.set_ylim([vmin_cbar2, vmax_cbar2])
+                if label_cbar2 is not None:
+                    cbar2.yaxis.set_label_position('left')
+                    cbar2.set_ylabel(label_cbar2, labelpad=labelpad)
+                #cbar2.yaxis.set_ticklabels(list(map(lambda x: '{:.2f}'.format(x), ticks2)))
+                cbar2.yaxis.set_ticks(ticks_cbar2)
+            else:
+                cbar2 = cbar.ax.twiny()
+                cbar2.set_xscale(cbar.ax.get_xscale(),
+                                 functions=(norm_cbar2, norm_cbar2.inverse))
+                cbar2.set_xlim([vmin_cbar2, vmax_cbar2])
+                if label_cbar2 is not None:
+                    cbar.ax.xaxis.set_label_position('bottom')
+                    cbar2.xaxis.set_label_position('top')
+                    cbar2.set_xlabel(label_cbar2, labelpad=labelpad)
+                #cbar2.xaxis.set_ticklabels(list(map(lambda x: '{:.2f}'.format(x), ticks2)))
+                cbar2.xaxis.set_ticks(ticks_cbar2)
+
+        # Font
         tlabels = (cbar.ax.xaxis.get_ticklabels(which='both') + 
                    cbar.ax.yaxis.get_ticklabels(which='both'))
         for tlabel in tlabels:
@@ -490,7 +534,7 @@ class PlotHandler:
             x0, y0, pa, l = arrow
         else:
             raise ValueError(f'Cannot configure arrow: {arrow}')
-        l = l*0.5
+        l = l * 0.5
         pa = pa + 90.
 
         # Locations
@@ -550,13 +594,16 @@ class PhysPlotHandler(PlotHandler):
                  yunit: u.Unit = u.Unit(1)) -> None:
         """Create a single plot container."""
         super().__init__(axis, cbaxis=cbaxis, xscale=xscale, yscale=yscale,
-                xname=xname, yname=yname)
+                         xname=xname, yname=yname)
         self.xunit = xunit
         self.yunit = yunit
 
-    def _simple_plt(self, fn: Callable[[], Plot], *args, **kwargs) -> Plot:
+    def _simple_plt(self, fn: Callable[[], Plot], *args, is_image=False,
+                    **kwargs) -> Plot:
         """Plot and assign label."""
-        if len(args) == 1:
+        if is_image:
+            phys_args = (args[0].value,)
+        elif len(args) == 1:
             phys_args = (args[0].to(self.yunit).value,)
         elif len(args) == 2:
             phys_args = (args[0].to(self.xunit).value, 
@@ -569,7 +616,7 @@ class PhysPlotHandler(PlotHandler):
             raise ValueError('Could not convert values')
 
         return self.insert_plt(kwargs.get('label', None),
-                               fn(*args, **kwargs))
+                               fn(*phys_args, **kwargs))
 
     @staticmethod
     def _check_unit(value: Union[u.Quantity, None], 
