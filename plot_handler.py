@@ -11,7 +11,7 @@ import matplotlib as mpl
 #import matplotlib.lines as mlines
 import numpy as np
 
-from .utils import generate_label, get_ticks, tick_formatter
+from .utils import generate_label, get_colorbar_ticks, tick_formatter
 
 # Type aliases
 Axes = type(mpl.axes.Axes)
@@ -409,7 +409,8 @@ class PlotHandler:
 
         # Ticks
         if ticks is None and vmin and vmax:
-            ticks = get_ticks(vmin, vmax, a=a, n=nticks, stretch=tickstretch)
+            ticks = get_colorbar_ticks(vmin, vmax, a=a, n=nticks,
+                                       stretch=tickstretch)
         self._log.info('Tick values: %s', ticks)
 
         # Create bar
