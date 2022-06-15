@@ -316,7 +316,7 @@ def get_artist_positions(values: str, artist: str,
     vals = values.split(separator)
     positions = []
     for val in vals:
-        if artist in ['scatters', 'arcs']:
+        if artist in ['scatters', 'arcs', 'texts']:
             try:
                 ra, dec, frame = val.split()
             except ValueError:
