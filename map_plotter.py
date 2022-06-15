@@ -18,9 +18,10 @@ import astropy.wcs as apy_wcs
 import matplotlib as mpl
 import numpy as np
 
-from base_plotter import BasePlotter
-from plot_handler import PhysPlotHandler
-import utils
+from .base_plotter import BasePlotter
+from .plot_handler import PhysPlotHandler
+from .utils import (get_artist_properties, auto_vmin, auto_vmax,
+                    generate_label, auto_levels, get_colorbar_ticks)
 
 # Type aliases
 Axes = TypeVar('Axes')
@@ -83,16 +84,16 @@ class MapHandler(PhysPlotHandler):
       skeleton: skeleton for the configuration options.
     """
     # Common class attributes
-    _defconfig = (pathlib.Path(__file__).resolve().parent / 
+    _defconfig = (pathlib.Path(__file__).resolve().parent /
                   pathlib.Path('configs/map_default.cfg'))
 
     # Read default skeleton
     skeleton = ConfigParserAdv()
     skeleton.read(_defconfig)
 
-    def __init__(self, 
-                 axis: Axes, 
-                 cbaxis: Optional[Axes] = None, 
+    def __init__(self,
+                 axis: Axes,
+                 cbaxis: Optional[Axes] = None,
                  radesys: Optional[str] = None,
                  units: Mapping = {},
                  vscale: Mapping = {},
@@ -185,7 +186,7 @@ class MapHandler(PhysPlotHandler):
         for opt, val in cls.skeleton.items('artists'):
             if opt not in config and opt not in kwargs:
                 continue
-            artists[opt] = utils.get_artist_properties(opt, config)
+            artists[opt] = get_artist_properties(opt, config)
 
         return cls(axis, cbaxis, radesys=radesys, units=units, vscale=vscale,
                    colors=colors, artists=artists)
@@ -212,7 +213,7 @@ class MapHandler(PhysPlotHandler):
     def stretch(self):
         return self.vscale['stretch']
 
-    def _validate_data(self, data: Map, 
+    def _validate_data(self, data: Map,
                        wcs: apy_wcs.WCS) -> Tuple[u.Quantity, apy_wcs.WCS]:
         """Validate input data.
 
@@ -243,7 +244,7 @@ class MapHandler(PhysPlotHandler):
                 valdata = valdata.to(self.bunit)
 
             # Check wcs
-            if wcs is None: 
+            if wcs is None:
                 wcs = apy_wcs.WCS(data.header, naxis=['longitude', 'latitude'])
 
             # Set RADESYS
@@ -263,11 +264,11 @@ class MapHandler(PhysPlotHandler):
         # Check wcs
         if wcs is None:
             self._log.warning('WCS is None')
-        
+
         return valdata, wcs
 
     def _validate_vscale(self,
-                         data: Map, 
+                         data: Map,
                          rms: Optional[u.Quantity] = None) -> None:
         """Validate and set vscale.
 
@@ -276,11 +277,10 @@ class MapHandler(PhysPlotHandler):
           rms: optional; use this rms to determine the intensity limits.
         """
         if self.vmin is None:
-            self.vscale['vmin'] = utils.auto_vmin(data, rms=rms,
-                                                  log=self._log.info)
+            self.vscale['vmin'] = auto_vmin(data, rms=rms, log=self._log.info)
             self._log.info(f"Setting vmin from data: {self.vscale['vmin']}")
         if self.vmax is None:
-            self.vscale['vmax'] = utils.auto_vmax(data)
+            self.vscale['vmax'] = auto_vmax(data)
             self._log.info(f"Setting vmax from data: {self.vscale['vmax']}")
 
     def _validate_extent(self,
@@ -302,7 +302,7 @@ class MapHandler(PhysPlotHandler):
                           vmin: Optional[u.Quantity] = None,
                           vmax: Optional[u.Quantity] = None) -> cm:
         """Determine the normalization of the color stretch.
-        
+
         Args:
           vmin: optional; scale minimum.
           vmax: optional; scale maximum.
@@ -327,25 +327,24 @@ class MapHandler(PhysPlotHandler):
 
     def get_blabel(self, unit_fmt: str = '({:latex_inline})') -> str:
         """Generate a string for the color bar label."""
-        return utils.generate_label(self.bname, unit=self.bunit,
-                                    unit_fmt=unit_fmt)
+        return generate_label(self.bname, unit=self.bunit, unit_fmt=unit_fmt)
 
     # Plotters
-    def plot_map(self, 
-                 data: Map, 
-                 wcs: Optional[apy_wcs.WCS] = None, 
-                 extent: Optional[Tuple[u.Quantity]] = None, 
-                 rms: Optional[u.Quantity] = None, 
+    def plot_map(self,
+                 data: Map,
+                 wcs: Optional[apy_wcs.WCS] = None,
+                 extent: Optional[Tuple[u.Quantity]] = None,
+                 rms: Optional[u.Quantity] = None,
                  mask_bad: bool = False,
-                 mask_color: str = 'w', 
+                 mask_color: str = 'w',
                  position: Optional['astroppy.SkyCoord'] = None,
-                 radius: Optional[u.Quantity] = None, 
-                 self_contours: bool = False, 
-                 contour_levels: Optional[List[u.Quantity]] = None, 
+                 radius: Optional[u.Quantity] = None,
+                 self_contours: bool = False,
+                 contour_levels: Optional[List[u.Quantity]] = None,
                  contour_colors: str = 'w',
-                 contour_linewidths: Optional[float] = None, 
-                 contour_nsigma: float = 5., 
-                 contour_negative_nsigma: Optional[float] = None, 
+                 contour_linewidths: Optional[float] = None,
+                 contour_nsigma: float = 5.,
+                 contour_negative_nsigma: Optional[float] = None,
                  contour_nsigmalevel: Optional[float] = None,
                  **kwargs) -> None:
         """Plot image data.
@@ -425,12 +424,12 @@ class MapHandler(PhysPlotHandler):
     def plot_contours(self,
                       data: Map,
                       wcs: Optional[apy_wcs.WCS] = None,
-                      extent: Optional[Tuple[u.Quantity]] = None, 
-                      rms: Optional[u.Quantity] = None, 
-                      levels: Optional[List[u.Quantity]] = None, 
+                      extent: Optional[Tuple[u.Quantity]] = None,
+                      rms: Optional[u.Quantity] = None,
+                      levels: Optional[List[u.Quantity]] = None,
                       colors: Optional[Sequence[str]] = None,
-                      nsigma: float = 5., 
-                      negative_nsigma: Optional[float] = None, 
+                      nsigma: float = 5.,
+                      negative_nsigma: Optional[float] = None,
                       nsigmalevel: Optional[float] = None,
                       **kwargs):
         """Plot a contour map.
@@ -454,7 +453,7 @@ class MapHandler(PhysPlotHandler):
         # Check extent
         if extent is not None:
             extent_val = _validate_extent(extent)
-        
+
         # Levels
         if levels is None:
             try:
@@ -462,13 +461,13 @@ class MapHandler(PhysPlotHandler):
                     nlevels = 1
                 else:
                     nlevels = None
-                levels = utils.auto_levels(valdata,
-                                           rms=rms,
-                                           nsigma=nsigma,
-                                           nsigmalevel=nsigmalevel,
-                                           nlevels=nlevels,
-                                           negative_nsigma=negative_nsigma,
-                                           log=self._log.info)
+                levels = auto_levels(valdata,
+                                     rms=rms,
+                                     nsigma=nsigma,
+                                     nsigmalevel=nsigmalevel,
+                                     nlevels=nlevels,
+                                     negative_nsigma=negative_nsigma,
+                                     log=self._log.info)
                 levels_val = levels.value
             except ValueError:
                 return None
@@ -494,7 +493,7 @@ class MapHandler(PhysPlotHandler):
         else:
             return super().contour(valdata,
                                    is_image=True,
-                                   levels=levels_val, 
+                                   levels=levels_val,
                                    extent=extent_val,
                                    **kwargs)
 
@@ -538,7 +537,7 @@ class MapHandler(PhysPlotHandler):
         #            else:
         #                markra = art.ra.degree
         #                markdec = art.dec.degree
-        #            mk = self.scatter(markra, markdec, 
+        #            mk = self.scatter(markra, markdec,
         #                    edgecolors=edgecolor, facecolors=facecolor,
         #                    marker=fmt, s=size, zorder=zorder)
         #        elif artist=='arcs':
@@ -578,24 +577,24 @@ class MapHandler(PhysPlotHandler):
     def plot_cbar(self,
                   fig: 'Figure',
                   label: Optional[str] = None,
-                  ticks: Optional[List[u.Quantity]] = None, 
+                  ticks: Optional[List[u.Quantity]] = None,
                   nticks: int = 5,
-                  ticklabels: Optional[List[str]] = None, 
+                  ticklabels: Optional[List[str]] = None,
                   tickstretch: Optional[str] = None,
-                  orientation: str = 'vertical', 
+                  orientation: str = 'vertical',
                   labelpad: float = 10,
                   lines: Optional[Plot] = None,
                   equivalency: Optional[Callable] = None,
                   ) -> Optional[mpl.colorbar.Colorbar]:
         """Plot the color bar.
-        
+
         If ticks are not given, they will be determined from the other
         parameters (nticks, vmin, vmax, a, stretch, etc.) or use the defaults
         from matplotlib.
 
         When a second (clone) color bar axis is requested, the `equivalency`
         argument can be used to convert the values of the color bar axis ticks.
-        
+
         Args:
           fig: figure object.
           label: optional; color bar label.
@@ -620,10 +619,10 @@ class MapHandler(PhysPlotHandler):
 
         # Get ticks
         if ticks is None:
-            aux = utils.get_colorbar_ticks(self.vmin, self.vmax,
-                                           a=kwargs['a'],
-                                           n=nticks,
-                                           stretch=tickstretch or self.stretch)
+            aux = get_colorbar_ticks(self.vmin, self.vmax,
+                                     a=kwargs['a'],
+                                     n=nticks,
+                                     stretch=tickstretch or self.stretch)
         else:
             aux = ticks.to(self.bunit)
         kwargs['ticks'] = aux
@@ -635,9 +634,9 @@ class MapHandler(PhysPlotHandler):
                 equivalency = self.vscale['equivalency']
             ticks_cbar2 = kwargs['ticks'].to(self.bunit_cbar2,
                                              equivalencies=equivalency)
-            label_cbar2 = utils.generate_label(self.bname_cbar2,
-                                               unit=self.bunit_cbar2,
-                                               unit_fmt='({:latex_inline})')
+            label_cbar2 = generate_label(self.bname_cbar2,
+                                         unit=self.bunit_cbar2,
+                                         unit_fmt='({:latex_inline})')
             kwargs['ticks_cbar2'] = ticks_cbar2
             kwargs['label_cbar2'] = label_cbar2
             kwargs['norm_cbar2'] = self.get_normalization(
@@ -705,7 +704,7 @@ class MapHandler(PhysPlotHandler):
     # Configurations
     def recenter(self,
                  r: u.Quantity,
-                 position: 'astroppy.SkyCoord', 
+                 position: 'astroppy.SkyCoord',
                  wcs: apy_wcs.WCS) -> None:
         """Recenter and zoom the plot.
 
@@ -836,15 +835,15 @@ class MapHandler(PhysPlotHandler):
             pass
         self.ax.plot(*args, **kwargs)
 
-    def plot_scale(self, size, r, distance, x=0.1, y=0.1, dy=0.01, color='g', zorder=10,
-            unit=u.au, loc=3):
+    def plot_scale(self, size, r, distance, x=0.1, y=0.1, dy=0.01, color='g',
+                   zorder=10, unit=u.au, loc=3):
         length = size.to(u.arcsec) / (2*r.to(u.arcsec))
         label = distance.to(u.pc) * size.to(u.arcsec)
         label = label.value * u.au
         label = "%s" % label.to(unit)
         label = label.lower()
         self.annotate('', xy=(x,y), xytext=(x+length.value, y),
-                xycoords='axes fraction', arrowprops=dict(arrowstyle="|-|", 
+                xycoords='axes fraction', arrowprops=dict(arrowstyle="|-|",
                     facecolor=color),
                 color=color)
         xmid = x + length.value/2.
@@ -1002,7 +1001,7 @@ class MapHandler(PhysPlotHandler):
         #    # From config
         #    scale_pos = config.getskycoord('scale_position')
         #    distance = config.getquantity('distance').to(u.pc)
-        #    length = config.getquantity('scale_length', 
+        #    length = config.getquantity('scale_length',
         #            fallback=1*u.arcsec).to(u.arcsec)
         #    scalecolor = config.get('scale_color', fallback='w')
 
@@ -1011,13 +1010,13 @@ class MapHandler(PhysPlotHandler):
         #    label = label.value * u.au
         #    label = '{0.value:.0f} {0.unit:latex_inline}  '.format(label)
         #    label = label.lower()
-        #    
+        #
         #    # Plot scale
         #    self.phys_scale(scale_pos.ra.degree, scale_pos.dec.degree,
         #            length.to(u.degree).value, label,
         #            color=scalecolor)
 
-        ## Label 
+        ## Label
         #if 'label' in config:
         #    self.label_axes(config['label'],
         #            backgroundcolor=config.get('label_background', None))
@@ -1025,13 +1024,13 @@ class MapHandler(PhysPlotHandler):
 
     def auto_config(self, cfg, xlabel, ylabel, xticks, yticks, **kwargs):
         # Config map options
-        xformat = kwargs.get('xformat', 
+        xformat = kwargs.get('xformat',
                 cfg.get('xformat', fallback="hh:mm:ss.s"))
-        yformat = kwargs.get('yformat', 
+        yformat = kwargs.get('yformat',
                 cfg.get('yformat', fallback="dd:mm:ss"))
 
         # Ticks color
-        tickscolor = kwargs.get('tickscolor', 
+        tickscolor = kwargs.get('tickscolor',
                 cfg.get('tickscolor', fallback="k"))
 
         # Apect ratio
@@ -1043,21 +1042,22 @@ class MapHandler(PhysPlotHandler):
             ylim = cfg.getfloatlist('ylim', fallback=(None,None))
             xlabel = 'Offset (arcsec)' if xlabel else ''
             ylabel = 'Velocity (km s$^{-1}$)' if ylabel else ''
-            self.config_plot(xlim=tuple(xlim), xlabel=xlabel, 
+            self.config_plot(xlim=tuple(xlim), xlabel=xlabel,
                     unset_xticks=not xticks,
-                    ylim=tuple(ylim), ylabel=ylabel, 
-                    unset_yticks=not yticks, 
+                    ylim=tuple(ylim), ylabel=ylabel,
+                    unset_yticks=not yticks,
                     tickscolor=tickscolor)
         else:
             self.config_map(xformat=xformat, yformat=yformat, xlabel=xlabel,
-                    ylabel=ylabel, xticks=xticks, yticks=yticks, 
-                    xpad=1., ypad=-0.7, tickscolor=tickscolor, xcoord='ra', ycoord='dec')
+                    ylabel=ylabel, xticks=xticks, yticks=yticks,
+                    xpad=1., ypad=-0.7, tickscolor=tickscolor, xcoord='ra',
+                            ycoord='dec')
 
     def brightness_temperature(self,
                                header: Mapping,
                                beam: Optional[Beam] = None):
         """Store brightness temperature equivalency function.
-        
+
         Args:
           header: FITS file header.
           beam: optional; beam area.
@@ -1081,7 +1081,7 @@ class MapsPlotter(BasePlotter):
     def __init__(self,
                  config: Optional[pathlib.Path] = None,
                  section: str = 'map_plot',
-                 projection: Projection = None, 
+                 projection: Projection = None,
                  **kwargs):
         super().__init__(config=config, section=section, **kwargs)
         self._projection = projection
@@ -1120,7 +1120,7 @@ class MapsPlotter(BasePlotter):
                     radesys = aux['RADESYS']
             except AttributeError:
                 pass
-        
+
         # Get the axis
         ax = super().init_axis(loc,
                                MapHandler,
@@ -1165,10 +1165,10 @@ class MapsPlotter(BasePlotter):
                                      ax.skeleton.options('data'))
         ax.auto_plot(image=image, contour=contour, options=options)
 
-    def plot_loc(self, loc: Location, 
+    def plot_loc(self, loc: Location,
                  projection: Optional[Projection] = None) -> None:
         """Plot everythnig at a given location.
-        
+
         Args:
           loc: axis location.
           projection: optional; map projection.
@@ -1188,7 +1188,7 @@ class MapsPlotter(BasePlotter):
             # Skip locations
             if loc in skip_loc:
                 continue
-            
+
             # Projection
             projection = projections.get(loc, self.projection)
 
@@ -1206,11 +1206,11 @@ class MapsPlotter(BasePlotter):
             cfg = self.config
 
         # Config map options
-        xformat = kwargs.get('xformat', 
+        xformat = kwargs.get('xformat',
                 cfg.get('xformat', fallback="hh:mm:ss.s"))
-        yformat = kwargs.get('yformat', 
+        yformat = kwargs.get('yformat',
                 cfg.get('yformat', fallback="dd:mm:ss"))
-        tickscolors = kwargs.get('tickscolor', 
+        tickscolors = kwargs.get('tickscolor',
                 cfg.get('tickscolor', fallback="k"))
 
         # Config
@@ -1255,7 +1255,6 @@ class MapsPlotter(BasePlotter):
                         ylim=tuple(ylim), ylabel=ylabel, 
                         unset_yticks=not yticks, 
                         tickscolor=tickscolor)
-
             else:
                 ax.config_map(xformat=xformat, yformat=yformat, xlabel=xlabel,
                         ylabel=ylabel, xticks=xticks, yticks=yticks, 

@@ -1,5 +1,5 @@
 """Manage the available plot handlers."""
-from map_plotter import MapHandler
+from .map_plotter import MapHandler
 
 HANDLERS = {
     'image': MapHandler,

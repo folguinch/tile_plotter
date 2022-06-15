@@ -43,7 +43,7 @@ def data_loader(config: 'ConfigParserAdv',
         log('Using loader option')
         key = config['loader']
         filename = config.getpath(key)
-        loader = LOADER[key]
+        loader = LOADERS[key]
     else:
         for key, loader in LOADERS.items():
             if key in config:

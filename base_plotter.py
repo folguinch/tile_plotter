@@ -1,14 +1,13 @@
 """Define the base plotter file for all the plotting tools."""
-from typing import Any, Optional, Tuple, TypeVar
+from typing import Any, Optional, Tuple
 import abc
-import os
 import pathlib
-        
+
 from logging_tools import get_logger
 import configparseradv.configparser as cfgparser
 import matplotlib.pyplot as plt
 
-import geometry
+from .geometry import GeometryHandler
 
 # Type aliases
 Location = Tuple[int, int]
@@ -20,7 +19,7 @@ class BasePlotter(metaclass=abc.ABCMeta):
 
     The `BasePlotter` opens and store the configuration file. The plot geometry
     can be described in 1 or 2 configurations files:
-      
+
     - 1 file: share the plot geometry information with the plot data
       information in one configuration file.
     - 2 files: the plot data information file defines a
@@ -40,13 +39,13 @@ class BasePlotter(metaclass=abc.ABCMeta):
       axes: the figure axes.
     """
 
-    _defconfig = (pathlib.Path(__file__).resolve().parent / 
+    _defconfig = (pathlib.Path(__file__).resolve().parent /
                   pathlib.Path('configs/default.cfg'))
     _log = get_logger(__name__)
 
-    def __init__(self, 
-                 config: Optional[pathlib.Path] = None, 
-                 section: str = 'DEFAULT', 
+    def __init__(self,
+                 config: Optional[pathlib.Path] = None,
+                 section: str = 'DEFAULT',
                  **kwargs):
         """Create a new base plotter."""
         # Close plt if still open
@@ -71,7 +70,7 @@ class BasePlotter(metaclass=abc.ABCMeta):
         plt.style.use(self.config.get('styles').replace(',', ' ').split())
 
         # Get axes
-        self.axes = geometry.GeometryHandler()
+        self.axes = GeometryHandler()
         self.figsize = self.axes.fill_from_config(self.config)
         self._log.info(f'Figure size: w={self.figsize[0]}, h={self.figsize[1]}')
 
@@ -103,7 +102,7 @@ class BasePlotter(metaclass=abc.ABCMeta):
     @property
     def section(self):
         return self.config.name
-    
+
     @property
     def shape(self):
         return self.axes.nrows, self.axes.ncols
@@ -149,17 +148,17 @@ class BasePlotter(metaclass=abc.ABCMeta):
             return self.axes[loc].handler is not None
 
     @abc.abstractmethod
-    def init_axis(self, 
-                  loc: Location, 
-                  handler: 'PlotHandler', 
+    def init_axis(self,
+                  loc: Location,
+                  handler: 'PlotHandler',
                   projection: Optional[str] = None,
-                  include_cbar: Optional[bool] = None, 
+                  include_cbar: Optional[bool] = None,
                   **kwargs) -> 'PlotHandler':
         """Initialize axis by assigning a plot handler.
 
         If the axis is not initialized, it replaces the axis geometry
         (`AxisHandler`) with a plot handler.
-        
+
         Args:
           loc: axis location.
           handler: plot handler to replace the geometry.
@@ -174,7 +173,7 @@ class BasePlotter(metaclass=abc.ABCMeta):
         # Verify include_cbar
         if include_cbar is None:
             include_cbar = self.has_cbar(loc)
-        
+
         # Initialize axis if needed
         if self.is_init(loc):
             self._log.info(f'Axis {loc} already initialized')
@@ -185,13 +184,13 @@ class BasePlotter(metaclass=abc.ABCMeta):
             self._log.info(f'Initializing axis: {loc}')
             self.axes[loc].axis.scalex(1./self.figsize[0])
             self.axes[loc].axis.scaley(1./self.figsize[1])
-            axis = self.fig.add_axes(self.axes[loc].axis.pyplot_axis, 
+            axis = self.fig.add_axes(self.axes[loc].axis.pyplot_axis,
                                      projection=projection)
-        
+
         # Color bar
         if include_cbar:
             cbaxis = self.init_cbar(loc)
-        
+
         # Create plotter object
         self.axes[loc].set_handler(handler.from_config(self.config, axis,
                                                        cbaxis, **kwargs))
@@ -225,21 +224,21 @@ class BasePlotter(metaclass=abc.ABCMeta):
 
     def has_ticks_labels(self, loc: Location) -> Tuple[bool, bool]:
         """Check if axis has tick labels."""
-        xticks = (not self.sharex or 
+        xticks = (not self.sharex or
                   (self.sharex and loc[0] == self.shape[0]-1))
         yticks = not self.sharey or (self.sharey and loc[1] == 0)
         return xticks, yticks
 
-    def get_value(self, 
-                  key: str, 
-                  loc: Optional[Location] = None, 
+    def get_value(self,
+                  key: str,
+                  loc: Optional[Location] = None,
                   **kwargs) -> Any:
         """Get value from configuration.
-        
+
         Args:
           key: option in the configuration parser.
           loc: optional; axis location.
-          kwargs: optional arguments for `configparseradv.getvalue`. 
+          kwargs: optional arguments for `configparseradv.getvalue`.
             See `configparseradv` documentation for a list of available kwargs.
         """
         # Convert location to index

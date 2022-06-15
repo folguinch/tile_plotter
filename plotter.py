@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 """Data plotting program.
 
 Implements the tile plotting tools to plot data from the command line.
@@ -9,7 +9,7 @@ import sys
 
 from toolkit.argparse_tools import actions, parents
 
-from multi_plotter import MultiPlotter
+from tile_plotter.multi_plotter import MultiPlotter
 
 #from loaders import *
 #from parsers import global_parser
@@ -27,10 +27,9 @@ def multiplot(args):
     plot.plot_all()
     plot.savefig(args.plotname[0])
 
-
 def main(args: Sequence):
     """Main program.
-    
+
     Args:
       args: list of command line inputs.
     """
@@ -68,7 +67,7 @@ def main(args: Sequence):
     # Add subparsers
     #for key,(p,h) in subpar.items():
     #    subparser = subparsers.add_parser(key, parents=[p], help=h)
-    
+
     # Process arguments
     args = parser.parse_args(args)
     for step in pipe:

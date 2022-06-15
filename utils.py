@@ -2,6 +2,7 @@
 from typing import Union, Optional, Callable, Tuple
 
 from astropy.coordinates import SkyCoord
+from matplotlib.ticker import FuncFormatter
 import astropy.stats as apystats
 import astropy.units as u
 import numpy as np
@@ -11,7 +12,7 @@ Quantity = Union[u.Quantity, float, np.array]
 
 def quick_rms(data: Quantity) -> Quantity:
     """Estimate the rms of the data using the MAD."""
-    return 1.482602219 * apystats.median_absolute_deviation(data, 
+    return 1.482602219 * apystats.median_absolute_deviation(data,
                                                             ignore_nan=True)
 
 def to_sigfig(x: Quantity, sigfig: int = 2) -> Quantity:
@@ -23,11 +24,11 @@ def to_sigfig(x: Quantity, sigfig: int = 2) -> Quantity:
     ndigits = -int(np.floor(np.log10(val))) + (sigfig - 1)
     return np.round(x, ndigits)
 
-def get_colorbar_ticks(vmin: u.Quantity, 
-                       vmax: u.Quantity, 
+def get_colorbar_ticks(vmin: u.Quantity,
+                       vmax: u.Quantity,
                        a: float = 1000.,
-                       n: int = 5, 
-                       stretch: str = 'linear', 
+                       n: int = 5,
+                       stretch: str = 'linear',
                        ndigits: Optional[int] = None,
                        sigfig: Optional[int] = None) -> Quantity:
     """Calculate the tick values for the colorbar given the intensity stretch.
@@ -40,14 +41,15 @@ def get_colorbar_ticks(vmin: u.Quantity,
       stretch: optional; stretch type.
       ndigits: optional; value of digits for rounding.
       sigfig: optional; number of significant figures.
-    
+
     Returns:
       A numpy array quantity with the ticks.
     """
     if stretch == 'log':
-        x = lambda y: (10.**(y * np.log10(a + 1.)) - 1.) / a
+        def log_dist(y, a):
+            return (10.**(y * np.log10(a + 1.)) - 1.) / a
         y = np.linspace(0., 1., n)
-        x = x(y)
+        x = log_dist(y, a)
         ticks = x*(vmax - vmin) + vmin
     elif stretch == 'symlog':
         n = n//2 + 1
@@ -62,7 +64,7 @@ def get_colorbar_ticks(vmin: u.Quantity,
         else:
             npos = nneg = n
         ypos = np.logspace(np.log10(linthresh), np.log10(vmax.value), npos)
-        yneg = np.logspace(np.log10(linthresh), np.log10(abs(vmin.value)), nneg, 
+        yneg = np.logspace(np.log10(linthresh), np.log10(abs(vmin.value)), nneg,
                            endpoint=False)
         ticks = np.append(-yneg, [0])
         ticks = np.unique(np.append(ticks, ypos)) * vmin.unit
@@ -72,23 +74,23 @@ def get_colorbar_ticks(vmin: u.Quantity,
         raise ValueError(f'Stretch {stretch} not recognized')
 
     # Round if needed
-    if ndigits: 
+    if ndigits:
         ticks = np.unique(np.round(ticks, ndigits))
     if sigfig:
         ticks = np.unique(to_sigfig(ticks, sigfig=ndigits))
-    
+
     return ticks
 
-def auto_vmin(data: u.Quantity, 
-              rms: Optional[u.Quantity] = None, 
-              nrms: float = 0.8, 
-              velocity_fraction: float = 0.98, 
+def auto_vmin(data: u.Quantity,
+              rms: Optional[u.Quantity] = None,
+              nrms: float = 0.8,
+              velocity_fraction: float = 0.98,
               map_type: str = 'intensity',
               log: Callable = print) -> u.Quantity:
     """Determine vmin from the data.
 
     If data_type=intensity, it calculates the rms from the data if not given.
-    The value of vmin is rms*nrms in this case. If data_type=velocity, vmin is 
+    The value of vmin is rms*nrms in this case. If data_type=velocity, vmin is
     a fraction of the minimum value of the data.
 
     Args:
@@ -108,26 +110,24 @@ def auto_vmin(data: u.Quantity,
             log(f'Input rms = {rms:.3e}')
         vmin = nrms * rms
     elif map_type.lower() == 'velocity':
-        vmin = np.nanmin(data) * vfrac
+        vmin = np.nanmin(data) * velocity_fraction
     else:
         raise KeyError(f'Map type {map_type} not recognized')
 
     return to_sigfig(vmin.to(data.unit))
 
-def auto_vmax(data: u.Quantity, 
-              maximum: u.Quantity = None,
-              fraction: float = 1.02, 
-              map_type: str = 'intensity') -> u.Quantity:
+def auto_vmax(data: u.Quantity,
+              maximum: Optional[u.Quantity] = None,
+              fraction: float = 1.02) -> u.Quantity:
     """Determine vmax from the data maximum.
-    
+
     If maximum is given, then this value is used instead of the data. At the
     moment there is not any difference based on the map_type.
-    
+
     Args:
       data: data to calculate vmax from.
       maximum: optional; maximum value.
       fraction: optional; fraction of the maximum for vmax.
-      map_type: optional; type of map.
     """
     if maximum is not None:
         vmax = fraction * maximum
@@ -135,20 +135,20 @@ def auto_vmax(data: u.Quantity,
         vmax = np.nanmax(data) * fraction
     return to_sigfig(vmax.to(data.unit))
 
-def auto_vminmax(data: u.Quantity, 
-                 map_type: str = 'intensity', 
+def auto_vminmax(data: u.Quantity,
+                 map_type: str = 'intensity',
                  **kwargs) -> Tuple[u.Quantity, u.Quantity]:
     """Calculate vmin and vmax from data."""
     return (auto_vmin(data, map_type=map_type, **kwargs),
-            auto_vmax(data, map_type=map_type))
+            auto_vmax(data))
 
-def get_nlevels(max_val: u.Quantity, min_val: u.Quantity, stretch: str, 
+def get_nlevels(max_val: u.Quantity, min_val: u.Quantity, stretch: str,
                 base: Optional[float] = 2.) -> int:
     """Determine the number of levels based on the stretch.
 
     Levels are assumed to be a multiple of min_val.
-    
-    Args: 
+
+    Args:
       max_val: maximum value.
       min_val: minimum value.
       stretch: level stretch.
@@ -254,6 +254,7 @@ def auto_levels(data: Optional[u.Quantity] = None,
 
     # Negative contours
     if negative_nsigma is not None:
+        # pylint: disable=invalid-unary-operand-type
         aux = -negative_nsigma * rms
         if min_val is None and data is not None:
             min_val = np.nanmin(data)
@@ -280,7 +281,7 @@ def auto_levels(data: Optional[u.Quantity] = None,
                 aux_levels = [factor] + aux_levels
             i = i * base
 
-    # Levels    
+    # Levels
     levels = np.array(aux_levels) * rms
     log(f'Levels/rms = {aux_levels}')
     log(f'Levels = {levels}')
@@ -312,7 +313,7 @@ def get_artist_positions(values: str, artist: str,
       artist: artist type.
       separator: optional; separator between values.
     """
-    vals = values.split(',')
+    vals = values.split(separator)
     positions = []
     for val in vals:
         if artist in ['scatters', 'arcs']:
@@ -349,7 +350,7 @@ def get_artist_properties(artist: str, config: 'ConfigParserAdv',
     properties = {'positions': ((pos1x, pos1y), (pos2x, pos2y)),
                   'properties': ({'color': 'r'}, {'color': 'w'})}
     ```
-    
+
     Each dictionary can be used as keyword input for the corresponding
     `matplotlib` function.
 
@@ -369,7 +370,7 @@ def get_artist_properties(artist: str, config: 'ConfigParserAdv',
         # Filter
         if not opt.startswith(artist) or opt == artist:
             continue
-        
+
         # Iterate over positions
         prop = opt.split('_')[-1]
         for i in range(nprops):
@@ -394,3 +395,25 @@ def get_artist_properties(artist: str, config: 'ConfigParserAdv',
                 props += ({prop: val},)
 
     return {'positions': positions, 'properties': props}
+
+def tick_formatter(stretch: str, sci: Tuple[int,int] = (-3, 4)) -> Callable:
+    """Creates a tick formatter function based on `stretch`.
+
+    The `sci` parameters determine the decades between where floats are used
+    instead of scientific notation
+
+    Args:
+      stretch: axis scale type.
+      sci: optional; scientific notation limits
+    """
+    if stretch == 'log':
+        def logformatter(x, pos):
+            if x <= 10**sci[0]:
+                return f'10$^{{{int(np.floor(np.log10(x)))}}}$'
+            elif x < 1:
+                return f'{x}'
+            elif x < 10**sci[1]:
+                return f'{int(x)}'
+            else:
+                return f'$10^{{{np.floor(np.log10(x))}}}$'
+        return FuncFormatter(logformatter)

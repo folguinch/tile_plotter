@@ -1,11 +1,9 @@
 """Manage different types of plots."""
 from typing import Optional, Sequence
 
-import configparseradv as cfgparser
-
-from base_plotter import BasePlotter, Location
-from data_loaders import data_loader
-from handlers import get_handler
+from .base_plotter import BasePlotter, Location
+from .data_loaders import data_loader
+from .handlers import get_handler
 
 class MultiPlotter(BasePlotter):
     """Multiple plot manager.
@@ -38,9 +36,9 @@ class MultiPlotter(BasePlotter):
         """Initialize axis by assigning a plot handler.
 
         If the axis is not initialized, it replaces the axis geometry
-        (`FigGeometry`) with a plot handler. The plot handler is determined by
-        the 
-        
+        (`FigGeometry`) with a plot handler. The plot handler is determined
+        from the configuration.
+
         Args:
           loc: axis location.
           projection: optional; update axis projection.
@@ -66,7 +64,7 @@ class MultiPlotter(BasePlotter):
 
     def plot_sections(self, sections: Sequence, loc: Location):
         """Plot the requested sections in the requested location.
-        
+
         Args:
           sections: list of sections to plot.
           loc: location where the sections are plotted.
@@ -115,7 +113,7 @@ class MultiPlotter(BasePlotter):
 #                a = 1000.
 #
 #            # Radesys
-#            radesys = '' 
+#            radesys = ''
 #            if projection is not None:
 #                aux = projection.to_header()
 #                if 'RADESYS' in aux:
@@ -127,9 +125,11 @@ class MultiPlotter(BasePlotter):
 #        elif dtype.lower() in ['data', 'spectrum']:
 #            xscale = self.config.get('xscale', fallback='linear')
 #            yscale = self.config.get('yscale', fallback='linear')
-#            plotter = AdvancedPlotter(axis, cbaxis=cbax, xscale=xscale, yscale=yscale)
+#            plotter = AdvancedPlotter(axis, cbaxis=cbax, xscale=xscale,
+#                                        yscale=yscale)
 #        else:
-#            raise NotImplementedError('Plot type %s not implemented yet' % dtype)
+#            raise NotImplementedError('Plot type %s not implemented yet'
+#                                       % dtype)
 #
 #        return plotter
 #

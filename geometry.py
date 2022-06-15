@@ -14,9 +14,9 @@ Location = Tuple[int, int]
 #@dataclass
 class BaseGeometry:
     """Figure geometry class.
-    
+
     Stores the dimesions and position of an axis.
-    
+
     Attributes:
       xsize: x axis size.
       ysize: y axis size.
@@ -36,12 +36,12 @@ class BaseGeometry:
     #position: Position = [0, 0]
 
     # To be remove in Python 3.7+
-    def __init__(self, 
-                 xsize: float, 
-                 ysize: float, 
-                 left: float = 0, 
-                 right: float = 0, 
-                 bottom: float = 0, 
+    def __init__(self,
+                 xsize: float,
+                 ysize: float,
+                 left: float = 0,
+                 right: float = 0,
+                 bottom: float = 0,
                  top: float = 0,
                  position: Position = (0., 0.)) -> None:
         """Initiate geometry with input parameters."""
@@ -65,8 +65,8 @@ class BaseGeometry:
 
         return '\n'.join(text)
 
-    def __setitem__(self, 
-                    key: str, 
+    def __setitem__(self,
+                    key: str,
                     val: Union[float, Location]) -> None:
         if key == 'xsize':
             self.xsize = val
@@ -98,14 +98,14 @@ class BaseGeometry:
         return [self.position[0]+self.left, self.position[1]+self.bottom,
                 self.xsize, self.ysize]
 
-    def scale_xaxis(self, 
-                    factor: float, 
+    def scale_xaxis(self,
+                    factor: float,
                     original: Optional[float] = None) -> float:
         """Scale the x axis and keep the axis centered.
-        
+
         Args:
           factor: scaling factor.
-          original: optional; original size for recentering. If None then the 
+          original: optional; original size for recentering. If None then the
             current size is used.
 
         Returns:
@@ -117,7 +117,7 @@ class BaseGeometry:
         if original is None:
             original = self.xsize
         dleft = abs(newsize - original) / 2.
-        
+
         # Apply
         self.xsize = newsize
         self.left = self.left + dleft
@@ -125,14 +125,14 @@ class BaseGeometry:
 
         return dleft
 
-    def scale_yaxis(self, 
-                    factor: float, 
+    def scale_yaxis(self,
+                    factor: float,
                     original: Optional[float] = None) -> float:
         """Scale the y axis and keep the axis centered.
-        
+
         Args:
           factor: scaling factor.
-          original: optional; original size for recentering. If None then the 
+          original: optional; original size for recentering. If None then the
             current size is used.
 
         Returns:
@@ -144,7 +144,7 @@ class BaseGeometry:
         if original is None:
             original = self.ysize
         dbottom = abs(newsize - original) / 2.
-        
+
         # Apply
         self.ysize = newsize
         self.bottom = self.bottom + dbottom
@@ -174,16 +174,16 @@ class BaseGeometry:
 
 class AxisHandler:
     """Stores the axes of a plot.
-    
+
     Attributes:
       axis: main axis.
       cbaxis: colorbar axis.
       cborientation: orientation of the colorbar.
     """
 
-    def __init__(self, 
-                 axis: Optional[BaseGeometry] = None, 
-                 cbaxis: Optional[BaseGeometry] = None, 
+    def __init__(self,
+                 axis: Optional[BaseGeometry] = None,
+                 cbaxis: Optional[BaseGeometry] = None,
                  cbar_orientation: Optional[str] = None,
                  ) -> None:
         """Initiate the figure geometry."""
@@ -193,7 +193,7 @@ class AxisHandler:
         if cbar_orientation is not None:
             self.set_cbar(cbar_orientation)
         self._handler = None
-    
+
     @property
     def width(self) -> float:
         """Returns the total width."""
@@ -227,10 +227,10 @@ class AxisHandler:
 
     def set_cbar(self, orientation: Union[None, str]) -> None:
         """Validate color bar value.
-        
+
         Args:
           orientation: orientation of the color bar.
-          
+
         Raises:
             ValueError: if orientation not in [None, vertical, horizontal].
         """
@@ -241,11 +241,11 @@ class AxisHandler:
         else:
             self.cborientation = orientation
 
-    def unset_cbar(self, 
-                   sharex: bool = False, 
+    def unset_cbar(self,
+                   sharex: bool = False,
                    sharey: bool = False) -> None:
         """Delete color bar axis.
-        
+
         Args:
           sharex: optional; is the x-axis shared?
           sharey: optional; is the y-axis shared?
@@ -276,19 +276,19 @@ class AxisHandler:
         """Set the handler value."""
         self._handler = handler
 
-    def init_geometry(self, 
-                      xsize: float, 
-                      ysize: float, 
-                      left: float, 
-                      right: float, 
-                      top: float, 
-                      bottom: float, 
-                      cbar_orientation: Optional[str] = None, 
-                      cbar_width: Optional[float] = None, 
-                      cbar_spacing: Optional[float] = None, 
-                      position: Position = [0., 0.]) -> None:
+    def init_geometry(self,
+                      xsize: float,
+                      ysize: float,
+                      left: float,
+                      right: float,
+                      top: float,
+                      bottom: float,
+                      cbar_orientation: Optional[str] = None,
+                      cbar_width: Optional[float] = None,
+                      cbar_spacing: Optional[float] = None,
+                      position: Position = (0., 0.)) -> None:
         """Initialize axes with a BaseGeometry from input values.
-        
+
         Args:
           xsize: x axis size.
           ysize: y axis size.
@@ -309,19 +309,19 @@ class AxisHandler:
         # Color bar
         self.set_cbar(cbar_orientation)
         if self.has_vertical_cbar():
-            self.cbaxis = BaseGeometry(cbar_width, ysize, cbar_spacing, 
-                                       right, bottom, top, 
+            self.cbaxis = BaseGeometry(cbar_width, ysize, cbar_spacing,
+                                       right, bottom, top,
                                        [self.axis.width, position[1]])
             self.axis.right = 0
         elif self.has_horizontal_cbar():
             self.cbaxis = BaseGeometry(xsize, cbar_width, left, right,
-                                       cbar_spacing, top, 
+                                       cbar_spacing, top,
                                        [position[0], self.axis.height])
             self.axis.top = 0
 
     def geometry_from_config(self, config: 'configparseradv') -> None:
         """Initialize axes from config file.
-        
+
         Args:
           config: configuration parser proxy.
         """
@@ -347,21 +347,21 @@ class AxisHandler:
         else:
             cbar_width = cbar_spacing = None
             cbar_orientation = None
-        
+
         # Generate geometries
         self.init_geometry(xsize, ysize, left, right, top,
                            bottom, cbar_orientation=cbar_orientation,
                            cbar_width=cbar_width, cbar_spacing=cbar_spacing)
 
-    def set_spacing(self, 
-                    left_spacing: float = 0, 
+    def set_spacing(self,
+                    left_spacing: float = 0,
                     bottom_spacing: float = 0,
-                    sharex: bool = False, 
-                    sharey: bool = False, 
+                    sharex: bool = False,
+                    sharey: bool = False,
                     is_top: bool = False,
                     is_right: bool = False) -> None:
         """Update geometries for a shared axis.
-        
+
         Args:
           left_spacing: space between axes in the horizontal direction.
           bottom_spacing: space between axes in the vertical direction.
@@ -396,7 +396,7 @@ class AxisHandler:
 
     def shift_position(self, xshift: float = 0., yshift: float = 0.) -> None:
         """Shift the positions of the axes.
-        
+
         Args:
           xshift: shift for the x position.
           yshift: shift for the y position.
@@ -407,13 +407,13 @@ class AxisHandler:
             self.cbaxis.position = [self.cbaxis.position[0] + xshift,
                                     self.cbaxis.position[1] + yshift]
 
-    def scale_axes(self, 
-                   xfactor: float = 1., 
-                   yfactor: float = 1., 
-                   xoriginal: Optional[float] = None, 
+    def scale_axes(self,
+                   xfactor: float = 1.,
+                   yfactor: float = 1.,
+                   xoriginal: Optional[float] = None,
                    yoriginal: Optional[float] = None) -> None:
         """Scale the axes.
-        
+
         Args:
           xfactor: x axis scaling factor.
           yfactor: y axis scaling factor.
@@ -488,6 +488,7 @@ class GeometryHandler(collections.OrderedDict):
                                                       ['nrows', 'ncols'])
         self.vspace, self.hspace = cfgutils.get_floatkeys(config,
                                                           ['vspace', 'hspace'])
+        # pylint: disable=unbalanced-tuple-unpacking
         self.sharex, self.sharey = cfgutils.get_boolkeys(config,
                                                          ['sharex', 'sharey'])
         vcbarpos, hcbarpos = cfgutils.get_keys(config,
@@ -515,7 +516,7 @@ class GeometryHandler(collections.OrderedDict):
         ranges = range(self.nrows - 1, -1, -1),  range(self.ncols)
         for loc in itertools.product(*ranges):
             # Initialize and get dimensions
-            width, height = self.init_loc(loc, config, cumx, cumy)
+            self.init_loc(loc, config, cumx, cumy)
 
             # Cumulative sums
             if loc[1] == self.ncols - 1:
@@ -530,13 +531,13 @@ class GeometryHandler(collections.OrderedDict):
                 cumx += self[loc].width
         return xdim, ydim
 
-    def init_loc(self, 
-                 loc: Location, 
-                 config: 'ConfigParserAdv', 
-                 xshift: float = 0, 
+    def init_loc(self,
+                 loc: Location,
+                 config: 'ConfigParserAdv',
+                 xshift: float = 0,
                  yshift: float = 0) -> Tuple[float, float]:
         """Initiate a single `AxisHandler` at given location from configuration.
-        
+
         Args:
           loc: location of the axis.
           config: configuration parser proxy.
@@ -590,9 +591,9 @@ class GeometryHandler(collections.OrderedDict):
             left_spacing = self.hspace
             sharey = self.sharey
 
-        self[loc].set_spacing(left_spacing=left_spacing, 
-                              bottom_spacing=bottom_spacing, 
-                              sharex=self.sharex, sharey=self.sharey, 
+        self[loc].set_spacing(left_spacing=left_spacing,
+                              bottom_spacing=bottom_spacing,
+                              sharex=sharex, sharey=sharey,
                               is_top=loc[0]==0, is_right=loc[1]==self.ncols-1)
 
     def remove_cbar(self, loc: Location) -> None:
@@ -600,12 +601,10 @@ class GeometryHandler(collections.OrderedDict):
         # Base case
         if not self[loc].has_cbar():
             return
-        
+
         # Remove cbar and apply corrections
-        new_right = 0
-        new_top = 0
         if self[loc].has_vertical_cbar():
-            has_cbar = (loc[1] in self.vcbarpos or 
+            has_cbar = (loc[1] in self.vcbarpos or
                         loc[1]-self.ncols in self.vcbarpos)
         elif self[loc].has_horizontal_cbar():
             has_cbar = (loc[0] in self.hcbarpos or

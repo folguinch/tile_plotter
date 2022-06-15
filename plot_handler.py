@@ -1,5 +1,5 @@
 """Objects for handling all type of plots."""
-from typing import (Any, Optional, Tuple, TypeVar, Callable, Dict, List,
+from typing import (Optional, Tuple, TypeVar, Callable, Dict, List,
                     Union, Sequence)
 import pathlib
 
@@ -7,12 +7,11 @@ from configparseradv.configparser import ConfigParserAdv
 from logging_tools import get_logger
 from matplotlib import patches
 import astropy.units as u
-import astropy.visualization as vis
 import matplotlib as mpl
-import matplotlib.lines as mlines
+#import matplotlib.lines as mlines
 import numpy as np
 
-import utils
+from .utils import generate_label, get_ticks, tick_formatter
 
 # Type aliases
 Axes = type(mpl.axes.Axes)
@@ -39,21 +38,21 @@ class PlotHandler:
     """
     # Common class attributes
     _log = get_logger(__name__)
-    _defconfig = (pathlib.Path(__file__).resolve().parent / 
+    _defconfig = (pathlib.Path(__file__).resolve().parent /
                   pathlib.Path('configs/plot_default.cfg'))
 
     # Read default skeleton
     skeleton = ConfigParserAdv()
     skeleton.read(_defconfig)
 
-    def __init__(self, 
-                 axis: Axes, 
-                 cbaxis: Optional[Axes] = None, 
+    def __init__(self,
+                 axis: Axes,
+                 cbaxis: Optional[Axes] = None,
                  xscale: str = 'linear',
-                 yscale: str = 'linear', 
-                 xname: str = 'x', 
-                 yname: str = 'y', 
-                 xunit: Optional[str] = None, 
+                 yscale: str = 'linear',
+                 xname: str = 'x',
+                 yname: str = 'y',
+                 xunit: Optional[str] = None,
                  yunit: Optional[str] = None) -> None:
         """ Create a single plot container."""
         self.axis = axis
@@ -78,16 +77,16 @@ class PlotHandler:
     def xlim(self) -> Tuple[float, float]:
         """Get x axis limits."""
         return self.ax.get_xlim()
-    
+
     @property
     def ylim(self) -> Tuple[float, float]:
         """Get y axis limits."""
         return self.ax.get_ylim()
 
-    def _simple_plt(self, fn: Callable[[], Plot], 
+    def _simple_plt(self, fn: Callable[[], Plot],
                     *args, **kwargs) -> Plot:
         """Plot and assign label.
-        
+
         Args:
           fn: matplotlib plotting function.
           *args: arguments for function.
@@ -101,11 +100,11 @@ class PlotHandler:
 
     def insert_plt(self, key: str, val: Plot) -> Plot:
         """Store plotted object.
-        
+
         Args:
           key: label of the plotted object.
           val: plotted object.
-        
+
         Returns:
           The plotted object in val.
         """
@@ -125,7 +124,7 @@ class PlotHandler:
 
         return val
 
-    def config_plot(self, 
+    def config_plot(self,
                     xlim: Limits = None,
                     ylim: Limits = None,
                     xscale: Optional[str] = None,
@@ -184,10 +183,10 @@ class PlotHandler:
         self.yscale = yscale or self.yscale
         if self.xscale == 'log':
             self.ax.set_xscale('log')
-            self.ax.xaxis.set_major_formatter(formatter('log'))
+            self.ax.xaxis.set_major_formatter(tick_formatter('log'))
         if self.yscale == 'log':
             self.ax.set_yscale('log')
-            self.ax.yaxis.set_major_formatter(formatter('log'))
+            self.ax.yaxis.set_major_formatter(tick_formatter('log'))
 
         # Labels
         self.set_axlabels(xlabel=xlabel, ylabel=ylabel)
@@ -214,26 +213,24 @@ class PlotHandler:
     # Getters
     def get_xlabel(self, unit_fmt: str = '({})') -> str:
         """Return the xlabel from stored values."""
-        return utils.generate_label(self.xname, unit=self.xunit,
-                                    unit_fmt=unit_fmt)
+        return generate_label(self.xname, unit=self.xunit, unit_fmt=unit_fmt)
 
     def get_ylabel(self, unit_fmt: str = '({})') -> str:
         """Return the ylabel from stored values."""
-        return utils.generate_label(self.yname, unit=self.yunit,
-                                    unit_fmt=unit_fmt)
+        return generate_label(self.yname, unit=self.yunit, unit_fmt=unit_fmt)
 
     # Setters
-    def set_xlim(self, xmin: Optional[float] = None, 
+    def set_xlim(self, xmin: Optional[float] = None,
                  xmax: Optional[float] = None) -> None:
         """Set the axis x limits."""
         self.axis.set_xlim(left=xmin, right=xmax)
 
-    def set_ylim(self, ymin: Optional[float] = None, 
+    def set_ylim(self, ymin: Optional[float] = None,
                  ymax: Optional[float] = None) -> None:
         """Set the axis y limits."""
         self.axis.set_ylim(bottom=ymin, top=ymax)
 
-    def set_axlabels(self, xlabel: Optional[str] = None, 
+    def set_axlabels(self, xlabel: Optional[str] = None,
                      ylabel: Optional[str] = None) -> None:
         """Set the axis labels.
 
@@ -292,7 +289,7 @@ class PlotHandler:
     def title(self, text: str, **kwargs) -> None:
         """Set plot title."""
         self.axis.set_title(text, **kwargs)
-    
+
     def annotate(self, *args, **kwargs) -> None:
         """Annotate the axis.
 
@@ -304,19 +301,19 @@ class PlotHandler:
         """
         self.axis.annotate(*args, **kwargs)
 
-    def legend(self, 
-               handlers: Optional[Plot] = None, 
-               labels: Optional[List[str]] = None, 
-               loc: int = 0, 
+    def legend(self,
+               handlers: Optional[Plot] = None,
+               labels: Optional[List[str]] = None,
+               loc: int = 0,
                auto: bool = False,
-               match_colors: bool = False, 
+               match_colors: bool = False,
                **kwargs) -> None:
         """Plot the legend.
 
         Args:
           handlers: matplotlib plot handlers.
           labels: labels for each handler.
-          loc: legend position. See matplotlib.pyplot.lengend() documentation 
+          loc: legend position. See matplotlib.pyplot.lengend() documentation
             for available values and positions (default 0, i.e. best location).
           auto: use stored handlers.
           match_colors: match legend artist and legend text colors.
@@ -340,7 +337,7 @@ class PlotHandler:
             for artist, text in zip(leg.legendHandles, leg.get_texts()):
                 try:
                     col = artist.get_color()
-                except:
+                except AttributeError:
                     col = artist.get_facecolor()
                 if isinstance(col, np.ndarray): col = col[0]
                 text.set_color(col)
@@ -360,22 +357,22 @@ class PlotHandler:
     def tricontour(self, x, y, *args, **kwargs) -> Plot:
         """Triangulation contour map."""
         triangulation = mpl.tri.Triangulation(x, y)
-        return self._simple_plt(self.axis.tricontour, triangulation, 
+        return self._simple_plt(self.axis.tricontour, triangulation,
                                 *args, **kwargs)
 
-    def plot_cbar(self, 
-                  fig: mpl.figure.Figure, 
-                  cs: mpl.colors.Colormap, 
-                  label: Optional[str] = None, 
-                  ticks: Optional[Sequence[float]] = None, 
+    def plot_cbar(self,
+                  fig: mpl.figure.Figure,
+                  cs: mpl.colors.Colormap,
+                  label: Optional[str] = None,
+                  ticks: Optional[Sequence[float]] = None,
                   nticks: int = 5,
-                  vmin: Optional[float] = None, 
-                  vmax: Optional[float] = None, 
+                  vmin: Optional[float] = None,
+                  vmax: Optional[float] = None,
                   a: float = 1000,
-                  ticklabels: Optional[Sequence[str]] = None, 
+                  ticklabels: Optional[Sequence[str]] = None,
                   tickstretch: Optional[str] = None,
-                  orientation: str = 'vertical', 
-                  labelpad: float = 0, 
+                  orientation: str = 'vertical',
+                  labelpad: float = 0,
                   lines: Optional[Plot] = None,
                   label_cbar2: Optional[str] = None,
                   ticks_cbar2: Optional[Sequence[float]] = None,
@@ -386,7 +383,7 @@ class PlotHandler:
         If ticks are not given, they will be determined from the other
         parameters (nticks, vmin, vmax, a, stretch, etc.) or use the defaults
         from matplotlib.
-        
+
         Args:
           fig: figure object.
           cs: color map.
@@ -412,12 +409,12 @@ class PlotHandler:
 
         # Ticks
         if ticks is None and vmin and vmax:
-            ticks = utils.get_ticks(vmin, vmax, a=a, n=nticks, stretch=tickstretch)
+            ticks = get_ticks(vmin, vmax, a=a, n=nticks, stretch=tickstretch)
         self._log.info('Tick values: %s', ticks)
 
         # Create bar
         cbar = fig.colorbar(cs, ax=self.axis, cax=self.cbaxis,
-                            orientation=orientation, drawedges=False, 
+                            orientation=orientation, drawedges=False,
                             ticks=ticks)
         if lines is not None:
             cbar.add_lines(lines)
@@ -444,7 +441,7 @@ class PlotHandler:
                     family=self.ax.yaxis.get_label().get_family(),
                     fontname=self.ax.yaxis.get_label().get_fontname(),
                     weight=self.ax.yaxis.get_label().get_weight(),
-                    labelpad=labelpad, 
+                    labelpad=labelpad,
                     verticalalignment='top')
             elif orientation == 'horizontal':
                 cbar.ax.xaxis.set_label_position('top')
@@ -467,7 +464,6 @@ class PlotHandler:
                 if label_cbar2 is not None:
                     cbar2.yaxis.set_label_position('left')
                     cbar2.set_ylabel(label_cbar2, labelpad=labelpad)
-                #cbar2.yaxis.set_ticklabels(list(map(lambda x: '{:.2f}'.format(x), ticks2)))
                 cbar2.yaxis.set_ticks(ticks_cbar2)
             else:
                 cbar2 = cbar.ax.twiny()
@@ -478,11 +474,10 @@ class PlotHandler:
                     cbar.ax.xaxis.set_label_position('bottom')
                     cbar2.xaxis.set_label_position('top')
                     cbar2.set_xlabel(label_cbar2, labelpad=labelpad)
-                #cbar2.xaxis.set_ticklabels(list(map(lambda x: '{:.2f}'.format(x), ticks2)))
                 cbar2.xaxis.set_ticks(ticks_cbar2)
 
         # Font
-        tlabels = (cbar.ax.xaxis.get_ticklabels(which='both') + 
+        tlabels = (cbar.ax.xaxis.get_ticklabels(which='both') +
                    cbar.ax.yaxis.get_ticklabels(which='both'))
         for tlabel in tlabels:
             tlabel.set_fontsize(
@@ -494,30 +489,36 @@ class PlotHandler:
 
         return cbar
 
-    def arrow(self, 
-              arrow: Union[str, Tuple[float]], 
-              arrowprops: dict = {'arrowstyle':'->', 'fc':'k', 'ec':'k',
-                                  'ls':'-', 'lw':2},
+    def arrow(self,
+              arrow: Union[str, Tuple[float]],
+              arrowprops: Optional[dict] = None,
               color: Optional[str] = None,
               **kwargs) -> None:
         """Draw an arrow.
 
         An arrow can be specified by the following combiantions:
-          (PA,)
-          (x, y, PA)
-          (PA, length)
-          (x, y, PA, length)
+
+          - (PA,)
+          - (x, y, PA)
+          - (PA, length)
+          - (x, y, PA, length)
+
         with PA the postion angle (from axis y>0 towards axis x<0). The
-        positions (x, y) are in axes fraction and their default value is 
+        positions (x, y) are in axes fraction and their default value is
         (0.5, 0.5). Similarly, the default legth is 0.5, i.e. half the axis
         length.
-        
+
         Args:
           arrow: arrow position, angle and/or legth.
           arrowprops: optional; arrow properties.
-          color: optional; use the default arrowprops but replace the color. 
+          color: optional; use the default arrowprops but replace the color.
           kwargs: other arrow properties. See `matplotlib.pyplot.annotate`.
         """
+        # Check input
+        if arrowprops is None:
+            arrowprops = {'arrowstyle':'->', 'fc':'k', 'ec':'k', 'ls':'-',
+                          'lw':2}
+
         # Arrow specified as PA or (x y PA) or (PA len) or (x y PA len)
         try:
             arrow = tuple(map(float, arrow.split()))
@@ -561,12 +562,12 @@ class PlotHandler:
         self.axis.add_patch(arcpatch)
 
     # Other utilities
-    def label_axes(self, 
-                   text: str, 
-                   loc: Tuple[float, float] = (0.1, 0.9), 
+    def label_axes(self,
+                   text: str,
+                   loc: Tuple[float, float] = (0.1, 0.9),
                    **kwargs) -> None:
         """Add a label for the axes.
-        
+
         Args:
           text: label text.
           loc: label location.
@@ -583,14 +584,14 @@ class PhysPlotHandler(PlotHandler):
       yunit: `astropy.Unit` for y axis.
     """
 
-    def __init__(self, 
-                 axis: Axes, 
-                 cbaxis: Optional[Axes] = None, 
-                 xscale: str = 'linear', 
-                 yscale: str = 'linear', 
-                 xname: str = 'x', 
-                 yname: str = 'y', 
-                 xunit: u.Unit = u.Unit(1), 
+    def __init__(self,
+                 axis: Axes,
+                 cbaxis: Optional[Axes] = None,
+                 xscale: str = 'linear',
+                 yscale: str = 'linear',
+                 xname: str = 'x',
+                 yname: str = 'y',
+                 xunit: u.Unit = u.Unit(1),
                  yunit: u.Unit = u.Unit(1)) -> None:
         """Create a single plot container."""
         super().__init__(axis, cbaxis=cbaxis, xscale=xscale, yscale=yscale,
@@ -606,11 +607,11 @@ class PhysPlotHandler(PlotHandler):
         elif len(args) == 1:
             phys_args = (args[0].to(self.yunit).value,)
         elif len(args) == 2:
-            phys_args = (args[0].to(self.xunit).value, 
+            phys_args = (args[0].to(self.xunit).value,
                          args[1].to(self.yunit).value)
         elif len(args) == 3:
-            phys_args = (args[0].to(self.xunit).value, 
-                         args[1].to(self.yunit).value, 
+            phys_args = (args[0].to(self.xunit).value,
+                         args[1].to(self.yunit).value,
                          args[2].to(self.yunit).value)
         else:
             raise ValueError('Could not convert values')
@@ -619,7 +620,7 @@ class PhysPlotHandler(PlotHandler):
                                fn(*phys_args, **kwargs))
 
     @staticmethod
-    def _check_unit(value: Union[u.Quantity, None], 
+    def _check_unit(value: Union[u.Quantity, None],
                     unit: u.Unit) -> Union[u.Quantity, None]:
         """Convert the value to unit.
 
@@ -644,14 +645,14 @@ class PhysPlotHandler(PlotHandler):
         return super().get_ylabel(unit_fmt=unit_fmt)
 
     # Setters
-    def set_xlim(self, xmin: Optional[u.Quantity] = None, 
+    def set_xlim(self, xmin: Optional[u.Quantity] = None,
                  xmax: Optional[u.Quantity] = None) -> None:
         """Set the axis x limits."""
-        super().set_xlim(xmin=self._check_unit(xmin, self.xunit), 
+        super().set_xlim(xmin=self._check_unit(xmin, self.xunit),
                          xmax=self._check_unit(xmax, self.xunit))
 
     def set_ylim(self, ymin: Optional[u.Quantity] = None,
                  ymax: Optional[u.Quantity] = None) -> None:
         """Set the axis y limits."""
-        super().set_ylim(ymin=self._check_unit(ymin, self.yunit), 
+        super().set_ylim(ymin=self._check_unit(ymin, self.yunit),
                          ymax=self._check_unit(ymax, self.yunit))
