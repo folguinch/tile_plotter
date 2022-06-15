@@ -504,6 +504,10 @@ class MapHandler(PhysPlotHandler):
             if artist == 'scatters':
                 pos = position.transform_to(self.radesys)
                 art = self.scatter(pos.ra, pos.dec, **props)
+            elif artist == 'texts':
+                pos = position.transform_to(self.radesys)
+                text = props.pop('s')
+                art = self.text(pos.ra, pos.dec, text, **props)
 
     def plot_artists(self) -> None:
         """Plot all the stored artists."""
@@ -909,7 +913,7 @@ class MapHandler(PhysPlotHandler):
         radius = config.getquantity('radius', fallback=None)
         self_contours = config.getboolean('self_contours', fallback=None)
         contour_colors = config.get('contour_colors', fallback=None)
-        contour_linewidth = config.getint('contour_linewidth', fallback=None)
+        contour_linewidth = config.getfloat('contour_linewidth', fallback=None)
         rms = config.getquantity('rms', fallback=None)
         levels = config.getquantity('levels', fallback=None)
         nsigma = self.skeleton.getfloat('data', 'nsigma')

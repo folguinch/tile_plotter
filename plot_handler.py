@@ -346,6 +346,10 @@ class PlotHandler:
         """Scatter plot."""
         return self._simple_plt(self.axis.plot, *args, **kwargs)
 
+    def text(self, *args, **kwargs) -> Plot:
+        """Scatter plot."""
+        return self._simple_plt(self.axis.text, *args, **kwargs)
+
     def clabel(self, *args, **kwargs) -> None:
         """Contour labels."""
         self.axis.clabel(*args, **kwargs)
