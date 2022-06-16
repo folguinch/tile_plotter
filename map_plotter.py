@@ -149,7 +149,6 @@ class MapHandler(PhysPlotHandler):
         # Get axes properties
         axes_props = {}
         for opt, val in cls.skeleton.items('axes_props'):
-            val = config.get(opt, vars=kwargs, fallback=default)
             if 'unit' in opt:
                 value = config.get(opt, vars=kwargs, fallback=val)
                 try:
@@ -159,7 +158,7 @@ class MapHandler(PhysPlotHandler):
             elif opt.startswith('set_'):
                 fallback = cls.skeleton.getboolean('axes_props', opt)
                 value = config.getboolean(opt, vars=kwargs, fallback=fallback)
-            elif opt in ['xpad', 'ypad']:
+            elif opt in ['label_xpad', 'label_ypad']:
                 value = config.getfloat(opt, vars=kwargs, fallback=float(val))
             else:
                 value = config.get(opt, vars=kwargs, fallback=val)
@@ -786,20 +785,19 @@ class MapHandler(PhysPlotHandler):
                          size=self.ax.xaxis.get_label().get_fontsize(),
                          family=self.ax.xaxis.get_label().get_family(),
                          fontname=self.ax.xaxis.get_label().get_fontname(),
-                         minpad=self.axes_props['xpad'])
+                         minpad=self.axes_props['label_xpad'])
         dec.set_axislabel(f'{self.yname} {system}' if set_ylabel else '',
                           size=self.ax.xaxis.get_label().get_fontsize(),
                           family=self.ax.xaxis.get_label().get_family(),
                           fontname=self.ax.xaxis.get_label().get_fontname(),
-                          minpad=self.axes_props['ypad'])
+                          minpad=self.axes_props['label_ypad'])
 
         # Ticks labels
         ra.set_major_formatter(self.axes_props['xformat'])
         ra.set_ticklabel_visible(set_xticks)
         dec.set_major_formatter(self.axes_props['yformat'])
         dec.set_ticklabel_visible(set_yticks)
-        ra.set_ticks(color=self.axes_props['ticks_color'],
-                     exclude_overlapping=True)
+        ra.set_ticks(color=self.axes_props['ticks_color'])
         dec.set_ticks(color=self.axes_props['ticks_color'])
 
         # Ticks fonts
@@ -807,6 +805,7 @@ class MapHandler(PhysPlotHandler):
             size=self.ax.xaxis.get_majorticklabels()[0].get_fontsize(),
             family=self.ax.xaxis.get_majorticklabels()[0].get_family(),
             fontname=self.ax.xaxis.get_majorticklabels()[0].get_fontname(),
+            exclude_overlapping=True,
         )
         dec.set_ticklabel(
             size=self.ax.yaxis.get_majorticklabels()[0].get_fontsize(),
