@@ -507,7 +507,7 @@ class MapHandler(PhysPlotHandler):
             elif artist == 'texts':
                 pos = position.transform_to(self.radesys)
                 text = props.pop('s')
-                art = self.text(pos.ra, pos.dec, text, **props)
+                art = self.text(pos.ra, pos.dec, text, nphys_args=2, **props)
 
     def plot_artists(self) -> None:
         """Plot all the stored artists."""

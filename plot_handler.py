@@ -604,25 +604,52 @@ class PhysPlotHandler(PlotHandler):
         self.xunit = xunit
         self.yunit = yunit
 
-    def _simple_plt(self, fn: Callable[[], Plot], *args, is_image=False,
+    def _simple_plt(self,
+                    fn: Callable[[], Plot],
+                    *args,
+                    nphys_args: Optional[int] = None,
+                    is_image: bool = False,
                     **kwargs) -> Plot:
-        """Plot and assign label."""
+        """Plot and assign label.
+
+        It verifies that args are in the correct units of the corresponding
+        axis. The parameter `nphys_args` can be used to specify the number of
+        `args` that are physical quantities. If `args` consist of an image,
+        then it is assumed that it is in the correct units and the `is_image`
+        keyword can be used to skip the unit checking.
+        
+        Args:
+          fn: plotting function.
+          args: arguments for the function.
+          nphys_args: optional; number of physical quantities.
+          is_image: optional; is the input args a 2-D image?
+          kwargs: keyword arguments for the function.
+        """
+        # Verify nphys_args
+        if nphys_args is None:
+            nphys_args = len(args)
+
+        # Cases
         if is_image:
             phys_args = (args[0].value,)
-        elif len(args) == 1:
+        elif nphys_args == 1:
             phys_args = (args[0].to(self.yunit).value,)
-        elif len(args) == 2:
+        elif nphys_args == 2:
             phys_args = (args[0].to(self.xunit).value,
                          args[1].to(self.yunit).value)
-        elif len(args) == 3:
+        elif nphys_args == 3:
             phys_args = (args[0].to(self.xunit).value,
                          args[1].to(self.yunit).value,
                          args[2].to(self.yunit).value)
         else:
             raise ValueError('Could not convert values')
 
+        # Non physical arguments
+        non_phys_args = args[nphys_args:]
+        fn_args = phys_args + non_phys_args
+
         return self.insert_plt(kwargs.get('label', None),
-                               fn(*phys_args, **kwargs))
+                               fn(*fn_args, **kwargs))
 
     @staticmethod
     def _check_unit(value: Union[u.Quantity, None],
