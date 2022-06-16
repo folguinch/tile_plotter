@@ -821,6 +821,16 @@ class MapHandler(PhysPlotHandler):
                                transform=self.ax.get_transform(self.radesys),
                                **kwargs)
 
+    def text(self,
+             x: Union[float, u.Quantity],
+             y: Union[float, u.Quantity],
+             text: str,
+             **kwargs):
+        """Plot text."""
+        return super().text(x, y, text,
+                            transform=self.ax.get_transform(self.radesys),
+                            **kwargs)
+
     def circle(self, x, y, r, color='g', facecolor='none', zorder=0):
         cir = SphericalCircle((x, y), r, edgecolor=color, facecolor=facecolor,
                 transform=self.ax.get_transform('world'), zorder=zorder)
