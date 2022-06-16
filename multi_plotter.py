@@ -59,8 +59,15 @@ class MultiPlotter(BasePlotter):
         for loc, sections in self:
             self.plot_sections(sections, loc)
 
-    def apply_config(self):
-        pass
+    def apply_config(self, loc: Location, handler: 'PlotHandler', dtype: str):
+        """Apply the plot configuration."""
+        set_xlabel, set_ylabel = self.has_axlabels(loc)
+        set_xticks, set_yticks = self.has_ticks_labels(loc)
+        if dtype in ['image', 'contour_map']:
+            handler.config_map(set_xlabel=set_xlabel, set_ylabel=set_ylabel,
+                               set_xticks=set_xticks, set_yticks=set_yticks)
+        else:
+            handler.config_plot()
 
     def plot_sections(self, sections: Sequence, loc: Location):
         """Plot the requested sections in the requested location.
@@ -70,6 +77,7 @@ class MultiPlotter(BasePlotter):
           loc: location where the sections are plotted.
         """
         color_bars = {}
+        is_config = ()
         for section in sections:
             print('-' * 50)
             # Reset config
@@ -93,6 +101,11 @@ class MultiPlotter(BasePlotter):
                 color_bars[loc] = True
                 handler.plot_cbar(self.fig,
                                   orientation=self.axes[loc].cborientation)
+
+            # Config plot
+            if loc not in is_config:
+                self.apply_config(loc, handler, dtype)
+                is_config += (loc,)
 
 #    def get_plotter(self, axis, cbax, projection):
 #        dtype = self.config['type']

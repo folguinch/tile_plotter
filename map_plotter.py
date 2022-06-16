@@ -77,9 +77,9 @@ class MapHandler(PhysPlotHandler):
       bunit
       bname_cbar2
       bunit_cbar2
+      axes_props: axes properties.
       vscale: intensity scale parameters.
       artists: artists to plot.
-      colors: replace style colors.
       radesys: projection system.
       skeleton: skeleton for the configuration options.
     """
@@ -95,29 +95,28 @@ class MapHandler(PhysPlotHandler):
                  axis: Axes,
                  cbaxis: Optional[Axes] = None,
                  radesys: Optional[str] = None,
-                 units: Mapping = {},
+                 axes_props: Mapping = {},
                  vscale: Mapping = {},
-                 colors: Mapping = {},
                  artists: Mapping = {}):
         """Initiate a map plot handler."""
         super().__init__(axis, cbaxis=cbaxis,
-                         xname=units.get('xname', 'RA'),
-                         yname=units.get('yname', 'Dec'),
-                         xunit=units.get('xunit', u.deg),
-                         yunit=units.get('yunit', u.deg))
+                         xname=axes_props.pop('xname', 'RA'),
+                         yname=axes_props.pop('yname', 'Dec'),
+                         xunit=axes_props.pop('xunit', u.deg),
+                         yunit=axes_props.pop('yunit', u.deg))
 
         # Units and names
         self._log.info('Creating map plot')
         self.im = None
-        self.bname = units.get('bname', 'Intensity')
-        self.bunit = units.get('bunit', u.Unit(1))
+        self.bname = axes_props.pop('bname', 'Intensity')
+        self.bunit = axes_props.pop('bunit', u.Unit(1))
         self._log.info(f'Setting bunit ({self.bname}): {self.bunit}')
-        self.bname_cbar2 = units.get('bname_cbar2')
-        self.bunit_cbar2 = units.get('bunit_cbar2')
+        self.bname_cbar2 = axes_props.pop('bname_cbar2')
+        self.bunit_cbar2 = axes_props.pop('bunit_cbar2')
+        self.axes_props = axes_props
 
         # Store other options
         self.vscale = vscale
-        self.colors = colors
         self.artists = artists
 
         # Projection system
@@ -147,18 +146,24 @@ class MapHandler(PhysPlotHandler):
           radesys: optional; projection system.
           kwargs: replace values in the config.
         """
-        # Get units
-        units = {}
-        for opt in cls.skeleton.options('units'):
-            default = cls.skeleton.get('units', opt)
+        # Get axes properties
+        axes_props = {}
+        for opt, val in cls.skeleton.items('axes_props'):
             val = config.get(opt, vars=kwargs, fallback=default)
             if 'unit' in opt:
+                value = config.get(opt, vars=kwargs, fallback=val)
                 try:
-                    units[opt] = u.Unit(val)
+                    value = u.Unit(value)
                 except ValueError:
-                    units[opt] = None
+                    value = None
+            elif opt.startswith('set_'):
+                fallback = cls.skeleton.getboolean('axes_props', opt)
+                value = config.getboolean(opt, vars=kwargs, fallback=fallback)
+            elif opt in ['xpad', 'ypad']:
+                value = config.getfloat(opt, vars=kwargs, fallback=float(val))
             else:
-                units[opt] = val
+                value = config.get(opt, vars=kwargs, fallback=val)
+            axes_props[opt] = value
 
         # Get vscale
         vscale = {}
@@ -174,13 +179,6 @@ class MapHandler(PhysPlotHandler):
             except IndexError:
                 vscale[opt] = float(val)
 
-        # Colors
-        colors = {}
-        for opt, val in cls.skeleton.items('colors'):
-            if opt not in config and opt not in kwargs:
-                continue
-            colors[opt] = config.get(opt, vars=kwargs)
-
         # Artists
         artists = {}
         for opt, val in cls.skeleton.items('artists'):
@@ -188,8 +186,8 @@ class MapHandler(PhysPlotHandler):
                 continue
             artists[opt] = get_artist_properties(opt, config)
 
-        return cls(axis, cbaxis, radesys=radesys, units=units, vscale=vscale,
-                   colors=colors, artists=artists)
+        return cls(axis, cbaxis, radesys=radesys, axes_props=axes_props,
+                   vscale=vscale, artists=artists)
 
     @property
     def vmin(self):
@@ -476,7 +474,8 @@ class MapHandler(PhysPlotHandler):
 
         # Color map
         if 'cmap' not in kwargs:
-            kwargs['colors'] = colors or self.colors.get('contours', 'g')
+            kwargs['colors'] = colors or self.skeleton.get('data',
+                                                           'contour_colors')
         elif 'norm' not in kwargs:
             kwargs['norm'] = self.get_normalization()
         else:
@@ -739,63 +738,71 @@ class MapHandler(PhysPlotHandler):
         self.ax.set_ylim(y-radius.value, y+radius.value)
 
     def config_map(self,
-                   xformat: str = "hh:mm:ss.s",
-                   yformat: str = "dd:mm:ss",
-                   xlabel: bool = True,
-                   ylabel: bool = True,
-                   xticks: bool = True,
-                   yticks: bool = True,
-                   xpad: float = 1.,
-                   ypad: float = 1.,
-                   tickscolor: Optional[str] = None,
+                   set_xlabel: Optional[bool] = None,
+                   set_ylabel: Optional[bool] = None,
+                   set_xticks: Optional[bool] = None,
+                   set_yticks: Optional[bool] = None,
                    xcoord: str = 'ra',
                    ycoord: str = 'dec') -> None:
         """Apply configuration to map axes.
 
         Args:
-          xformat: optional; format of the `x` axis tick labels.
-          yformat: optional; format of the `y` axis tick labels.
-          xlabel: optional; display `x` axis label?
-          ylabel: optional; display `y` axis label?
-          xticks: optional; display `x` axis tick labels?
-          yticks: optional; display `y` axis tick labels?
-          xpad: optional; shift of the `x` axis label.
-          ypad: optional; shift of the `y` axis label.
-          tickscolor: optional; ticks color.
+          set_xlabel: optional; display `x` axis label?
+          set_ylabel: optional; display `y` axis label?
+          set_xticks: optional; display `x` axis tick labels?
+          set_yticks: optional; display `y` axis tick labels?
           xcoord: optional; name of the `x` coordinate axis.
           ycoord: optional; name of the `y` coordinate axis.
         """
+        # Update stored axes properties
+        if set_xlabel is not None:
+            self.axes_props['set_xlabel'] = set_xlabel
+        else:
+            set_xlabel = self.axes_props['set_xlabel']
+        if set_ylabel is not None:
+            self.axes_props['set_ylabel'] = set_ylabel
+        else:
+            set_ylabel = self.axes_props['set_ylabel']
+        if set_xticks is not None:
+            self.axes_props['set_xticks'] = set_xticks
+        else:
+            set_xticks = self.axes_props['set_xticks']
+        if set_yticks is not None:
+            self.axes_props['set_yticks'] = set_yticks
+        else:
+            set_yticks = self.axes_props['set_yticks']
+
         # Get axes
         ra, dec = self.ax.coords[xcoord], self.ax.coords[ycoord]
 
         # Axes labels
         if self.radesys == 'icrs':
-            system = '(%s)' % self.radesys.upper()
+            system = f'({self.radesys.upper()})'
         elif self.radesys == 'fk5':
             system = '(J2000)'
         else:
             system = ''
-        ra.set_axislabel('RA %s' % system if xlabel else '',
+        ra.set_axislabel(f'{self.xname} {system}' if set_xlabel else '',
                          size=self.ax.xaxis.get_label().get_fontsize(),
                          family=self.ax.xaxis.get_label().get_family(),
                          fontname=self.ax.xaxis.get_label().get_fontname(),
-                         minpad=xpad)
-        dec.set_axislabel('Dec %s' % system if ylabel else '',
+                         minpad=self.axes_props['xpad'])
+        dec.set_axislabel(f'{self.yname} {system}' if set_ylabel else '',
                           size=self.ax.xaxis.get_label().get_fontsize(),
                           family=self.ax.xaxis.get_label().get_family(),
                           fontname=self.ax.xaxis.get_label().get_fontname(),
-                          minpad=ypad)
+                          minpad=self.axes_props['ypad'])
 
         # Ticks labels
-        tickscolor = tickscolor or self.colors.get('tickscolor', 'w')
-        ra.set_major_formatter(xformat)
-        ra.set_ticklabel_visible(xticks)
-        dec.set_major_formatter(yformat)
-        dec.set_ticklabel_visible(yticks)
-        ra.set_ticks(color=tickscolor, exclude_overlapping=True)
-        dec.set_ticks(color=tickscolor)
+        ra.set_major_formatter(self.axes_props['xformat'])
+        ra.set_ticklabel_visible(set_xticks)
+        dec.set_major_formatter(self.axes_props['yformat'])
+        dec.set_ticklabel_visible(set_yticks)
+        ra.set_ticks(color=self.axes_props['ticks_color'],
+                     exclude_overlapping=True)
+        dec.set_ticks(color=self.axes_props['ticks_color'])
 
-        # Ticks
+        # Ticks fonts
         ra.set_ticklabel(
             size=self.ax.xaxis.get_majorticklabels()[0].get_fontsize(),
             family=self.ax.xaxis.get_majorticklabels()[0].get_family(),
@@ -806,8 +813,13 @@ class MapHandler(PhysPlotHandler):
             family=self.ax.yaxis.get_majorticklabels()[0].get_family(),
             fontname=self.ax.yaxis.get_majorticklabels()[0].get_fontname(),
         )
+
+        # Minor ticks
         ra.display_minor_ticks(True)
         dec.display_minor_ticks(True)
+
+        # Apect ratio
+        self.set_aspect(1./self.ax.get_data_ratio())
 
     def set_title(self, title):
         self.ax.set_title(title)
@@ -843,8 +855,9 @@ class MapHandler(PhysPlotHandler):
         self.ax.add_patch(r)
 
     def plot(self, *args, **kwargs):
+        """Plot data."""
         try:
-            kwargs['transform'] = self.ax.get_transform('world')
+            kwargs['transform'] = self.ax.get_transform(self.radesys)
         except TypeError:
             pass
         self.ax.plot(*args, **kwargs)
@@ -880,31 +893,8 @@ class MapHandler(PhysPlotHandler):
                 horizontalalignment='right',
                 xycoords=xycoords, zorder=zorder)
 
-    def plot_markers(self, markers, skip_label=False, zorder=3, **kwargs):
-        self.log.info('Plotting markers')
-        self.log.info('Converting markers to %s system', self.radesys)
-        for m in markers:
-            # Plot marker
-            if self.radesys == 'icrs':
-                mark = m['loc'].icrs
-            elif self.radesys == 'fk5':
-                mark = m['loc'].fk5
-            else:
-                mark = m['loc']
-            mp = self.scatter(mark.ra.degree, mark.dec.degree, c=m['color'],
-                    marker=m['style'], label=m.get('legend'),
-                    s=m.get('size'), zorder=zorder,
-                    **kwargs)
-
-            # Marker label
-            if m.get('label') and not skip_label:
-                labloc = m['labloc'].ra.degree, m['labloc'].dec.degree
-                self.annotate(m['label'].strip(), xy=labloc, xytext=labloc,
-                        xycoords=self.ax.get_transform('world'),
-                        color=m['color'], zorder=zorder,
-                        fontweight=m['font_weight'])
-
     def set_aspect(self, *args):
+        """Set plot aspect ratio."""
         self.ax.set_aspect(*args)
 
     def auto_plot(self,
@@ -932,7 +922,7 @@ class MapHandler(PhysPlotHandler):
         nsigma_level = config.getfloat('nsigma_level', fallback=None)
 
         ## Plot contours or map
-        if dtype == 'contour':
+        if dtype == 'contour_map':
             self.plot_contours(data, rms=rms, levels=levels,
                                colors=contours_colors, nsigma=nsigma,
                                negative_nsigma=negative_nsigma,
@@ -980,32 +970,6 @@ class MapHandler(PhysPlotHandler):
             self.plot_beam(data.header, beam=beam, color=beam_color,
                            pad=beam_pad)
 
-        ## Colorbar
-        #if fig is not None and dtype != 'contour_map':
-        #    # Color bar label
-        #    cbarlabel = config.get('cbarlabel', fallback='Intensity')
-        #    if dtype == 'moment' and 'cbarlabel' not in config:
-        #        moment = config.getint('moment', fallback=0)
-        #        if moment==1:
-        #            cbarlabel = 'Velocity'
-        #        elif moment==2:
-        #            cbarlabel = 'Velocity dispersion'
-        #        else:
-        #            cbarlabel = 'Intensity'
-        #    else:
-        #        cbarlabel = config.get('cbarlabel', fallback='Intensity')
-
-        #    # Color bar unit
-        #    if bunit:
-        #        cbarlabel += ' (%s)' % (bunit.to_string('latex_inline'),)
-        #    if config.getboolean('vcbar', fallback=False):
-        #        orientation = 'vertical'
-        #    else:
-        #        orientation = 'horizontal'
-
-        #    self.plot_cbar(fig, orientation=orientation, label=cbarlabel,
-        #            labelpad=config.getfloat('labelpad', fallback=10))
-
         ## Title
         #if 'title' in config:
         #    self.title(config['title'])
@@ -1034,38 +998,6 @@ class MapHandler(PhysPlotHandler):
         #if 'label' in config:
         #    self.label_axes(config['label'],
         #            backgroundcolor=config.get('label_background', None))
-
-
-    def auto_config(self, cfg, xlabel, ylabel, xticks, yticks, **kwargs):
-        # Config map options
-        xformat = kwargs.get('xformat',
-                cfg.get('xformat', fallback="hh:mm:ss.s"))
-        yformat = kwargs.get('yformat',
-                cfg.get('yformat', fallback="dd:mm:ss"))
-
-        # Ticks color
-        tickscolor = kwargs.get('tickscolor',
-                cfg.get('tickscolor', fallback="k"))
-
-        # Apect ratio
-        self.set_aspect(1./self.ax.get_data_ratio())
-
-        # Config
-        if cfg['type']=='pvmap':
-            xlim = cfg.getfloatlist('xlim', fallback=(None,None))
-            ylim = cfg.getfloatlist('ylim', fallback=(None,None))
-            xlabel = 'Offset (arcsec)' if xlabel else ''
-            ylabel = 'Velocity (km s$^{-1}$)' if ylabel else ''
-            self.config_plot(xlim=tuple(xlim), xlabel=xlabel,
-                    unset_xticks=not xticks,
-                    ylim=tuple(ylim), ylabel=ylabel,
-                    unset_yticks=not yticks,
-                    tickscolor=tickscolor)
-        else:
-            self.config_map(xformat=xformat, yformat=yformat, xlabel=xlabel,
-                    ylabel=ylabel, xticks=xticks, yticks=yticks,
-                    xpad=1., ypad=-0.7, tickscolor=tickscolor, xcoord='ra',
-                            ycoord='dec')
 
     def brightness_temperature(self,
                                header: Mapping,
@@ -1127,6 +1059,7 @@ class MapsPlotter(BasePlotter):
         radesys = ''
         if projection is None:
             projection = self.projection
+            radesys = 'world'
         if projection is not None:
             try:
                 aux = projection.to_header()
