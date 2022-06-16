@@ -506,7 +506,7 @@ class MapHandler(PhysPlotHandler):
                 art = self.scatter(pos.ra, pos.dec, **props)
             elif artist == 'texts':
                 pos = position.transform_to(self.radesys)
-                text = props.pop('s')
+                text = props.pop('text')
                 art = self.text(pos.ra, pos.dec, text, nphys_args=2, **props)
 
     def plot_artists(self) -> None:
