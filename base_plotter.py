@@ -229,6 +229,10 @@ class BasePlotter(metaclass=abc.ABCMeta):
         yticks = not self.sharey or (self.sharey and loc[1] == 0)
         return xticks, yticks
 
+    def get_loc_index(self, loc: Location) -> int:
+        """Get the axis index of the given location."""
+        return self.axes.keys().index(loc)
+
     def get_value(self,
                   key: str,
                   loc: Optional[Location] = None,
@@ -243,7 +247,7 @@ class BasePlotter(metaclass=abc.ABCMeta):
         """
         # Convert location to index
         if loc is not None and loc in self.axes:
-            kwargs['n'] = self.axes.keys().index(loc)
+            kwargs['n'] = self.get_loc_index(loc)
 
         return self.config.getvalue(key, **kwargs)
 
