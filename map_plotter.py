@@ -511,9 +511,6 @@ class MapHandler(PhysPlotHandler):
         """Plot all the stored artists."""
         for artist in self.artists:
             self._plot_artist(artist)
-        #for artist in artists:
-        #    if artist not in cfg:
-        #        continue
         #    if artist=='texts' or artist=='arrows':
         #        iterover = cfg.getvalueiter(artist, sep=',')
         #    else:
@@ -526,22 +523,6 @@ class MapHandler(PhysPlotHandler):
         #                fallback=color)
         #        zorder = cfg.getvalue('%s_zorder' % artist, n=i, fallback=2,
         #                dtype=int)
-        #        if artist=='markers':
-        #            fmt = cfg.getvalue('%s_fmt' % artist, n=i, fallback='+')
-        #            size = cfg.getvalue('%s_size' % artist, n=i, fallback=100,
-        #                    dtype=float)
-        #            if self.radesys == 'icrs':
-        #                markra = art.icrs.ra.degree
-        #                markdec = art.icrs.dec.degree
-        #            elif self.radesys == 'fk5':
-        #                markra = art.fk5.ra.degree
-        #                markdec = art.fk5.dec.degree
-        #            else:
-        #                markra = art.ra.degree
-        #                markdec = art.dec.degree
-        #            mk = self.scatter(markra, markdec,
-        #                    edgecolors=edgecolor, facecolors=facecolor,
-        #                    marker=fmt, s=size, zorder=zorder)
         #        elif artist=='arcs':
         #            width = cfg.getvalue('%s_width' % artist, n=i, dtype=float)
         #            height = cfg.getvalue('%s_height' % artist, n=i,
@@ -632,7 +613,7 @@ class MapHandler(PhysPlotHandler):
         # Ticks of cbar2
         self._log.info('Color bar ticks: %s', kwargs['ticks'])
         if self.bunit_cbar2 is not None:
-            if equivalency is None:
+            if equivalency is None and 'equivalency' in self.vscale:
                 equivalency = self.vscale['equivalency']
             ticks_cbar2 = kwargs['ticks'].to(self.bunit_cbar2,
                                              equivalencies=equivalency)
@@ -680,7 +661,10 @@ class MapHandler(PhysPlotHandler):
         self._log.info('Plotting %s', beam)
 
         # Store beam equivalency
-        self.brightness_temperature(header, beam)
+        if 'equivalency' not in self.vscale:
+            self.brightness_temperature(header, beam)
+        else:
+            self._log.warn('A bunit equivalency value has already been stored')
 
         # Convert to pixel
         pixsize = np.sqrt(wcs.proj_plane_pixel_area())
@@ -715,15 +699,6 @@ class MapHandler(PhysPlotHandler):
           position: center of the map.
           wcs: WCS object of the map.
         """
-        #if hasattr(position, 'ra'):
-        #    ra = position.ra.degree
-        #    dec = position.dec.degree
-        #elif len(position)==2:
-        #    ra, dec = position
-        #else:
-        #    print('WARN: Could not recenter plot')
-        #    return
-        #x, y = wcs.all_world2pix([[ra,dec]], 0)[0]
         self._log.info('Recentering to: %s', position)
         x, y = wcs.world_to_pixel(position)
         cdelt = np.sqrt(wcs.proj_plane_pixel_area())
@@ -953,6 +928,7 @@ class MapHandler(PhysPlotHandler):
         plot_beam = self.skeleton.getboolean('data', 'plot_beam')
         if (config.getboolean('plot_beam', fallback=plot_beam) and
             hasattr(data, 'header')):
+            self._log.info('Plotting beam')
             # Configuration keys
             if 'bmin' in config and 'bmaj' in config and 'bpa' in config:
                 beam = Beam(major=config.getquantity('bmaj'),

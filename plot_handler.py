@@ -569,7 +569,7 @@ class PlotHandler:
     # Other utilities
     def label_axes(self,
                    text: str,
-                   loc: Tuple[float, float] = (0.1, 0.9),
+                   loc: Sequence[float] = (0.1, 0.9),
                    **kwargs) -> None:
         """Add a label for the axes.
 
