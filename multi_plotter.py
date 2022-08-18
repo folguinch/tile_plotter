@@ -61,6 +61,7 @@ class MultiPlotter(BasePlotter):
 
     def apply_config(self, loc: Location, handler: 'PlotHandler', dtype: str):
         """Apply the plot configuration."""
+        # Configuration
         set_xlabel, set_ylabel = self.has_axlabels(loc)
         set_xticks, set_yticks = self.has_ticks_labels(loc)
         if dtype in ['image', 'contour_map']:
@@ -68,6 +69,16 @@ class MultiPlotter(BasePlotter):
                                set_xticks=set_xticks, set_yticks=set_yticks)
         else:
             handler.config_plot()
+
+        # Axes label
+        label = self.config.get('label', fallback='')
+        label_loc = self.config.getfloatlist('label_position',
+                                             fallback=(0.1, 0.9))
+        if len(self.axes) > 1:
+            ind = self.axes.keys().index(loc)
+            label = f"({chr(ord('a') + ind)}) {label}"
+        if label:
+            handler.label_axes(label, loc=label_loc)
 
     def plot_sections(self, sections: Sequence, loc: Location):
         """Plot the requested sections in the requested location.
@@ -90,6 +101,13 @@ class MultiPlotter(BasePlotter):
 
             # Get axis
             handler = self.init_axis(loc, projection=projection)
+
+            # Update label
+            if len(self.axes) > 1 and 'label' in handler.artists:
+                ind = self.axes.keys().index(loc)
+                label = self.artists[artist]['properties'][0].get('text', '')
+                label = f'({chr(ind+1)}) {label}'
+                self.artists[artist]['properties'][0] = label
 
             # Plot
             self._log.info('Plotting data')
