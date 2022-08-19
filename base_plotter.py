@@ -1,5 +1,5 @@
 """Define the base plotter file for all the plotting tools."""
-from typing import Any, Optional, Tuple
+from typing import Any, Optional, Tuple, Dict
 import abc
 import pathlib
 
@@ -128,6 +128,17 @@ class BasePlotter(metaclass=abc.ABCMeta):
     def apply_config(self):
         """Apply the configuration of the axis."""
         pass
+
+    def insert_section(section: str, value: Dict, switch: bool = False) -> None:
+        """Insert a new section to the configuration."""
+        if section not in self._config:
+            self._config[section] = value
+        else:
+            raise KeyError(f'Section {section} already in config')
+        self._config_mapping = self._group_config_sections()
+
+        if switch:
+            self.switch_to(section)
 
     def switch_to(self, section: str) -> None:
         """Change the current `config` proxy."""
