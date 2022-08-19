@@ -3,7 +3,7 @@ from typing import Any, Optional, Tuple, Dict
 import abc
 import pathlib
 
-from logging_tools import get_logger
+from toolkit.logger import get_logger
 import configparseradv.configparser as cfgparser
 import matplotlib.pyplot as plt
 
@@ -41,7 +41,7 @@ class BasePlotter(metaclass=abc.ABCMeta):
 
     _defconfig = (pathlib.Path(__file__).resolve().parent /
                   pathlib.Path('configs/default.cfg'))
-    _log = get_logger(__name__)
+    _log = get_logger(__name__, filename='plotter.log')
 
     def __init__(self,
                  config: Optional[pathlib.Path] = None,
