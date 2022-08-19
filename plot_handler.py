@@ -4,8 +4,8 @@ from typing import (Optional, Tuple, TypeVar, Callable, Dict, List,
 import pathlib
 
 from configparseradv.configparser import ConfigParserAdv
-from logging_tools import get_logger
 from matplotlib import patches
+from toolkit.logger import get_logger
 import astropy.units as u
 import matplotlib as mpl
 #import matplotlib.lines as mlines
@@ -37,7 +37,7 @@ class PlotHandler:
       pltd: plotted objects tracker.
     """
     # Common class attributes
-    _log = get_logger(__name__)
+    _log = get_logger(__name__, filename='plotter.log')
     _defconfig = (pathlib.Path(__file__).resolve().parent /
                   pathlib.Path('configs/plot_default.cfg'))
 
