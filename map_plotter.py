@@ -211,7 +211,9 @@ class MapHandler(PhysPlotHandler):
         return self.vscale['stretch']
 
     def _validate_data(self, data: Map,
-                       wcs: apy_wcs.WCS) -> Tuple[u.Quantity, apy_wcs.WCS]:
+                       wcs: apy_wcs.WCS,
+                       ignore_units: bool = True
+                       ) -> Tuple[u.Quantity, apy_wcs.WCS]:
         """Validate input data.
 
         Convert input data to a quantity with the same unit as `self.bunit` or
@@ -222,23 +224,28 @@ class MapHandler(PhysPlotHandler):
         Args:
           data: input data.
           wcs: WCS of the data.
+          ignore_units: optional; ignore data units?
         """
         if hasattr(data, 'unit'):
             # Check bunit
-            if self.bunit is None:
+            if not ignore_units and self.bunit is None:
                 self.bunit = data.bunit
                 self._log.info(f'Setting bunit to data unit: {self.bunit}')
-            else:
+            elif not ignore_units:
                 valdata = data.to(self.bunit)
+            else:
+                valdata = data
         elif hasattr(data, 'header'):
             # Check bunit
             bunit = u.Unit(data.header.get('BUNIT', 1))
             valdata = np.squeeze(data.data) * bunit
-            if self.bunit is None:
+            if not ignore_units and self.bunit is None:
                 self.bunit = bunit
                 self._log.info(f'Setting bunit to header unit: {bunit}')
-            else:
+            elif not ignore_units:
                 valdata = valdata.to(self.bunit)
+            else:
+                pass
 
             # Check wcs
             if wcs is None:
@@ -250,13 +257,16 @@ class MapHandler(PhysPlotHandler):
                 if self.radesys.upper() == 'J2000':
                     self.radesys = 'fk5'
                 self._log.info(f'Setting RADESYS: {self.radesys}')
-        else:
+        elif not ignore_units:
             if self.bunit is None:
                 self._log.warning('Setting data as dimensionless')
                 self.bunit = u.Unit(1)
             else:
                 self._log.warning(f'Assuming data in {self.bunit} units')
             valdata = data * self.bunit
+        else:
+            self._log.warning('Setting data as dimensionless')
+            valdata = data * u.Unit(1)
 
         # Check wcs
         if wcs is None:
@@ -428,6 +438,7 @@ class MapHandler(PhysPlotHandler):
                       nsigma: float = 5.,
                       negative_nsigma: Optional[float] = None,
                       nsigmalevel: Optional[float] = None,
+                      ignore_units: bool = False,
                       **kwargs):
         """Plot a contour map.
 
@@ -442,10 +453,12 @@ class MapHandler(PhysPlotHandler):
           negative_nsigma: optional; level of the highest negative contour.
           nsigmalevel: optional; plot only one contour at this level times the
             rms value.
+          ignore_units: optional; ignore data units?
           **kwargs: optional; additional arguments for `pyplot.contours`.
         """
         # Validate data: valdata is a quantity with self.bunit units
-        valdata, valwcs = self._validate_data(data, wcs)
+        valdata, valwcs = self._validate_data(data, wcs,
+                                              ignore_units=ignore_units)
 
         # Check extent
         if extent is not None:
@@ -469,7 +482,7 @@ class MapHandler(PhysPlotHandler):
             except ValueError:
                 return None
         else:
-            levels_val = levels.to(self.bunit).value
+            levels_val = levels.to(valdata.unit).value
 
         # Color map
         if 'cmap' not in kwargs:
