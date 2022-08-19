@@ -95,7 +95,7 @@ def get_colorbar_ticks(vmin: u.Quantity,
 def auto_vmin(data: u.Quantity,
               rms: Optional[u.Quantity] = None,
               nrms: float = 0.8,
-              velocity_fraction: float = 0.98,
+              velocity_fraction: Optional[float] = None,
               data_type: Optional[str] = None,
               sigfig: Optional[int] = None,
               log: Callable = print) -> u.Quantity:
@@ -106,6 +106,9 @@ def auto_vmin(data: u.Quantity,
     `velocity`. If `data_type=intensity`, it calculates the rms from the data
     if not given. The value of `vmin` is `rms * nrms` in this case. If
     `data_type=velocity`, `vmin` is a fraction of the minimum value of the data.
+
+    If `velocity_fraction` is `None`, the default behaviour is to subtract 2% of
+    the minumum value.
 
     Args:
       data: data to calculate vmin from.
@@ -129,7 +132,11 @@ def auto_vmin(data: u.Quantity,
             log(f'Input rms = {rms:.3e}')
         vmin = nrms * rms
     elif data_type.lower() == 'velocity':
-        vmin = np.nanmin(data) * velocity_fraction
+        vmin = np.nanmin(data)
+        if velocity_fraction is None:
+            vmin = vmin - np.abs(0.02 * vmin)
+        else:
+            vmin = vmin * velocity_fraction
     else:
         raise KeyError(f'Map type {data_type} not recognized')
 
@@ -140,12 +147,15 @@ def auto_vmin(data: u.Quantity,
 
 def auto_vmax(data: u.Quantity,
               maximum: Optional[u.Quantity] = None,
-              fraction: float = 1.02,
+              fraction: Optional[float] = None,
               sigfig: Optional[int] = None) -> u.Quantity:
     """Determine vmax from the data maximum.
 
     If maximum is given, then this value is used instead of the data. At the
-    moment there is not any difference based on the map_type.
+    moment there isn't any difference based on the map type.
+
+    The default behaviour if `fraction` is `None` is to add 2% of the maximum
+    value.
 
     Args:
       data: data to calculate vmax from.
@@ -154,9 +164,14 @@ def auto_vmax(data: u.Quantity,
       sigfig: optional; number of significant figures of output.
     """
     if maximum is not None:
-        vmax = fraction * maximum
+        vmax = maximum
     else:
-        vmax = np.nanmax(data) * fraction
+        vmax = np.nanmax(data)
+
+    if fraction is None:
+        vmax = vmax + np.abs(vmax * 0.02)
+    else:
+        vmax = vmax * fraction
 
     if sigfig is not None:
         return to_sigfig(vmax.to(data.unit), sigfig=sigfig)
