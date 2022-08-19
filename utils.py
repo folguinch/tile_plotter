@@ -24,6 +24,17 @@ def to_sigfig(x: Quantity, sigfig: int = 2) -> Quantity:
     ndigits = -int(np.floor(np.log10(val))) + (sigfig - 1)
     return np.round(x, ndigits)
 
+def get_data_type(data: Quantity, default: Optional[str] = None) -> str:
+    """Determine the data type based on `data` unit."""
+    if default is None and data.unit.is_equivalent(u.km/u.s):
+        data_type = 'velocity'
+    elif default is None:
+        data_type = 'intensity'
+    else:
+        data_type = default
+
+    return data_type
+
 def get_colorbar_ticks(vmin: u.Quantity,
                        vmax: u.Quantity,
                        a: float = 1000.,
@@ -85,40 +96,52 @@ def auto_vmin(data: u.Quantity,
               rms: Optional[u.Quantity] = None,
               nrms: float = 0.8,
               velocity_fraction: float = 0.98,
-              map_type: str = 'intensity',
+              data_type: Optional[str] = None,
+              sigfig: Optional[int] = None,
               log: Callable = print) -> u.Quantity:
     """Determine vmin from the data.
 
-    If data_type=intensity, it calculates the rms from the data if not given.
-    The value of vmin is rms*nrms in this case. If data_type=velocity, vmin is
-    a fraction of the minimum value of the data.
+    The `data_type` is assumed to be `intensity` unless specified or if the
+    units of `data` are equivalent to `km/s`, in which case it is set to
+    `velocity`. If `data_type=intensity`, it calculates the rms from the data
+    if not given. The value of `vmin` is `rms * nrms` in this case. If
+    `data_type=velocity`, `vmin` is a fraction of the minimum value of the data.
 
     Args:
       data: data to calculate vmin from.
       rms: optional; rms of the data.
       nrms: optional; number of rms values for vmin.
       velocity_fraction: optional; fraction of the minimum value of the data to
-        use if data_type=velocity.
-      map_type: optional; type of map.
+        use if `data_type=velocity`.
+      data_type: optional; type of map.
+      sigfig: optional; number of significant figures of output.
       log: optional; logging function.
     """
-    if map_type.lower() in ['intensity', 'pvmap']:
+    # Verify data type
+    data_type = get_data_type(data, default=data_type)
+
+    # Get vmin
+    if data_type.lower() in ['intensity', 'pvmap']:
         if rms is None:
             rms = apystats.mad_std(data, ignore_nan=True)
             log(f'MAD std = {rms:.3e}')
         else:
             log(f'Input rms = {rms:.3e}')
         vmin = nrms * rms
-    elif map_type.lower() == 'velocity':
+    elif data_type.lower() == 'velocity':
         vmin = np.nanmin(data) * velocity_fraction
     else:
-        raise KeyError(f'Map type {map_type} not recognized')
+        raise KeyError(f'Map type {data_type} not recognized')
 
-    return to_sigfig(vmin.to(data.unit))
+    if sigfig is not None
+        return to_sigfig(vmin.to(data.unit), sigfig=sigfig)
+    else:
+        return vmin.to(data.unit)
 
 def auto_vmax(data: u.Quantity,
               maximum: Optional[u.Quantity] = None,
-              fraction: float = 1.02) -> u.Quantity:
+              fraction: float = 1.02,
+              sigfig: Optional[int] = None) -> u.Quantity:
     """Determine vmax from the data maximum.
 
     If maximum is given, then this value is used instead of the data. At the
@@ -128,12 +151,17 @@ def auto_vmax(data: u.Quantity,
       data: data to calculate vmax from.
       maximum: optional; maximum value.
       fraction: optional; fraction of the maximum for vmax.
+      sigfig: optional; number of significant figures of output.
     """
     if maximum is not None:
         vmax = fraction * maximum
     else:
         vmax = np.nanmax(data) * fraction
-    return to_sigfig(vmax.to(data.unit))
+
+    if sigfig is not None:
+        return to_sigfig(vmax.to(data.unit), sigfig=sigfig)
+    else:
+        return vmax.to(data.unit)
 
 def auto_vminmax(data: u.Quantity,
                  map_type: str = 'intensity',
