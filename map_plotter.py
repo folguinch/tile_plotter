@@ -662,7 +662,10 @@ class MapHandler(PhysPlotHandler):
 
         # Store beam equivalency
         if 'equivalency' not in self.vscale:
-            self.brightness_temperature(header, beam)
+            try:
+                self.brightness_temperature(header, beam)
+            except KeyError:
+                pass
         else:
             self._log.warn('A bunit equivalency value has already been stored')
 
