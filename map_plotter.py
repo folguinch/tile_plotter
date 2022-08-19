@@ -165,7 +165,7 @@ class MapHandler(PhysPlotHandler):
             axes_props[opt] = value
 
         # Get vscale
-        vscale = {}
+        vscale = {'stretch': cls.skeleton['vscale']['stretch']}
         for opt in cls.skeleton.options('vscale'):
             if opt not in config and opt not in kwargs:
                 continue
