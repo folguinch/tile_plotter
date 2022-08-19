@@ -251,8 +251,7 @@ def auto_levels(data: Optional[u.Quantity] = None,
     if rms is None and data is not None:
         log('Using automatic rms for levels')
         rms = apystats.mad_std(data, ignore_nan=True)
-    elif ((rms is None and data is None) or
-          (rms is not None and nlevels is None)):
+    elif rms is None and data is None:
         raise ValueError('Could not determine levels')
     rms = to_sigfig(rms)
     log(f'Getting levels from rms = {rms}')
