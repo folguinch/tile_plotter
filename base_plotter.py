@@ -129,7 +129,8 @@ class BasePlotter(metaclass=abc.ABCMeta):
         """Apply the configuration of the axis."""
         pass
 
-    def insert_section(section: str, value: Dict, switch: bool = False) -> None:
+    def insert_section(self, section: str, value: Dict,
+                       switch: bool = False) -> None:
         """Insert a new section to the configuration."""
         if section not in self._config:
             self._config[section] = value
