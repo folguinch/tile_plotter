@@ -133,7 +133,7 @@ def auto_vmin(data: u.Quantity,
     else:
         raise KeyError(f'Map type {data_type} not recognized')
 
-    if sigfig is not None
+    if sigfig is not None:
         return to_sigfig(vmin.to(data.unit), sigfig=sigfig)
     else:
         return vmin.to(data.unit)
