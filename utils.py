@@ -345,7 +345,8 @@ def generate_label(name: str, unit: Optional[u.Unit] = None,
     return ' '.join(label)
 
 def get_artist_positions(values: str, artist: str,
-                         separator: str = ',') -> tuple:
+                         separator: str = ',',
+                         xycoords: str = 'data') -> tuple:
     """Extract the position values for the input `artist`.
 
     It uses `artist` to determine the type of the output.
@@ -354,11 +355,13 @@ def get_artist_positions(values: str, artist: str,
       values: string where the positions are obtained.
       artist: artist type.
       separator: optional; separator between values.
+      xycoords: optional; type of coordinates.
     """
     vals = values.split(separator)
     positions = []
     for val in vals:
-        if artist in ['scatters', 'arcs', 'texts']:
+        if (artist in ['scatters', 'arcs', 'texts', 'arrows'] and
+            xycoords == 'data'):
             try:
                 ra, dec, frame = val.split()
             except ValueError:
@@ -401,9 +404,10 @@ def get_artist_properties(artist: str, config: 'ConfigParserAdv',
       config: configuration parser proxy.
       separator: optional; separator between values of an config option.
     """
-    # Length
+    # Position
+    xycoords = config.get(f'{artist}_xycoords', fallback='data')
     positions = get_artist_positions(config[artist], artist,
-                                     separator=separator)
+                                     separator=separator, xycoords=xycoords)
     nprops = len(positions)
 
     # Iterate over properties
@@ -414,14 +418,19 @@ def get_artist_properties(artist: str, config: 'ConfigParserAdv',
             continue
 
         # Iterate over positions
+        float_props = ['size', 'width', 'height', 'angle', 's', 'alpha',
+                       'length']
         prop = opt.split('_')[-1]
         for i in range(nprops):
-            if prop in ['size', 'width', 'height', 'angle', 's', 'alpha']:
+            if prop in float_props:
                 val = config.getvalue(opt, n=i, dtype=float, allow_global=True,
                                       sep=separator)
             elif prop in ['zorder']:
                 val = config.getvalue(opt, n=i, dtype=int, allow_global=True,
                                       sep=separator)
+            elif prop in ['pa',]:
+                val = config.getvalue(opt, n=i, dtype='quantity',
+                                      allow_global=True, sep=separator)
             else:
                 val = config.getvalue(opt, n=i, allow_global=True,
                                       sep=separator)

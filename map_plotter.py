@@ -180,7 +180,7 @@ class MapHandler(PhysPlotHandler):
 
         # Artists
         artists = {}
-        for opt, val in cls.skeleton.items('artists'):
+        for opt in cls.skeleton.options('artists'):
             if opt not in config and opt not in kwargs:
                 continue
             artists[opt] = get_artist_properties(opt, config)
@@ -512,13 +512,14 @@ class MapHandler(PhysPlotHandler):
         """Plot each value of the artist"""
         for position, props in zip(self.artists[artist]['positions'],
                                    self.artists[artist]['properties']):
+            pos = position.transform_to(self.radesys)
             if artist == 'scatters':
-                pos = position.transform_to(self.radesys)
                 art = self.scatter(pos.ra, pos.dec, **props)
             elif artist == 'texts':
-                pos = position.transform_to(self.radesys)
                 text = props.pop('text')
                 art = self.text(pos.ra, pos.dec, text, nphys_args=2, **props)
+            elif artist == 'arrow':
+                art = self.arrow(pos.ra, pos.dec, **props)
 
     def plot_artists(self) -> None:
         """Plot all the stored artists."""
@@ -814,6 +815,7 @@ class MapHandler(PhysPlotHandler):
     def set_title(self, title):
         self.ax.set_title(title)
 
+    # Artist functions
     def scatter(self,
                 x: Union[float, u.Quantity],
                 y: Union[float, u.Quantity],
@@ -832,6 +834,22 @@ class MapHandler(PhysPlotHandler):
         return super().text(x, y, text,
                             transform=self.ax.get_transform(self.radesys),
                             **kwargs)
+
+    def arrow(self,
+              x: u.Quantity,
+              y: u.Quantity,
+              pa: u.Quantity = 0 * u.deg,
+              length: Union[float, u.Quantity] = 1 * u.arcsec,
+              **kwargs):
+        """Plot arrow."""
+        xycoords = kwargs.get('xycoords', 'data')
+        if xycoords == 'data':
+            vals = (x.value, y.value, pa.to(u.deg).value, length)
+            kwargs['transform'] = self.ax.get_transform(self.radesys)
+        else:
+            vals = (x, y, pa.to(u.deg).value, length)
+
+        return super().arrow(vals, **kwargs)
 
     def circle(self, x, y, r, color='g', facecolor='none', zorder=0):
         cir = SphericalCircle((x, y), r, edgecolor=color, facecolor=facecolor,

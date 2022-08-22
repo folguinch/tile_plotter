@@ -508,7 +508,7 @@ class PlotHandler:
           - (PA, length)
           - (x, y, PA, length)
 
-        with PA the postion angle (from axis y>0 towards axis x<0). The
+        with PA the position angle (from axis y>0 towards axis x<0). The
         positions (x, y) are in axes fraction and their default value is
         (0.5, 0.5). Similarly, the default legth is 0.5, i.e. half the axis
         length.
@@ -557,7 +557,7 @@ class PlotHandler:
             color = arrowprops['fc']
 
         # Draw
-        self.annotate('', xy=xy, xytext=xytext, xycoords='axes fraction',
+        self.annotate('', xy=xy, xytext=xytext,
                       arrowprops=arrowprops, color=color, **kwargs)
 
     def arc(self, *args, **kwargs):
