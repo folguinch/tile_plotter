@@ -838,15 +838,33 @@ class MapHandler(PhysPlotHandler):
     def arrow(self,
               x: Union[u.Quantity, float],
               y: Union[u.Quantity, float],
-              pa: u.Quantity = 0 * u.deg,
-              length: Union[float, u.Quantity] = 1 * u.arcsec,
+              pa: u.Quantity,
+              length: float = 0.5,
               **kwargs):
-        """Draw an arrow."""
+        """Draw an arrow.
+
+        An arrow can be specified by the following combiantions:
+
+          - (PA,)
+          - (x, y, PA)
+          - (PA, length)
+          - (x, y, PA, length)
+
+        with PA the position angle (from axis `y>0` towards axis `x<0`). The
+        keyword argument `xycoords` can be used to specify the coordinate
+        system of the `(x, y)` position. The default is to use `data`
+        coordinates. The `length` is specified in axes fraction.
+
+        Args:
+          x, y: position of the center of the arrow.
+          pa: position angle of the arrow.
+          length: optional; length of the arrow.
+          kwargs: optional; arrow properties for `matplotlib.pyplot.annotate`.
+        """
         xycoords = kwargs.pop('xycoords', 'data')
         if xycoords == 'data':
             xy = (x.value, y.value)
             vals = (pa.to(u.deg).value, length)
-            #kwargs['transform'] = self.ax.get_transform(self.radesys)
 
             # Transform to axes coordinates
             xy_disp = self.ax.get_transform(self.radesys).transform(xy)
