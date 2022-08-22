@@ -518,7 +518,7 @@ class MapHandler(PhysPlotHandler):
             elif artist == 'texts':
                 text = props.pop('text')
                 art = self.text(pos.ra, pos.dec, text, nphys_args=2, **props)
-            elif artist == 'arrow':
+            elif artist == 'arrows':
                 art = self.arrow(pos.ra, pos.dec, **props)
 
     def plot_artists(self) -> None:
@@ -836,20 +836,27 @@ class MapHandler(PhysPlotHandler):
                             **kwargs)
 
     def arrow(self,
-              x: u.Quantity,
-              y: u.Quantity,
+              x: Union[u.Quantity, float],
+              y: Union[u.Quantity, float],
               pa: u.Quantity = 0 * u.deg,
               length: Union[float, u.Quantity] = 1 * u.arcsec,
               **kwargs):
-        """Plot arrow."""
-        xycoords = kwargs.get('xycoords', 'data')
+        """Draw an arrow."""
+        xycoords = kwargs.pop('xycoords', 'data')
         if xycoords == 'data':
-            vals = (x.value, y.value, pa.to(u.deg).value, length)
-            kwargs['transform'] = self.ax.get_transform(self.radesys)
-        else:
-            vals = (x, y, pa.to(u.deg).value, length)
+            xy = (x.value, y.value)
+            vals = (pa.to(u.deg).value, length)
+            #kwargs['transform'] = self.ax.get_transform(self.radesys)
 
-        return super().arrow(vals, **kwargs)
+            # Transform to axes coordinates
+            xy_disp = self.ax.get_transform(self.radesys).transform(xy)
+            xy_axes = self.ax.transAxes.inverted().transform(xy_disp)
+        else:
+            xy_axes = (x, y)
+            vals = (pa.to(u.deg).value, length)
+
+
+        return super().arrow(xy_axes + vals, **kwargs)
 
     def circle(self, x, y, r, color='g', facecolor='none', zorder=0):
         cir = SphericalCircle((x, y), r, edgecolor=color, facecolor=facecolor,

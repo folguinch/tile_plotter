@@ -557,7 +557,7 @@ class PlotHandler:
             color = arrowprops['fc']
 
         # Draw
-        self.annotate('', xy=xy, xytext=xytext,
+        self.annotate('', xy=xy, xytext=xytext, xycoords='axes fraction'
                       arrowprops=arrowprops, color=color, **kwargs)
 
     def arc(self, *args, **kwargs):
