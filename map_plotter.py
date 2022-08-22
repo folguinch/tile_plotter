@@ -850,7 +850,7 @@ class MapHandler(PhysPlotHandler):
 
             # Transform to axes coordinates
             xy_disp = self.ax.get_transform(self.radesys).transform(xy)
-            xy_axes = self.ax.transAxes.inverted().transform(xy_disp)
+            xy_axes = tuple(self.ax.transAxes.inverted().transform(xy_disp))
         else:
             xy_axes = (x, y)
             vals = (pa.to(u.deg).value, length)
