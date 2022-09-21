@@ -212,7 +212,7 @@ class MapHandler(PhysPlotHandler):
 
     def _validate_data(self, data: Map,
                        wcs: apy_wcs.WCS,
-                       ignore_units: bool = True
+                       ignore_units: bool = False
                        ) -> Tuple[u.Quantity, apy_wcs.WCS]:
         """Validate input data.
 
@@ -243,6 +243,8 @@ class MapHandler(PhysPlotHandler):
                 self.bunit = bunit
                 self._log.info(f'Setting bunit to header unit: {bunit}')
             elif not ignore_units:
+                self._log.info('Converting data unit: %s -> %s',
+                               valdata.unit, bunit)
                 valdata = valdata.to(self.bunit)
             else:
                 pass
@@ -525,18 +527,6 @@ class MapHandler(PhysPlotHandler):
         """Plot all the stored artists."""
         for artist in self.artists:
             self._plot_artist(artist)
-        #    if artist=='texts' or artist=='arrows':
-        #        iterover = cfg.getvalueiter(artist, sep=',')
-        #    else:
-        #        iterover = cfg.getvalueiter(artist, sep=',', dtype='skycoord')
-        #    for i, art in enumerate(iterover):
-        #        color = cfg.getvalue('%s_color' % artist, n=i, fallback='g')
-        #        facecolor = cfg.getvalue('%s_facecolor' % artist, n=i,
-        #                fallback=color)
-        #        edgecolor = cfg.getvalue('%s_edgecolor' % artist, n=i,
-        #                fallback=color)
-        #        zorder = cfg.getvalue('%s_zorder' % artist, n=i, fallback=2,
-        #                dtype=int)
         #        elif artist=='arcs':
         #            width = cfg.getvalue('%s_width' % artist, n=i, dtype=float)
         #            height = cfg.getvalue('%s_height' % artist, n=i,
@@ -557,19 +547,6 @@ class MapHandler(PhysPlotHandler):
         #            mk = self.arc((art.ra.degree, art.dec.degree), width,
         #                    height, color=color, zorder=zorder,
         #                    transform=self.ax.get_transform('world'), **kwargs)
-        #        elif artist=='texts':
-        #            loc = cfg.getvalue('%s_loc' % artist, n=i, sep=',')
-        #            if r'\n' in art:
-        #                art = art.replace(r'\n', '\n')
-        #            kwargs = {'weight':'normal'}
-        #            for opt in kwargs:
-        #                kwargs[opt] = cfg.getvalue('%s_%s' % (artist, opt),
-        #                        n=i, fallback=kwargs[opt])
-        #            loc = map(float, loc.split())
-        #            self.label_axes(str(art), loc=loc, color=color,
-        #                    zorder=zorder, **kwargs)
-        #        elif artist=='arrows':
-        #            self.arrow(art, color=color)
 
     def plot_cbar(self,
                   fig: 'Figure',
