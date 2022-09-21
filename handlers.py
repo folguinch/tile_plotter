@@ -4,6 +4,8 @@ from .map_plotter import MapHandler
 HANDLERS = {
     'image': MapHandler,
     'contour': MapHandler,
+    'moment': MapHandler,
+    'pvmap': MapHandler,
 }
 
 def get_handler(config: 'ConfigParser') -> 'Handler':
