@@ -1,6 +1,8 @@
 """Manage different types of plots."""
 from typing import Optional, Sequence
 
+import configparseradv.configparser as cfgparser
+
 from .base_plotter import BasePlotter, Location
 from .data_loaders import data_loader
 from .handlers import get_handler
