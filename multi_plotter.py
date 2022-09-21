@@ -18,9 +18,13 @@ class MultiPlotter(BasePlotter):
       axes: the figure axes.
     """
 
-    def __init__(self, config: Optional['Path'] = None, **kwargs):
+    def __init__(self,
+                 config: Optional['Path'] = None,
+                 config_parser: Optional[cfgparser.ConfigParserAdv] = None,
+                 **kwargs):
         """Initialize plotter."""
-        super().__init__(config=config, section='DEFAULT', **kwargs)
+        super().__init__(config=config, config_parser=config_parser,
+                         section='DEFAULT', **kwargs)
 
     @property
     def plot_type(self):

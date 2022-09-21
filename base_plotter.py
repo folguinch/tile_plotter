@@ -45,6 +45,7 @@ class BasePlotter(metaclass=abc.ABCMeta):
 
     def __init__(self,
                  config: Optional[pathlib.Path] = None,
+                 config_parser: Optional[cfgparser.ConfigParserAdv] = None,
                  section: str = 'DEFAULT',
                  **kwargs):
         """Create a new base plotter."""
