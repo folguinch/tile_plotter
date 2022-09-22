@@ -79,7 +79,7 @@ def get_colorbar_ticks(vmin: u.Quantity,
                            endpoint=False)
         ticks = np.append(-yneg, [0])
         ticks = np.unique(np.append(ticks, ypos)) * vmin.unit
-    elif stretch == 'linear':
+    elif stretch in ['linear', 'midnorm']:
         ticks = np.linspace(vmin, vmax, n)
     else:
         raise ValueError(f'Stretch {stretch} not recognized')
