@@ -388,6 +388,10 @@ class MapHandler(PhysPlotHandler):
         # Validate data: valdata is a quantity with self.bunit units
         valdata, valwcs = self._validate_data(data, wcs)
 
+        # Shift data
+        if shift_data is not None:
+            valdata = valdata + shift_data.to(valdata.unit)
+
         # Check vscale and get normalization
         self._validate_vscale(valdata, rms=rms)
         norm = self.get_normalization()
@@ -401,10 +405,6 @@ class MapHandler(PhysPlotHandler):
         # Check wcs and re-center the image
         if valwcs is not None and radius is not None and position is not None:
             self.recenter(radius, position, valwcs)
-
-        # Shift data
-        if shift_data is not None:
-            valdata = valdata + shift_data.to(valdata.unit)
 
         # Plot data
         zorder = kwargs.setdefault('zorder', 1)
