@@ -326,7 +326,7 @@ class MapHandler(PhysPlotHandler):
                                   stretch=LogStretch(a=self.vscale.get('a',
                                                                        1000)))
         elif self.stretch == 'midnorm':
-            return TwoSlopeNorm(self.vcenter,
+            return TwoSlopeNorm(self.vcenter.value,
                                 vmin=vmin.value,
                                 vmax=vmax.value)
         else:
@@ -348,6 +348,7 @@ class MapHandler(PhysPlotHandler):
                  mask_color: str = 'w',
                  position: Optional['astroppy.SkyCoord'] = None,
                  radius: Optional[u.Quantity] = None,
+                 shift_data: Optional[u.Quantity] = None,
                  self_contours: bool = False,
                  contour_levels: Optional[List[u.Quantity]] = None,
                  contour_colors: str = 'w',
@@ -372,6 +373,7 @@ class MapHandler(PhysPlotHandler):
           mask_color: optional; color for bad/null pixels.
           position: optional; center of the map.
           radius: optional; radius of the region shown.
+          shift_data: optional; an additive constant to apply to the data.
           self_contours: optional; plot contours of the data too?
           contour_levels: optional; self contour levels.
           contour_colors: optional; self contour colors.
@@ -399,6 +401,10 @@ class MapHandler(PhysPlotHandler):
         # Check wcs and re-center the image
         if valwcs is not None and radius is not None and position is not None:
             self.recenter(radius, position, valwcs)
+
+        # Shift data
+        if shift_data is not None:
+            valdata = valdata + shift_data.to(valdata.unit)
 
         # Plot data
         zorder = kwargs.setdefault('zorder', 1)
@@ -930,6 +936,7 @@ class MapHandler(PhysPlotHandler):
         nsigma = config.getfloat('nsigma', fallback=nsigma)
         negative_nsigma = config.getfloat('negative_nsigma', fallback=None)
         nsigma_level = config.getfloat('nsigma_level', fallback=None)
+        shift_data = config.getquantity('shift_data', fallback=None)
 
         ## Plot contours or map
         if dtype == 'contour_map':
@@ -940,7 +947,11 @@ class MapHandler(PhysPlotHandler):
         elif 'with_style' in config:
             self._log.info('Changing style: %s', config['with_style'])
             with matplotlib.pyplot.style.context(config['with_style']):
-                self.plot_map(data, rms=rms, position=position, radius=radius,
+                self.plot_map(data,
+                              rms=rms,
+                              position=position,
+                              radius=radius,
+                              shift_data = shift_data,
                               self_contours=self_contours,
                               contour_levels=levels,
                               contour_colors=contour_colors,
