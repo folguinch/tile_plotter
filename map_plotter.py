@@ -960,8 +960,13 @@ class MapHandler(PhysPlotHandler):
                               contour_negative_nsigma=negative_nsigma,
                               contour_nsigmalevel=nsigma_level)
         else:
-            self.plot_map(data, rms=rms, position=position, radius=radius,
-                          self_contours=self_contours, contour_levels=levels,
+            self.plot_map(data,
+                          rms=rms,
+                          position=position,
+                          radius=radius,
+                          shift_data = shift_data,
+                          self_contours=self_contours,
+                          contour_levels=levels,
                           contour_colors=contour_colors,
                           contour_linewidths=contour_linewidth,
                           contour_nsigma=nsigma,
