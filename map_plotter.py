@@ -946,12 +946,12 @@ class MapHandler(PhysPlotHandler):
                                linewidths=contour_linewidth, zorder=2)
         elif 'with_style' in config:
             self._log.info('Changing style: %s', config['with_style'])
-            with matplotlib.pyplot.style.context(config['with_style']):
+            with mpl.pyplot.style.context(config['with_style']):
                 self.plot_map(data,
                               rms=rms,
                               position=position,
                               radius=radius,
-                              shift_data = shift_data,
+                              shift_data=shift_data,
                               self_contours=self_contours,
                               contour_levels=levels,
                               contour_colors=contour_colors,
@@ -964,7 +964,7 @@ class MapHandler(PhysPlotHandler):
                           rms=rms,
                           position=position,
                           radius=radius,
-                          shift_data = shift_data,
+                          shift_data=shift_data,
                           self_contours=self_contours,
                           contour_levels=levels,
                           contour_colors=contour_colors,
