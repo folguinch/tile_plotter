@@ -315,20 +315,21 @@ class AxisHandler:
         """
 
         # Main axis
-        self.axis = BaseGeometry(xsize, ysize, left, right, bottom, top,
-                                 position)
+        self.axis = BaseGeometry(xsize, ysize, left=left, right=right,
+                                 bottom=bottom, top=top, position=position)
 
         # Color bar
         self.set_cbar(cbar_orientation)
         if self.has_vertical_cbar():
-            self.cbaxis = BaseGeometry(cbar_width, ysize, cbar_spacing,
-                                       right, bottom, top,
-                                       [self.axis.width, position[1]])
+            self.cbaxis = BaseGeometry(cbar_width, ysize, left=cbar_spacing,
+                                       right=right, bottom=bottom, top=top,
+                                       position=[self.axis.width, position[1]])
             self.axis.right = 0
         elif self.has_horizontal_cbar():
-            self.cbaxis = BaseGeometry(xsize, cbar_width, left, right,
-                                       cbar_spacing, top,
-                                       [position[0], self.axis.height])
+            self.cbaxis = BaseGeometry(xsize, cbar_width, left=left,
+                                       right=right, bottom=cbar_spacing,
+                                       top=top,
+                                       position=[position[0], self.axis.height])
             self.axis.top = 0
 
     def geometry_from_config(self, config: 'configparseradv') -> None:
