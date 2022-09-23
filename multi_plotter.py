@@ -82,7 +82,7 @@ class MultiPlotter(BasePlotter):
         label_loc = self.config.getfloatlist('label_position',
                                              fallback=(0.1, 0.9))
         if len(self.axes) > 1:
-            ind = reversed(list(self.axes.keys())).index(loc)
+            ind = list(reversed(self.axes.keys())).index(loc)
             label = f"({chr(ord('a') + ind)}) {label}"
         if label:
             handler.label_axes(label, loc=label_loc)
