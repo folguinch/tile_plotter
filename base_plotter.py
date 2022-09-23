@@ -201,7 +201,7 @@ class BasePlotter(LoggedObject, metaclass=abc.ABCMeta):
             self._log.info(f'Axis {loc} already initialized')
             if include_cbar:
                 cbaxis = self.init_cbar(loc)
-            return self.axes[loc]
+            return self.axes[loc].handler
         else:
             self._log.info(f'Initializing axis: {loc}')
             self.axes[loc].axis.scalex(1./self.figsize[0])
