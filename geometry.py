@@ -2,16 +2,16 @@
 from typing import List, Optional, Sequence, Union, Tuple
 import collections
 import itertools
-# Future update for Python 3.7+
-# from dataclasses import dataclass
+from dataclasses import dataclass, field
 
+from toolkit.logger import LoggedObject
 import configparseradv.utils as cfgutils
 
 # Type Aliases
 Position = Tuple[float, float]
 Location = Tuple[int, int]
 
-#@dataclass
+@dataclass
 class BaseGeometry:
     """Figure geometry class.
 
@@ -26,44 +26,43 @@ class BaseGeometry:
       top: top margin.
       position: axis position within figure.
     """
-    # Future update for Python 3.7+
-    #xsize: float
-    #ysize: float
-    #left: float = 0
-    #right: float = 0
-    #top: float = 0
-    #bottom: float = 0
-    #position: Position = [0, 0]
+    xsize: float
+    ysize: float
+    left: float = 0
+    right: float = 0
+    top: float = 0
+    bottom: float = 0
+    position: Position = field(default=[0., 0.])
 
     # To be remove in Python 3.7+
-    def __init__(self,
-                 xsize: float,
-                 ysize: float,
-                 left: float = 0,
-                 right: float = 0,
-                 bottom: float = 0,
-                 top: float = 0,
-                 position: Position = (0., 0.)) -> None:
-        """Initiate geometry with input parameters."""
-        self.xsize = xsize
-        self.ysize = ysize
-        self.left = left
-        self.right = right
-        self.bottom = bottom
-        self.top = top
-        self.position = position
+    #def __init__(self,
+    #             xsize: float,
+    #             ysize: float,
+    #             left: float = 0,
+    #             right: float = 0,
+    #             bottom: float = 0,
+    #             top: float = 0,
+    #             position: Position = (0., 0.)) -> None:
+    #    """Initiate geometry with input parameters."""
+    #    self.xsize = xsize
+    #    self.ysize = ysize
+    #    self.left = left
+    #    self.right = right
+    #    self.bottom = bottom
+    #    self.top = top
+    #    self.position = position
 
     # To be remove in Python 3.7+
-    def __repr__(self) -> str:
-        text = [f'x size: {self.xsize}']
-        text.append(f'y size: {self.ysize}')
-        text.append(f'left margin: {self.left}')
-        text.append(f'right margin: {self.rigth}')
-        text.append(f'bottom margin: {self.bottom}')
-        text.append(f'top margin: {self.top}')
-        text.append(f'axis position: {self.position}')
+    #def __repr__(self) -> str:
+    #    text = [f'x size: {self.xsize}']
+    #    text.append(f'y size: {self.ysize}')
+    #    text.append(f'left margin: {self.left}')
+    #    text.append(f'right margin: {self.rigth}')
+    #    text.append(f'bottom margin: {self.bottom}')
+    #    text.append(f'top margin: {self.top}')
+    #    text.append(f'axis position: {self.position}')
 
-        return '\n'.join(text)
+    #    return '\n'.join(text)
 
     def __setitem__(self,
                     key: str,
@@ -194,6 +193,12 @@ class AxisHandler:
             self.set_cbar(cbar_orientation)
         self._handler = None
 
+    def __str__(self):
+        lines = [f'Axis: {self.axis}',
+                 f'Color bar:{self.cbaxis}',
+                 f'Color bar orientation: {self.cborientation}']
+        return '\n'.join(lines)
+
     @property
     def width(self) -> float:
         """Returns the total width."""
@@ -236,7 +241,8 @@ class AxisHandler:
         """
         if orientation is not None:
             if orientation.lower() not in ['vertical', 'horizontal']:
-                raise ValueError('Colorbar orientation not recognized')
+                raise ValueError(('Colorbar orientation not recognized: '
+                                  f'{orientation}'))
             self.cborientation = orientation.lower()
         else:
             self.cborientation = orientation
@@ -442,7 +448,8 @@ class AxisHandler:
         else:
             pass
 
-class GeometryHandler(collections.OrderedDict):
+@dataclass
+class GeometryHandler(collections.OrderedDict, LoggedObject):
     """Manage the geometries in a figure.
 
     Attributes:
@@ -463,7 +470,11 @@ class GeometryHandler(collections.OrderedDict):
     hspace: int = 0
     vcbarpos: Optional[Tuple[int]] = None
     hcbarpos: Optional[Tuple[int]] = None
+    verbose: str = 'v'
     #single_dimensions = None
+
+    def __post_init__(self):
+        super().__init__(__name__, filename='plotter.log', verbose=self.verbose)
 
     def __setitiem__(self, key: Sequence[int], value: 'axis') -> None:
         if len(key) != 2:
@@ -516,6 +527,7 @@ class GeometryHandler(collections.OrderedDict):
         ranges = range(self.nrows - 1, -1, -1),  range(self.ncols)
         for loc in itertools.product(*ranges):
             # Initialize and get dimensions
+            self._log.debug(f'Defining axis at location: {loc}')
             self.init_loc(loc, config, cumx, cumy)
 
             # Cumulative sums
@@ -529,6 +541,9 @@ class GeometryHandler(collections.OrderedDict):
                     ydim = cumy + self[loc].height
             else:
                 cumx += self[loc].width
+            self._log.debug('=====')
+            self._log.debug(f'Cumulative axis: {cumx}, {cumy}')
+            self._log.debug('=====')
         return xdim, ydim
 
     def init_loc(self,
@@ -550,6 +565,7 @@ class GeometryHandler(collections.OrderedDict):
         # Initial value
         self[loc] = AxisHandler()
         self[loc].geometry_from_config(config)
+        self._log.debug(f'Initial new axes:\n{self[loc]}')
 
         # Scale axis
         options = [f'{loc[0]}*', f'*{loc[1]}', ''.join(map(str,loc))]
@@ -560,20 +576,26 @@ class GeometryHandler(collections.OrderedDict):
             xfactor = config.getfloat(key1, fallback=None)
             yfactor = config.getfloat(key2, fallback=None)
         if xfactor or yfactor:
+            self._log.debug(f'Scaling axes by {xfactor} x {yfactor}')
             xfactor = xfactor or 1.0
             yfactor = yfactor or 1.0
             self[loc].scale_axes(xfactor, yfactor)
+            self._log.debug(f'Scaled axis:\n{self[loc]}')
 
         # Set spacing
         self.set_spacing(loc)
+        self._log.debug(f'Set axes spacing:\n{self[loc]}')
 
         # Unset cbar
         self.remove_cbar(loc)
+        self._log.debug(f'Updated color bar:\n{self[loc]}')
 
         # Shift position
         self[loc].shift_position(xshift=xshift, yshift=yshift)
+        self._log.debug(f'Shifted positions:\n{self[loc]}')
 
         # Return dimensions
+        self._log.debug(f'New axis dimensions: {self[loc].dimensions}')
         return self[loc].dimensions
 
     def set_spacing(self, loc: Location) -> None:
@@ -612,5 +634,6 @@ class GeometryHandler(collections.OrderedDict):
         else:
             has_cbar = False
         if not has_cbar:
+            self._log.debug('Unsetting cbar')
             self[loc].unset_cbar(self.sharex, self.sharey)
 

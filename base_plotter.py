@@ -41,7 +41,6 @@ class BasePlotter(LoggedObject, metaclass=abc.ABCMeta):
 
     _defconfig = (pathlib.Path(__file__).resolve().parent /
                   pathlib.Path('configs/default.cfg'))
-    #_log = get_logger(__name__, filename='plotter.log')
 
     def __init__(self,
                  config: Optional[pathlib.Path] = None,
@@ -63,19 +62,25 @@ class BasePlotter(LoggedObject, metaclass=abc.ABCMeta):
         if config is None:
             pass
         else:
+            self._log.debug(f'Reading input config: {config}')
             self._config.read(config.expanduser().resolve())
         self._config.read_dict({section: kwargs})
 
         # Read geometry configuration
         if 'geometry_config' in self._config[section]:
+            self._log.debug(('Reading geometry config:'
+                             f"{self._config[section]['geometry_config']}"))
             self._config.read(self._config[section]['geometry_config'])
         self.config = self._config[section]
 
         # Set plot styles
-        plt.style.use(self.config.get('styles').replace(',', ' ').split())
+        styles = self.config.get('styles').replace(',', ' ').split()
+        self._log.debug(f'Setting styles: {styles}')
+        plt.style.use(styles)
 
         # Get axes
-        self.axes = GeometryHandler()
+        self._log.debug('Initializing geometry handler')
+        self.axes = GeometryHandler(verbose=verbose)
         self.figsize = self.axes.fill_from_config(self.config)
         self._log.info(f'Figure size: w={self.figsize[0]}, h={self.figsize[1]}')
 
