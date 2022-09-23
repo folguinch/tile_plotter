@@ -455,7 +455,7 @@ class AxisHandler:
             pass
 
 @dataclass
-class GeometryHandler(collections.OrderedDict, LoggedObject):
+class GeometryHandler(LoggedObject, collections.OrderedDict):
     """Manage the geometries in a figure.
 
     Attributes:
