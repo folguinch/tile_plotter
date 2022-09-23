@@ -32,7 +32,7 @@ class BaseGeometry:
     right: float = 0
     top: float = 0
     bottom: float = 0
-    position: Position = field(default=[0., 0.])
+    position: Position = field(default_factory=tuple)
 
     # To be remove in Python 3.7+
     #def __init__(self,
@@ -63,6 +63,10 @@ class BaseGeometry:
     #    text.append(f'axis position: {self.position}')
 
     #    return '\n'.join(text)
+
+    def __post_init__(self):
+        if len(self.position) == 0:
+            self.position = (0., 0.)
 
     def __setitem__(self,
                     key: str,
@@ -156,14 +160,16 @@ class BaseGeometry:
         self.xsize = self.xsize * factor
         self.left = self.left * factor
         self.right = self.right * factor
-        self.position[0] = self.position[0]*factor
+        xposition = self.position[0]*factor
+        self.position = (xposition, self.position[1])
 
     def scaley(self, factor: float) -> None:
         """Scale all the vertical variables by factor."""
         self.ysize = self.ysize*factor
         self.bottom = self.bottom*factor
         self.top = self.top*factor
-        self.position[1] = self.position[1]*factor
+        yposition = self.position[1]*factor
+        self.position = (self.position[0], yposition)
 
     def is_empty(self) -> bool:
         """Is the geometry empty?"""
