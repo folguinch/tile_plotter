@@ -625,7 +625,7 @@ class GeometryHandler(LoggedObject, collections.OrderedDict):
         is_right = loc[1] == self.ncols-1
 
         self[loc].set_spacing(left_spacing=self.hspace,
-                              bottom_spacing=self.vpace,
+                              bottom_spacing=self.vspace,
                               sharex=self.sharex,
                               sharey=self.sharey,
                               is_top=is_top,
