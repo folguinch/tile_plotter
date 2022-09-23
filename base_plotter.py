@@ -3,7 +3,7 @@ from typing import Any, Optional, Tuple, Dict
 import abc
 import pathlib
 
-from toolkit.logger import get_logger
+from toolkit.logger import LoggedObject
 import configparseradv.configparser as cfgparser
 import matplotlib.pyplot as plt
 
@@ -12,7 +12,7 @@ from .geometry import GeometryHandler
 # Type aliases
 Location = Tuple[int, int]
 
-class BasePlotter(metaclass=abc.ABCMeta):
+class BasePlotter(LoggedObject, metaclass=abc.ABCMeta):
     """Figure axes collection base class.
 
     Keeps track of the Figure axes, whether they have been initialized or not.
@@ -41,14 +41,18 @@ class BasePlotter(metaclass=abc.ABCMeta):
 
     _defconfig = (pathlib.Path(__file__).resolve().parent /
                   pathlib.Path('configs/default.cfg'))
-    _log = get_logger(__name__, filename='plotter.log')
+    #_log = get_logger(__name__, filename='plotter.log')
 
     def __init__(self,
                  config: Optional[pathlib.Path] = None,
                  config_parser: Optional[cfgparser.ConfigParserAdv] = None,
                  section: str = 'DEFAULT',
+                 verbose: str = 'v',
                  **kwargs):
         """Create a new base plotter."""
+        # Initiate log
+        super().__init__(__name__, filename='plotter.log', verbose=verbose)
+
         # Close plt if still open
         plt.close()
 

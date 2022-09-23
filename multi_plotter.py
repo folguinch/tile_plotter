@@ -23,10 +23,11 @@ class MultiPlotter(BasePlotter):
     def __init__(self,
                  config: Optional['Path'] = None,
                  config_parser: Optional[cfgparser.ConfigParserAdv] = None,
+                 verbose: str = 'v',
                  **kwargs):
         """Initialize plotter."""
         super().__init__(config=config, config_parser=config_parser,
-                         section='DEFAULT', **kwargs)
+                         section='DEFAULT', verbose=verbose, **kwargs)
 
     @property
     def plot_type(self):
@@ -70,7 +71,7 @@ class MultiPlotter(BasePlotter):
         # Configuration
         set_xlabel, set_ylabel = self.has_axlabels(loc)
         set_xticks, set_yticks = self.has_ticks_labels(loc)
-        if dtype in ['image', 'contour_map']:
+        if dtype in ['image', 'contour_map', 'moment']:
             handler.config_map(set_xlabel=set_xlabel, set_ylabel=set_ylabel,
                                set_xticks=set_xticks, set_yticks=set_yticks)
         else:
