@@ -372,29 +372,41 @@ class AxisHandler:
                     sharex: bool = False,
                     sharey: bool = False,
                     is_top: bool = False,
+                    is_bottom: bool = False,
+                    is_left: bool = False,
                     is_right: bool = False) -> None:
         """Update geometries for a shared axis.
 
+        Left and bottom spacing are not added if the axis in the left or bottom
+        margins, respectively. If axes are shared, then the respective values
+        replace the current `left` and `bottom` values, while `top` and `right`
+        values are set to zero if the position is not in the figure top and
+        right margins.
+
         Args:
-          left_spacing: space between axes in the horizontal direction.
-          bottom_spacing: space between axes in the vertical direction.
+          left_spacing: optional; space at the left of the axis.
+          bottom_spacing: optional; space at the bottom of the axis.
           sharex: is the x axis shared?
           sharey: is the y axis shared?
           is_top: is the axis at the topmost row of the figure?
+          is_bottom: is the axis at the bottom row of the figure?
+          is_left: is the axis at the leftmost column of the figure?
           is_right: is the axis at the rightmost column of the figure?
         """
         # Check shared axes
         if sharex:
-            self.axis.bottom = bottom_spacing
+            if not is_bottom:
+                self.axis.bottom = bottom_spacing
             if not is_top:
                 self.axis.top = 0
-        else:
+        elif not is_bottom:
             self.axis.bottom += bottom_spacing
         if sharey:
-            self.axis.left = left_spacing
+            if not is_left:
+                self.axis.left = left_spacing
             if not is_right:
                 self.axis.right = 0
-        else:
+        elif not is_left:
             self.axis.left += left_spacing
 
         # Update color bar
@@ -607,23 +619,19 @@ class GeometryHandler(LoggedObject, collections.OrderedDict):
 
     def set_spacing(self, loc: Location) -> None:
         """Set the space between axes."""
-        if loc[0] == self.nrows-1:
-            bottom_spacing = 0
-            sharex = False
-        else:
-            bottom_spacing = self.vspace
-            sharex = self.sharex
-        if loc[1] == 0:
-            left_spacing = 0
-            sharey = False
-        else:
-            left_spacing = self.hspace
-            sharey = self.sharey
+        is_top = loc[0] == 0
+        is_bottom = loc[0] == self.nrows-1
+        is_left = loc[1] == 0
+        is_right = loc[1] == self.ncols-1
 
-        self[loc].set_spacing(left_spacing=left_spacing,
-                              bottom_spacing=bottom_spacing,
-                              sharex=sharex, sharey=sharey,
-                              is_top=loc[0]==0, is_right=loc[1]==self.ncols-1)
+        self[loc].set_spacing(left_spacing=self.hspace,
+                              bottom_spacing=self.vpace,
+                              sharex=self.sharex,
+                              sharey=self.sharey,
+                              is_top=is_top,
+                              is_bottom=is_bottom,
+                              is_left=is_left,
+                              is_right=is_right)
 
     def remove_cbar(self, loc: Location) -> None:
         """Remove color bar and adjust spacing."""
