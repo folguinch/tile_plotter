@@ -81,11 +81,13 @@ class MultiPlotter(BasePlotter):
         label = self.config.get('label', fallback='')
         label_loc = self.config.getfloatlist('label_position',
                                              fallback=(0.1, 0.9))
+        label_bkgc = self.config.getfloatlist('label_backgroundcolor',
+                                              fallback='w')
         if len(self.axes) > 1:
             ind = list(reversed(self.axes.keys())).index(loc)
             label = f"({chr(ord('a') + ind)}) {label}"
         if label:
-            handler.label_axes(label, loc=label_loc)
+            handler.label_axes(label, loc=label_loc, backgroundcolor=label_bkgc)
 
     def plot_sections(self, sections: Sequence, loc: Location):
         """Plot the requested sections in the requested location.
