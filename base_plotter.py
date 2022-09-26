@@ -98,11 +98,13 @@ class BasePlotter(LoggedObject, metaclass=abc.ABCMeta):
         """Group config sections based on location of each section."""
         mapping = {}
         for section in self._config.sections():
-            loc = tuple(self._config.getintlist(section, 'loc'))
-            if loc in mapping:
-                mapping[loc] += [section]
-            else:
-                mapping[loc] = [section]
+            locs = self._config[section]['loc'].split(',')
+            for loc in locs:
+                loc_tuple = tuple(map(int, loc.split()))
+                if loc_tuple in mapping:
+                    mapping[loc_tuple] += [section]
+                else:
+                    mapping[loc_tuple] = [section]
         return mapping
 
     @property
