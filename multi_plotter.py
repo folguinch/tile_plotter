@@ -89,6 +89,11 @@ class MultiPlotter(BasePlotter):
         if label:
             handler.label_axes(label, loc=label_loc, backgroundcolor=label_bkgc)
 
+        # Title
+        title = self.config.get('title', fallback=None)
+        if title is not None:
+            handler.title(title)
+
     def plot_sections(self, sections: Sequence, loc: Location):
         """Plot the requested sections in the requested location.
 
