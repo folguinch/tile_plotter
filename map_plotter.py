@@ -942,7 +942,7 @@ class MapHandler(PhysPlotHandler):
         ## Plot contours or map
         if dtype == 'contour':
             self.plot_contours(data, rms=rms, levels=levels,
-                               colors=contours_colors, nsigma=nsigma,
+                               colors=contour_colors, nsigma=nsigma,
                                negative_nsigma=negative_nsigma,
                                ignore_units=ignore_units,
                                linewidths=contour_linewidth, zorder=2)
