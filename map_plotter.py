@@ -795,9 +795,6 @@ class MapHandler(PhysPlotHandler):
         # Apect ratio
         self.set_aspect(1./self.ax.get_data_ratio())
 
-    def set_title(self, title):
-        self.ax.set_title(title)
-
     # Artist functions
     def scatter(self,
                 x: Union[float, u.Quantity],

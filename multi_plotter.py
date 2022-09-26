@@ -68,10 +68,18 @@ class MultiPlotter(BasePlotter):
 
     def apply_config(self, loc: Location, handler: 'PlotHandler', dtype: str):
         """Apply the plot configuration."""
+        # Title
+        title = self.config.get('title', fallback=None)
+        if title is not None:
+            self._log.debug(f'Plotting title: {title}')
+            handler.title(title)
+
         # Configuration
         set_xlabel, set_ylabel = self.has_axlabels(loc)
         set_xticks, set_yticks = self.has_ticks_labels(loc)
         if dtype in ['image', 'contour', 'moment']:
+            self._log.debug(f'Label switches: {set_xlabel}, {set_ylabel}')
+            self._log.debug(f'Tick switches: {set_xticks}, {set_yticks}')
             handler.config_map(set_xlabel=set_xlabel, set_ylabel=set_ylabel,
                                set_xticks=set_xticks, set_yticks=set_yticks)
         else:
@@ -89,11 +97,6 @@ class MultiPlotter(BasePlotter):
         if label:
             handler.label_axes(label, loc=label_loc, backgroundcolor=label_bkgc)
 
-        # Title
-        title = self.config.get('title', fallback=None)
-        if title is not None:
-            handler.title(title)
-
     def plot_sections(self, sections: Sequence, loc: Location):
         """Plot the requested sections in the requested location.
 
@@ -110,6 +113,7 @@ class MultiPlotter(BasePlotter):
             self.switch_to(section)
 
             # Load data
+            self._log.debug('Loading data')
             data, projection, dtype = data_loader(self.config,
                                                   log=self._log.info)
 
@@ -136,6 +140,7 @@ class MultiPlotter(BasePlotter):
 
             # Config plot
             if loc not in is_config:
+                self._log.debug('Configuring plot')
                 self.apply_config(loc, handler, dtype)
                 is_config += (loc,)
 
