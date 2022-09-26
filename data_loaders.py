@@ -15,7 +15,7 @@ def load_image(filename: 'Path') -> Tuple[fits.PrimaryHDU, wcs.WCS]:
 # Available loaders
 LOADERS = {
     'image': load_image,
-    'contour_map': load_image,
+    'contour': load_image,
     'pvmap': load_image,
     'moment': load_image,
 }
