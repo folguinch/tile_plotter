@@ -940,7 +940,7 @@ class MapHandler(PhysPlotHandler):
         shift_data = config.getquantity('shift_data', fallback=None)
 
         ## Plot contours or map
-        if dtype == 'contour_map':
+        if dtype == 'contour':
             self.plot_contours(data, rms=rms, levels=levels,
                                colors=contours_colors, nsigma=nsigma,
                                negative_nsigma=negative_nsigma,

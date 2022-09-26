@@ -71,7 +71,7 @@ class MultiPlotter(BasePlotter):
         # Configuration
         set_xlabel, set_ylabel = self.has_axlabels(loc)
         set_xticks, set_yticks = self.has_ticks_labels(loc)
-        if dtype in ['image', 'contour_map', 'moment']:
+        if dtype in ['image', 'contour', 'moment']:
             handler.config_map(set_xlabel=set_xlabel, set_ylabel=set_ylabel,
                                set_xticks=set_xticks, set_yticks=set_yticks)
         else:
