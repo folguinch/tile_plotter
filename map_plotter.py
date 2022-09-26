@@ -244,7 +244,7 @@ class MapHandler(PhysPlotHandler):
                 self._log.info(f'Setting bunit to header unit: {bunit}')
             elif not ignore_units:
                 self._log.info('Converting data unit: %s -> %s',
-                               valdata.unit, bunit)
+                               valdata.unit, self.bunit)
                 valdata = valdata.to(self.bunit)
             else:
                 pass
@@ -930,6 +930,7 @@ class MapHandler(PhysPlotHandler):
         self_contours = config.getboolean('self_contours', fallback=None)
         contour_colors = config.get('contour_colors', fallback=None)
         contour_linewidth = config.getfloat('contour_linewidth', fallback=None)
+        ignore_units = config.getboolean('ignore_units', fallback=False)
         rms = config.getquantity('rms', fallback=None)
         levels = config.getquantity('levels', fallback=None)
         nsigma = self.skeleton.getfloat('data', 'nsigma')
@@ -943,6 +944,7 @@ class MapHandler(PhysPlotHandler):
             self.plot_contours(data, rms=rms, levels=levels,
                                colors=contours_colors, nsigma=nsigma,
                                negative_nsigma=negative_nsigma,
+                               ignore_units=ignore_units,
                                linewidths=contour_linewidth, zorder=2)
         elif 'with_style' in config:
             self._log.info('Changing style: %s', config['with_style'])
