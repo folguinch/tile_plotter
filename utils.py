@@ -269,7 +269,12 @@ def auto_levels(data: Optional[u.Quantity] = None,
         max_val = max_val.to(rms.unit)
         if nlevels is None:
             nlevels = get_nlevels(max_val, base_level, 'log', base=base)
-        if min_nlevels and nlevels < min_nlevels and base == min_base:
+        if nlevels == 0:
+            log(f'No contours over {nsigma}rms')
+            log(f'Using one level at rms level')
+            nlevels = 1
+            nsigma = 1
+        elif min_nlevels and nlevels < min_nlevels and base == min_base:
             log('Minimum number of levels not achieved with min_base')
             log(f'Setting min_nlevels value = {nlevels}')
             min_nlevels = nlevels
