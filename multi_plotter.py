@@ -5,7 +5,7 @@ import configparseradv.configparser as cfgparser
 
 from .base_plotter import BasePlotter, Location
 from .data_loaders import data_loader
-from .handlers import get_handler
+from .handlers import get_handler, HANDLERS
 
 class MultiPlotter(BasePlotter):
     """Multiple plot manager.
@@ -143,6 +143,81 @@ class MultiPlotter(BasePlotter):
                 self._log.debug('Configuring plot')
                 self.apply_config(loc, handler, dtype)
                 is_config += (loc,)
+
+class OTFMultiPlotter(BasePlotter):
+    """On-the-fly multiple plot manager.
+
+    It manages multiplotter without needing a configuration file. It
+    can be initialized with the basic properties of the plot that replace the
+    default values of a tile plot (e.g. properties like the number of rows and
+    columns).
+
+    Attributes:
+      config: configuration parser proxy of the current section.
+      fig: matplotlib figure.
+      figsize: figure size.
+      axes: the figure axes.
+    """
+
+    def __init__(self, **props):
+        """Initialize plotter."""
+        super().__init__(section='DEFAULT', **props)
+
+    def init_axis(self,
+                  loc: Location,
+                  handler: str,
+                  projection: Optional[str] = None,
+                  include_cbar: Optional[bool] = None,
+                  ) -> 'PlotHandler':
+        """Initialize axis by assigning a plot handler.
+
+        If the axis is not initialized, it replaces the axis geometry
+        (`FigGeometry`) with a plot handler. The plot handler is determined
+        from the configuration.
+
+        Args:
+          loc: axis location.
+          handler: handler name.
+          projection: optional; update axis projection.
+          include_cbar: optional; initialize the color bar.
+        """
+        handler = HANDLERS[handler]
+        axis = super().init_axis(loc, handler, projection=projection,
+                                 include_cbar=include_cbar)
+
+        return axis
+
+    def gen_handler(self,
+                    loc: Location,
+                    handler: str,
+                    projection: Optional[str] = None,
+                    include_cbar: Optional[bool] = None,
+                    **props) -> 'PlotHandler':
+        """Generate a handler with the given properties.
+
+        Args:
+          loc: axis location.
+          handler: handler name.
+          projection: optional; update axis projection.
+          include_cbar: optional; initialize the color bar.
+          props: optional; properties for the handler.
+        """
+        # Generate a new section
+        section = f'section{loc[0]}{loc[1]}'
+        props['loc'] = f'loc[0] loc[1]'
+        props['handler'] = handler
+        self._log.info('Generating dummy %s for (%i, %i)', section, *loc)
+        self.insert_section(section, value=props, switch=True)
+
+        return self.init_axis(loc, handler, projection=projection,
+                              include_cbar=include_cbar)
+
+    def plot_all():
+        pass
+
+    def apply_config():
+        pass
+
 
 #    def get_plotter(self, axis, cbax, projection):
 #        dtype = self.config['type']
