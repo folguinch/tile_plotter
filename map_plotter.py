@@ -511,7 +511,7 @@ class MapHandler(PhysPlotHandler):
 
         # Plot
         zorder = kwargs.setdefault('zorder', 0)
-        if valwcs is not None:
+        if valwcs is not None and extent is None:
             return super().contour(valdata,
                                    is_image=True,
                                    levels=levels_val,
