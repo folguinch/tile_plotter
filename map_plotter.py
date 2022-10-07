@@ -402,7 +402,7 @@ class MapHandler(PhysPlotHandler):
 
         # Check extent
         if extent is not None:
-            extent_val = _validate_extent(extent)
+            extent_val = self._validate_extent(extent)
         else:
             extent_val = None
 
