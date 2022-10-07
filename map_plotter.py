@@ -255,10 +255,14 @@ class MapHandler(PhysPlotHandler):
 
             # Set RADESYS
             if self.radesys is None:
-                self.radesys = data.header['RADESYS'].lower()
-                if self.radesys.upper() == 'J2000':
-                    self.radesys = 'fk5'
-                self._log.info(f'Setting RADESYS: {self.radesys}')
+                try:
+                    self.radesys = data.header['RADESYS'].lower()
+                    if self.radesys.upper() == 'J2000':
+                        self.radesys = 'fk5'
+                    self._log.info(f'Setting RADESYS: {self.radesys}')
+                except KeyError:
+                    self._log.warn(f'Map does not have RADESYS')
+                    self.radesys = ''
         elif not ignore_units:
             if self.bunit is None:
                 self._log.warning('Setting data as dimensionless')
