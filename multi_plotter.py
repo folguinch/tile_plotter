@@ -204,7 +204,7 @@ class OTFMultiPlotter(BasePlotter):
         """
         # Generate a new section
         section = f'section{loc[0]}{loc[1]}'
-        props['loc'] = f'loc[0] loc[1]'
+        props['loc'] = f'{loc[0]} {loc[1]}'
         props['handler'] = handler
         self._log.info('Generating dummy %s for (%i, %i)', section, *loc)
         self.insert_section(section, value=props, switch=True)
