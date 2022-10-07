@@ -307,6 +307,7 @@ class MapHandler(PhysPlotHandler):
         """
         xextent = [ext.to(self.xunit).value for ext in extent[:2]]
         yextent = [ext.to(self.yunit).value for ext in extent[2:]]
+        self._log.info('Axes extent: %s, %s', xextent, yextent)
 
         return tuple(xextent + yextent)
 
