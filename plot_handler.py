@@ -170,13 +170,15 @@ class PlotHandler:
                 if len(xlim) != 2:
                     raise ValueError(f'Could not set xlim: {xlim}')
                 xlim = dict(zip(['xmin', 'xmax'], xlim))
+            self._log.info('Setting xlim: %s', xlim)
             self.set_xlim(**xlim)
         if ylim is not None:
             if hasattr(ylim, 'index'):
                 if len(ylim) != 2:
                     raise ValueError(f'Could not set ylim: {ylim}')
                 ylim = dict(zip(['ymin', 'ymax'], ylim))
-            self.set_xlim(**ylim)
+            self._log.info('Setting ylim: %s', ylim)
+            self.set_ylim(**ylim)
 
         # Axis scales
         self.xscale = xscale or self.xscale
