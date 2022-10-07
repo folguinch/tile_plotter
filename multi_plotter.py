@@ -216,7 +216,7 @@ class OTFMultiPlotter(BasePlotter):
         pass
 
     def apply_config(self, loc: Location, handler: 'PlotHandler', dtype: str,
-                     label: str = ''):
+                     label: str = '', **kwargs):
         """Apply the plot configuration."""
         # Title
         title = self.config.get('title', fallback=None)
@@ -233,7 +233,7 @@ class OTFMultiPlotter(BasePlotter):
             handler.config_map(set_xlabel=set_xlabel, set_ylabel=set_ylabel,
                                set_xticks=set_xticks, set_yticks=set_yticks)
         else:
-            handler.config_plot()
+            handler.config_plot(**kwargs)
 
         # Axes label
         label = self.config.get('label', fallback=label)
