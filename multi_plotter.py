@@ -227,7 +227,7 @@ class OTFMultiPlotter(BasePlotter):
         # Configuration
         set_xlabel, set_ylabel = self.has_axlabels(loc)
         set_xticks, set_yticks = self.has_ticks_labels(loc)
-        if dtype in ['image', 'contour', 'moment', 'pvmap']:
+        if dtype in ['image', 'contour', 'moment']:
             self._log.debug(f'Label switches: {set_xlabel}, {set_ylabel}')
             self._log.debug(f'Tick switches: {set_xticks}, {set_yticks}')
             handler.config_map(set_xlabel=set_xlabel, set_ylabel=set_ylabel,
