@@ -215,9 +215,34 @@ class OTFMultiPlotter(BasePlotter):
     def plot_all():
         pass
 
-    def apply_config():
-        pass
+    def apply_config(self, loc: Location, handler: 'PlotHandler', dtype: str,
+                     label: str = ''):
+        """Apply the plot configuration."""
+        # Title
+        title = self.config.get('title', fallback=None)
+        if title is not None:
+            self._log.debug(f'Plotting title: {title}')
+            handler.title(title)
 
+        # Configuration
+        set_xlabel, set_ylabel = self.has_axlabels(loc)
+        set_xticks, set_yticks = self.has_ticks_labels(loc)
+        if dtype in ['image', 'contour', 'moment', 'pvmap']:
+            self._log.debug(f'Label switches: {set_xlabel}, {set_ylabel}')
+            self._log.debug(f'Tick switches: {set_xticks}, {set_yticks}')
+            handler.config_map(set_xlabel=set_xlabel, set_ylabel=set_ylabel,
+                               set_xticks=set_xticks, set_yticks=set_yticks)
+        else:
+            handler.config_plot()
+
+        # Axes label
+        label = self.config.get('label', fallback=label)
+        label_loc = self.config.getfloatlist('label_position',
+                                             fallback=(0.1, 0.9))
+        label_bkgc = self.config.getfloatlist('label_backgroundcolor',
+                                              fallback='w')
+        if label:
+            handler.label_axes(label, loc=label_loc, backgroundcolor=label_bkgc)
 
 #    def get_plotter(self, axis, cbax, projection):
 #        dtype = self.config['type']
