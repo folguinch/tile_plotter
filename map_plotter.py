@@ -410,6 +410,9 @@ class MapHandler(PhysPlotHandler):
         # Check wcs and re-center the image
         if valwcs is not None and radius is not None and position is not None:
             self.recenter(radius, position, valwcs)
+        elif extent_val is not None:
+            self.ax.set_xlim(*extent_val[:2])
+            self.ax.set_ylim(*extent_val[2:])
 
         # Plot data
         zorder = kwargs.setdefault('zorder', 1)
