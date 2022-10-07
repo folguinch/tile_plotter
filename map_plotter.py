@@ -346,7 +346,7 @@ class MapHandler(PhysPlotHandler):
                  rms: Optional[u.Quantity] = None,
                  mask_bad: bool = False,
                  mask_color: str = 'w',
-                 position: Optional['astroppy.SkyCoord'] = None,
+                 position: Optional['astropy.SkyCoord'] = None,
                  radius: Optional[u.Quantity] = None,
                  shift_data: Optional[u.Quantity] = None,
                  self_contours: bool = False,

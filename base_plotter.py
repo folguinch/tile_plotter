@@ -132,46 +132,6 @@ class BasePlotter(LoggedObject, metaclass=abc.ABCMeta):
         return self.axes.sharey
 
     @abc.abstractmethod
-    def plot_all(self):
-        """Iterate over the configuration sections and plot each one."""
-        pass
-
-    @abc.abstractmethod
-    def apply_config(self):
-        """Apply the configuration of the axis."""
-        pass
-
-    def insert_section(self, section: str, value: Dict,
-                       switch: bool = False) -> None:
-        """Insert a new section to the configuration."""
-        if section not in self._config:
-            self._config[section] = value
-        else:
-            raise KeyError(f'Section {section} already in config')
-        self._config_mapping = self._group_config_sections()
-
-        if switch:
-            self.switch_to(section)
-
-    def switch_to(self, section: str) -> None:
-        """Change the current `config` proxy."""
-        self.config = self._config[section]
-
-    def is_init(self, loc: Location, cbaxis: bool = False) -> bool:
-        """Check if an axis has been initialized.
-
-        Args:
-          loc: axis location.
-          cbaxis: whether to check for a colorbar axis instead.
-        """
-        if not cbaxis:
-            #return hasattr(self.axes[loc].axis, 'plot')
-            return self.axes[loc].handler is not None
-        else:
-            #return hasattr(self.axes[loc].cbaxis, 'plot')
-            return self.axes[loc].handler is not None
-
-    @abc.abstractmethod
     def init_axis(self,
                   loc: Location,
                   handler: 'PlotHandler',
@@ -220,6 +180,46 @@ class BasePlotter(LoggedObject, metaclass=abc.ABCMeta):
                                                        cbaxis, **kwargs))
 
         return self.axes[loc].handler
+
+    @abc.abstractmethod
+    def plot_all(self):
+        """Iterate over the configuration sections and plot each one."""
+        pass
+
+    @abc.abstractmethod
+    def apply_config(self):
+        """Apply the configuration of the axis."""
+        pass
+
+    def insert_section(self, section: str, value: Dict,
+                       switch: bool = False) -> None:
+        """Insert a new section to the configuration."""
+        if section not in self._config:
+            self._config[section] = value
+        else:
+            raise KeyError(f'Section {section} already in config')
+        self._config_mapping = self._group_config_sections()
+
+        if switch:
+            self.switch_to(section)
+
+    def switch_to(self, section: str) -> None:
+        """Change the current `config` proxy."""
+        self.config = self._config[section]
+
+    def is_init(self, loc: Location, cbaxis: bool = False) -> bool:
+        """Check if an axis has been initialized.
+
+        Args:
+          loc: axis location.
+          cbaxis: whether to check for a colorbar axis instead.
+        """
+        if not cbaxis:
+            #return hasattr(self.axes[loc].axis, 'plot')
+            return self.axes[loc].handler is not None
+        else:
+            #return hasattr(self.axes[loc].cbaxis, 'plot')
+            return self.axes[loc].handler is not None
 
     def init_cbar(self, loc: Location) -> None:
         """Initialize color bar."""
