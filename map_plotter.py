@@ -487,14 +487,14 @@ class MapHandler(PhysPlotHandler):
                     nlevels = 1
                 else:
                     nlevels = None
-                levels = auto_levels(valdata,
+                levels = auto_levels(data=valdata,
                                      rms=rms,
                                      nsigma=nsigma,
                                      nsigmalevel=nsigmalevel,
                                      nlevels=nlevels,
                                      negative_nsigma=negative_nsigma,
                                      log=self._log.info)
-                levels_val = levels.value
+                levels_val = levels.to(valdata.unit).value
             except ValueError:
                 return None
         else:
