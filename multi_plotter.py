@@ -1,5 +1,6 @@
 """Manage different types of plots."""
 from typing import Optional, Sequence
+from itertools import product
 
 import configparseradv.configparser as cfgparser
 
@@ -92,8 +93,9 @@ class MultiPlotter(BasePlotter):
         label_bkgc = self.config.getfloatlist('label_backgroundcolor',
                                               fallback='w')
         if len(self.axes) > 1:
-            ind = list(reversed(self.axes.keys())).index(loc)
-            label = f"({chr(ord('a') + ind)}) {label}"
+            #ind = list(reversed(self.axes.keys())).index(loc)
+            ind = list(product(*self.shape)).index(loc)
+            label = f"({chr(ord('a') + ind)}) {label}".strip()
         if label:
             handler.label_axes(label, loc=label_loc, backgroundcolor=label_bkgc)
 
