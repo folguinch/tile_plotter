@@ -94,7 +94,8 @@ class MultiPlotter(BasePlotter):
                                               fallback='w')
         if len(self.axes) > 1:
             #ind = list(reversed(self.axes.keys())).index(loc)
-            ind = list(product(*self.shape)).index(loc)
+            nrows, ncols = self.shape
+            ind = list(product(range(nrows), rows(ncols)).index(loc)
             label = f"({chr(ord('a') + ind)}) {label}".strip()
         if label:
             handler.label_axes(label, loc=label_loc, backgroundcolor=label_bkgc)
