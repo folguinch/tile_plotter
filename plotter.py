@@ -27,7 +27,7 @@ def multiplot(args):
     plot.plot_all()
     plot.savefig(args.plotname[0])
 
-def main(args: Sequence):
+def plotter(args: Sequence):
     """Main program.
 
     Args:
@@ -83,4 +83,4 @@ def main(args: Sequence):
     #    args.post(figure, args)
 
 if __name__=='__main__':
-    main(sys.argv[1:])
+    plotter(sys.argv[1:])
