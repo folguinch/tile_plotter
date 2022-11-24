@@ -23,7 +23,7 @@ from tile_plotter.multi_plotter import MultiPlotter
 #from plot_pvmap import plot_pvmaps_parser
 
 def multiplot(args):
-    plot = MultiPlotter(args.config[0], verbose='vv')
+    plot = MultiPlotter(args.config[0], verbose='v')
     plot.plot_all()
     plot.savefig(args.plotname[0])
 
