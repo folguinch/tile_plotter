@@ -404,6 +404,7 @@ class MapHandler(PhysPlotHandler):
         # Check extent
         if extent is not None:
             extent_val = self._validate_extent(extent)
+            self.log.info('Validated extent: %s', extent_val)
         else:
             extent_val = None
 
@@ -434,7 +435,7 @@ class MapHandler(PhysPlotHandler):
         if self_contours:
             self.plot_contours(valdata,
                                wcs=valwcs,
-                               extent=extent,
+                               extent=extent_val,
                                rms=rms,
                                levels=contour_levels,
                                colors=contour_colors,
@@ -802,6 +803,22 @@ class MapHandler(PhysPlotHandler):
 
         # Apect ratio
         self.set_aspect(1./self.ax.get_data_ratio())
+
+    def config_plot(self, **kwargs) -> None:
+        # Docs is inherited
+        # Change axes 
+        try:
+            self.ax.coord[0].set_major_formatter(self.axes_props['xformat'])
+        except ValueError:
+            pass
+        try:
+            self.ax.coord[1].set_major_formatter(self.axes_props['yformat'])
+        except ValueError:
+            pass
+        self.ax.coord[0].set_format_unit(self.xunit)
+        self.ax.coord[1].set_format_unit(self.yunit)
+
+        super().config_plot(**kwargs)
 
     # Artist functions
     def scatter(self,
