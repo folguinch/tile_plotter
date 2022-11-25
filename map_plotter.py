@@ -251,7 +251,7 @@ class MapHandler(PhysPlotHandler):
 
             # Check wcs
             if wcs is None:
-                wcs = apy_wcs.WCS(data.header, naxis=['longitude', 'latitude'])
+                wcs = apy_wcs.WCS(data.header, naxis=2)
 
             # Set RADESYS
             if self.radesys is None:
@@ -658,7 +658,7 @@ class MapHandler(PhysPlotHandler):
           kwargs: optional keywords for `matplotlib.patches.Ellipse`.
         """
         # Get wcs
-        wcs = apy_wcs.WCS(header, naxis=['longitude', 'latitude'])
+        wcs = apy_wcs.WCS(header, naxis=2)
 
         # Beam
         if beam is None:
