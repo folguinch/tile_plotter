@@ -809,7 +809,7 @@ class MapHandler(PhysPlotHandler):
         dec.display_minor_ticks(True)
 
         # Apect ratio
-        self.set_aspect(1./self.ax.get_data_ratio())
+        #self.set_aspect(1./self.ax.get_data_ratio())
 
     def config_plot(self, **kwargs) -> None:
         # Docs is inherited
