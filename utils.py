@@ -394,7 +394,7 @@ def get_artist_positions(values: str, artist: str,
                     ra, dec, cunit = val.split()
                     ra = u.Quantity(f'{ra} {unit}')
                     dec = u.Quantity(f'{dec} {unit}')
-                positions.append(LikeSkyCoord(ra, dec)
+                positions.append(LikeSkyCoord(ra, dec))
         elif (artist in ['hlines', 'vlines'] and xycoords == 'data'):
             positions.append(u.Quantity(val))
         else:
