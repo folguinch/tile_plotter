@@ -8,7 +8,7 @@ from astropy import wcs
 def load_image(filename: 'Path') -> Tuple[fits.PrimaryHDU, wcs.WCS]:
     """Load FITS file."""
     image = fits.open(filename)[0]
-    proj = wcs.WCS(image.header, naxis=['longitude', 'latitude'])
+    proj = wcs.WCS(image.header, naxis=2)
 
     return image, proj
 
