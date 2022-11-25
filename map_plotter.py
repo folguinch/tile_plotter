@@ -818,9 +818,9 @@ class MapHandler(PhysPlotHandler):
         self.ax.coords[0].set_format_unit(self.xunit)
         self.ax.coords[1].set_format_unit(self.yunit)
 
-        if self.axes_props['invertx']:
+        if self.axes_props.get('invertx'):
             self.ax.invert_xaxis()
-        if self.axes_props['inverty']:
+        if self.axes_props.get('inverty'):
             self.ax.invert_yaxis()
 
         super().config_plot(**kwargs)
