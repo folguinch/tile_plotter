@@ -155,7 +155,7 @@ class MapHandler(PhysPlotHandler):
                     value = u.Unit(value)
                 except ValueError:
                     value = None
-            elif opt.startswith('set_'):
+            elif opt.startswith('set_') or opt.startswith('invert'):
                 fallback = cls.skeleton.getboolean('axes_props', opt)
                 value = config.getboolean(opt, vars=kwargs, fallback=fallback)
             elif opt in ['label_xpad', 'label_ypad']:
@@ -818,6 +818,11 @@ class MapHandler(PhysPlotHandler):
         self.ax.coords[0].set_format_unit(self.xunit)
         self.ax.coords[1].set_format_unit(self.yunit)
 
+        if self.axes_props['invertx']:
+            self.ax.invert_xaxis()
+        if self.axes_props['inverty']:
+            self.ax.invert_yaxis()
+
         super().config_plot(**kwargs)
 
     # Artist functions
@@ -825,7 +830,6 @@ class MapHandler(PhysPlotHandler):
                 x: Union[float, u.Quantity],
                 y: Union[float, u.Quantity],
                 **kwargs):
-        """Scatter plot."""
         return super().scatter(x, y,
                                transform=self.ax.get_transform(self.radesys),
                                **kwargs)
@@ -835,7 +839,6 @@ class MapHandler(PhysPlotHandler):
              y: Union[float, u.Quantity],
              text: str,
              **kwargs):
-        """Plot text."""
         return super().text(x, y, text,
                             transform=self.ax.get_transform(self.radesys),
                             **kwargs)
