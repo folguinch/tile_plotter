@@ -529,7 +529,8 @@ class MapHandler(PhysPlotHandler):
         """Plot each value of the artist"""
         for position, props in zip(self.artists[artist]['positions'],
                                    self.artists[artist]['properties']):
-            pos = position.transform_to(self.radesys)
+            if self.radesys:
+                pos = position.transform_to(self.radesys)
             if artist == 'scatters':
                 art = self.scatter(pos.ra, pos.dec, **props)
             elif artist == 'texts':
@@ -537,6 +538,12 @@ class MapHandler(PhysPlotHandler):
                 art = self.text(pos.ra, pos.dec, text, nphys_args=2, **props)
             elif artist == 'arrows':
                 art = self.arrow(pos.ra, pos.dec, **props)
+            elif artist == 'hlines':
+                pos = position.to(self.yunit)
+                art = self.axhline(pos.value, **props)
+            elif artist == 'vlines':
+                pos = position.to(self.xunit)
+                art = self.axvline(pos.value, **props)
 
     def plot_artists(self) -> None:
         """Plot all the stored artists."""
@@ -884,60 +891,61 @@ class MapHandler(PhysPlotHandler):
 
         return super().arrow(xy_axes + vals, **kwargs)
 
-    def circle(self, x, y, r, color='g', facecolor='none', zorder=0):
-        cir = SphericalCircle((x, y), r, edgecolor=color, facecolor=facecolor,
-                transform=self.ax.get_transform('world'), zorder=zorder)
-        self.ax.add_patch(cir)
+    #def circle(self, x, y, r, color='g', facecolor='none', zorder=0):
+    #    cir = SphericalCircle((x, y), r, edgecolor=color, facecolor=facecolor,
+    #            transform=self.ax.get_transform('world'), zorder=zorder)
+    #    self.ax.add_patch(cir)
 
-    def rectangle(self, blc, width, height, edgecolor='green',
-            facecolor='none', **kwargs):
-        r = Rectangle(blc, width, height, edgecolor=edgecolor,
-                facecolor=facecolor, **kwargs)
-        self.ax.add_patch(r)
+    #def rectangle(self, blc, width, height, edgecolor='green',
+    #        facecolor='none', **kwargs):
+    #    r = Rectangle(blc, width, height, edgecolor=edgecolor,
+    #            facecolor=facecolor, **kwargs)
+    #    self.ax.add_patch(r)
 
-    def plot(self, *args, **kwargs):
-        """Plot data."""
-        try:
-            kwargs['transform'] = self.ax.get_transform(self.radesys)
-        except TypeError:
-            pass
-        self.ax.plot(*args, **kwargs)
+    #def plot(self, *args, **kwargs):
+    #    """Plot data."""
+    #    try:
+    #        kwargs['transform'] = self.ax.get_transform(self.radesys)
+    #    except TypeError:
+    #        pass
+    #    self.ax.plot(*args, **kwargs)
 
-    def plot_scale(self, size, r, distance, x=0.1, y=0.1, dy=0.01, color='g',
-                   zorder=10, unit=u.au, loc=3):
-        length = size.to(u.arcsec) / (2*r.to(u.arcsec))
-        label = distance.to(u.pc) * size.to(u.arcsec)
-        label = label.value * u.au
-        label = "%s" % label.to(unit)
-        label = label.lower()
-        self.annotate('', xy=(x,y), xytext=(x+length.value, y),
-                xycoords='axes fraction', arrowprops=dict(arrowstyle="|-|",
-                    facecolor=color),
-                color=color)
-        xmid = x + length.value/2.
-        self.annotate(label, xy=(xmid,y+dy), xytext=(xmid, y+dy),
-                xycoords='axes fraction', color=color)
-        #bar = AnchoredSizeBar(self.ax.transData, size.to(u.deg), label, loc,
-        #        color=color)
-        #self.ax.add_artist(bar)
+    #def plot_scale(self, size, r, distance, x=0.1, y=0.1, dy=0.01, color='g',
+    #               zorder=10, unit=u.au, loc=3):
+    #    length = size.to(u.arcsec) / (2*r.to(u.arcsec))
+    #    label = distance.to(u.pc) * size.to(u.arcsec)
+    #    label = label.value * u.au
+    #    label = "%s" % label.to(unit)
+    #    label = label.lower()
+    #    self.annotate('', xy=(x,y), xytext=(x+length.value, y),
+    #            xycoords='axes fraction', arrowprops=dict(arrowstyle="|-|",
+    #                facecolor=color),
+    #            color=color)
+    #    xmid = x + length.value/2.
+    #    self.annotate(label, xy=(xmid,y+dy), xytext=(xmid, y+dy),
+    #            xycoords='axes fraction', color=color)
+    #    #bar = AnchoredSizeBar(self.ax.transData, size.to(u.deg), label, loc,
+    #    #        color=color)
+    #    #self.ax.add_artist(bar)
 
-    def phys_scale(self, xstart, ystart, dy, label, color='w', zorder=10):
-        self.log.info('Plotting physical scale')
-        self.plot([xstart, xstart], [ystart, ystart+dy], color=color, ls='-',
-                lw=1, marker='_', zorder=zorder)
-        try:
-            xycoords = self.ax.get_transform('world')
-        except TypeError:
-            xycoords = 'data'
-        self.annotate(label, xy=[xstart, ystart],
-                xytext=[xstart, ystart], color=color,
-                horizontalalignment='right',
-                xycoords=xycoords, zorder=zorder)
+    #def phys_scale(self, xstart, ystart, dy, label, color='w', zorder=10):
+    #    self.log.info('Plotting physical scale')
+    #    self.plot([xstart, xstart], [ystart, ystart+dy], color=color, ls='-',
+    #            lw=1, marker='_', zorder=zorder)
+    #    try:
+    #        xycoords = self.ax.get_transform('world')
+    #    except TypeError:
+    #        xycoords = 'data'
+    #    self.annotate(label, xy=[xstart, ystart],
+    #            xytext=[xstart, ystart], color=color,
+    #            horizontalalignment='right',
+    #            xycoords=xycoords, zorder=zorder)
 
-    def set_aspect(self, *args):
-        """Set plot aspect ratio."""
-        self.ax.set_aspect(*args)
+    #def set_aspect(self, *args):
+    #    """Set plot aspect ratio."""
+    #    self.ax.set_aspect(*args)
 
+    # Misc
     def auto_plot(self,
                   data: Map,
                   dtype: str,

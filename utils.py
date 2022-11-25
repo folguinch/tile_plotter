@@ -1,5 +1,6 @@
 """Plotting utilities."""
 from typing import Union, Optional, Callable, Tuple
+from dataclasses import dataclass
 
 from astropy.coordinates import SkyCoord
 from matplotlib.ticker import FuncFormatter
@@ -9,6 +10,13 @@ import numpy as np
 
 # Type aliases
 Quantity = Union[u.Quantity, float, np.array]
+
+# Classes
+@dataclass
+class LikeSkyCoord:
+    """Class to emulate a `SkyCoord` object."""
+    ra: u.Quantity
+    dec: u.Quantity
 
 def quick_rms(data: Quantity) -> Quantity:
     """Estimate the rms of the data using the MAD."""
@@ -351,7 +359,8 @@ def generate_label(name: str, unit: Optional[u.Unit] = None,
 
 def get_artist_positions(values: str, artist: str,
                          separator: str = ',',
-                         xycoords: str = 'data') -> tuple:
+                         xycoords: str = 'data',
+                         phys_frame: str = 'sky') -> tuple:
     """Extract the position values for the input `artist`.
 
     It uses `artist` to determine the type of the output.
@@ -361,18 +370,33 @@ def get_artist_positions(values: str, artist: str,
       artist: artist type.
       separator: optional; separator between values.
       xycoords: optional; type of coordinates.
+      phys_frame: optional; physical frame of the data (`sky` or `projection`)
     """
     vals = values.split(separator)
     positions = []
     for val in vals:
         if (artist in ['scatters', 'arcs', 'texts', 'arrows'] and
             xycoords == 'data'):
-            try:
-                ra, dec, frame = val.split()
-            except ValueError:
-                ra, dec = val.split()
-                frame = 'icrs'
-            positions.append(SkyCoord(ra, dec, frame=frame))
+            if phys_frame == 'sky':
+                try:
+                    ra, dec, frame = val.split()
+                except ValueError:
+                    ra, dec = val.split()
+                    frame = 'icrs'
+                positions.append(SkyCoord(ra, dec, frame=frame))
+            else:
+                # Emulate a SkyCoord
+                try:
+                    ra, raunit, dec, decunit = val.split()
+                    ra = u.Quantity(f'{ra} {raunit}')
+                    dec = u.Quantity(f'{dec} {decunit}')
+                except ValueError:
+                    ra, dec, cunit = val.split()
+                    ra = u.Quantity(f'{ra} {unit}')
+                    dec = u.Quantity(f'{dec} {unit}')
+                positions.append(LikeSkyCoord(ra, dec)
+        elif (artist in ['hlines', 'vlines'] and xycoords == 'data'):
+            positions.append(u.Quantity(val))
         else:
             positions.append(tuple(map(float, val.split())))
 
@@ -411,8 +435,10 @@ def get_artist_properties(artist: str, config: 'ConfigParserAdv',
     """
     # Position
     xycoords = config.get(f'{artist}_xycoords', fallback='data')
+    phys_frame = config.get(f'{artist}_physframe', fallback='sky')
     positions = get_artist_positions(config[artist], artist,
-                                     separator=separator, xycoords=xycoords)
+                                     separator=separator, xycoords=xycoords,
+                                     phys_frame=phys_frame)
     nprops = len(positions)
 
     # Iterate over properties
@@ -424,7 +450,7 @@ def get_artist_properties(artist: str, config: 'ConfigParserAdv',
 
         # Iterate over positions
         float_props = ['size', 'width', 'height', 'angle', 's', 'alpha',
-                       'length']
+                       'length', 'linewidth']
         prop = opt.split('_')[-1]
         for i in range(nprops):
             if prop in float_props:
