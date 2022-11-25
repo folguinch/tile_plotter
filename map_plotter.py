@@ -808,15 +808,15 @@ class MapHandler(PhysPlotHandler):
         # Docs is inherited
         # Change axes 
         try:
-            self.ax.coord[0].set_major_formatter(self.axes_props['xformat'])
+            self.ax.coords[0].set_major_formatter(self.axes_props['xformat'])
         except ValueError:
             pass
         try:
-            self.ax.coord[1].set_major_formatter(self.axes_props['yformat'])
+            self.ax.coords[1].set_major_formatter(self.axes_props['yformat'])
         except ValueError:
             pass
-        self.ax.coord[0].set_format_unit(self.xunit)
-        self.ax.coord[1].set_format_unit(self.yunit)
+        self.ax.coords[0].set_format_unit(self.xunit)
+        self.ax.coords[1].set_format_unit(self.yunit)
 
         super().config_plot(**kwargs)
 
