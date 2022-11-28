@@ -407,13 +407,13 @@ class MapHandler(PhysPlotHandler):
         # Check extent
         if extent is not None:
             extent_val = self._validate_extent(extent)
-            self.log.info('Validated extent: %s', extent_val)
+            self._log.info('Validated extent: %s', extent_val)
             valwcs = None
         elif extent is None and use_extent:
             extent = get_extent(data, wcs=wcs)
-            self.log.info('Extent from data: %s', extent)
+            self._log.info('Extent from data: %s', extent)
             extent_val = self._validate_extent(extent)
-            self.log.info('Validated extent: %s', extent_val)
+            self._log.info('Validated extent: %s', extent_val)
             valwcs = None
         else:
             extent_val = None
@@ -492,12 +492,12 @@ class MapHandler(PhysPlotHandler):
         # Check extent
         if extent is not None:
             extent_val = self._validate_extent(extent)
-            self.log.info('Contour validated extent: %s', extent_val)
+            self._log.info('Contour validated extent: %s', extent_val)
         elif extent is None and use_extent:
             extent = get_extent(data, wcs=wcs)
-            self.log.info('Contour extent from data: %s', extent)
+            self._log.info('Contour extent from data: %s', extent)
             extent_val = self._validate_extent(extent)
-            self.log.info('Contour validated extent: %s', extent_val)
+            self._log.info('Contour validated extent: %s', extent_val)
         else:
             extent_val = None
 
