@@ -12,17 +12,24 @@ def load_image(filename: 'Path') -> Tuple[fits.PrimaryHDU, wcs.WCS]:
 
     return image, proj
 
+def load_pvimage(filename: 'Path') -> Tuple[fits.PrimaryHDU, str]:
+    """Load FITS file."""
+    image = fits.open(filename)[0]
+    proj = 'rectilinear'
+
+    return image, proj
+
 # Available loaders
 LOADERS = {
     'image': load_image,
     'contour': load_image,
-    'pvmap': load_image,
+    'pvmap': load_pvimage,
     'moment': load_image,
 }
 
 # General purpose loader
 def data_loader(config: 'ConfigParserAdv',
-                log: Callable = print) -> Tuple['Data', 'Projection']:
+                log: Callable = print) -> Tuple['Data', 'Projection', str]:
     """Find a loader and loads the data from a config parser proxy.
 
     If the `loader` option is given in the configuration, then this is used to

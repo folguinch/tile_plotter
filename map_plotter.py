@@ -21,7 +21,8 @@ import numpy as np
 from .base_plotter import BasePlotter
 from .plot_handler import PhysPlotHandler
 from .utils import (get_artist_properties, auto_vmin, auto_vmax,
-                    generate_label, auto_levels, get_colorbar_ticks)
+                    generate_label, auto_levels, get_colorbar_ticks,
+                    get_extent)
 
 # Type aliases
 Axes = TypeVar('Axes')
@@ -54,7 +55,7 @@ def filter_config_data(config: ConfigParserAdv, keys: Sequence,
             options[key] = config.getskycoord(key)
         elif key in ['radius', 'rms', 'levels']:
             options[key] = config.getquantity(key)
-        elif key in ['self_contours']:
+        elif key in ['self_contours', 'use_extent']:
             options[key] = config.getboolean(key)
         elif key in ['nsigma', 'negative_nsigma', 'nsigma_level',
                      'contour_linewidth']:
@@ -348,6 +349,7 @@ class MapHandler(PhysPlotHandler):
                  data: Map,
                  wcs: Optional[apy_wcs.WCS] = None,
                  extent: Optional[Tuple[u.Quantity]] = None,
+                 use_extent: bool = False,
                  rms: Optional[u.Quantity] = None,
                  mask_bad: bool = False,
                  mask_color: str = 'w',
@@ -373,6 +375,7 @@ class MapHandler(PhysPlotHandler):
           data: input map.
           wcs: optional; WCS object of the map.
           extent: optional; `xy` range of the data (left, right, bottom, top).
+          use_extent: optional; determine extent from data and ignore wcs.
           rms: optional; map noise level.
           mask_bad: optional; mask bad/null pixels?
           mask_color: optional; color for bad/null pixels.
@@ -405,6 +408,13 @@ class MapHandler(PhysPlotHandler):
         if extent is not None:
             extent_val = self._validate_extent(extent)
             self.log.info('Validated extent: %s', extent_val)
+            valwcs = None
+        elif extent is None and use_extent:
+            extent = get_extent(data, wcs=wcs)
+            self.log.info('Extent from data: %s', extent)
+            extent_val = self._validate_extent(extent)
+            self.log.info('Validated extent: %s', extent_val)
+            valwcs = None
         else:
             extent_val = None
 
@@ -449,6 +459,7 @@ class MapHandler(PhysPlotHandler):
                       data: Map,
                       wcs: Optional[apy_wcs.WCS] = None,
                       extent: Optional[Tuple[u.Quantity]] = None,
+                      use_extent: bool = False,
                       rms: Optional[u.Quantity] = None,
                       levels: Optional[List[u.Quantity]] = None,
                       colors: Optional[Sequence[str]] = None,
@@ -463,6 +474,7 @@ class MapHandler(PhysPlotHandler):
           data: input map.
           wcs: optional; WCS object of the map.
           extent: optional; `xy` range of the data (left, right, bottom, top).
+          use_extent: optional; determine extent from data and ignore wcs.
           rms: optional; map noise level.
           levels: optional; contour levels.
           colors: optional; contour colors.
@@ -480,6 +492,14 @@ class MapHandler(PhysPlotHandler):
         # Check extent
         if extent is not None:
             extent_val = self._validate_extent(extent)
+            self.log.info('Contour validated extent: %s', extent_val)
+        elif extent is None and use_extent:
+            extent = get_extent(data, wcs=wcs)
+            self.log.info('Contour extent from data: %s', extent)
+            extent_val = self._validate_extent(extent)
+            self.log.info('Contour validated extent: %s', extent_val)
+        else:
+            extent_val = None
 
         # Levels
         if levels is None:
@@ -512,7 +532,7 @@ class MapHandler(PhysPlotHandler):
 
         # Plot
         zorder = kwargs.setdefault('zorder', 0)
-        if valwcs is not None and extent is None:
+        if valwcs is not None and extent_val is None:
             return super().contour(valdata,
                                    is_image=True,
                                    levels=levels_val,
@@ -961,6 +981,7 @@ class MapHandler(PhysPlotHandler):
         position = config.getskycoord('center', fallback=None)
         radius = config.getquantity('radius', fallback=None)
         self_contours = config.getboolean('self_contours', fallback=None)
+        use_extent = config.getboolean('use_extent', fallback=False)
         contour_colors = config.get('contour_colors', fallback=None)
         contour_linewidth = config.getfloat('contour_linewidth', fallback=None)
         ignore_units = config.getboolean('ignore_units', fallback=False)
@@ -972,17 +993,22 @@ class MapHandler(PhysPlotHandler):
         nsigma_level = config.getfloat('nsigma_level', fallback=None)
         shift_data = config.getquantity('shift_data', fallback=None)
 
-        ## Plot contours or map
+        # Special cases
+        if dtype == 'pvmap':
+            use_extent = True
+
+        # Plot contours or map
         if dtype == 'contour':
-            self.plot_contours(data, rms=rms, levels=levels,
-                               colors=contour_colors, nsigma=nsigma,
-                               negative_nsigma=negative_nsigma,
+            self.plot_contours(data, use_extent=use_extent, rms=rms,
+                               levels=levels, colors=contour_colors,
+                               nsigma=nsigma, negative_nsigma=negative_nsigma,
                                ignore_units=ignore_units,
                                linewidths=contour_linewidth, zorder=2)
         elif 'with_style' in config:
             self._log.info('Changing style: %s', config['with_style'])
             with mpl.pyplot.style.context(config['with_style']):
                 self.plot_map(data,
+                              use_extent=use_extent,
                               rms=rms,
                               position=position,
                               radius=radius,
@@ -996,6 +1022,7 @@ class MapHandler(PhysPlotHandler):
                               contour_nsigmalevel=nsigma_level)
         else:
             self.plot_map(data,
+                          use_extent=use_extent,
                           rms=rms,
                           position=position,
                           radius=radius,

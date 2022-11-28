@@ -1,14 +1,16 @@
 """Plotting utilities."""
-from typing import Union, Optional, Callable, Tuple
+from typing import Union, Optional, Callable, Tuple, List
 from dataclasses import dataclass
 
 from astropy.coordinates import SkyCoord
 from matplotlib.ticker import FuncFormatter
+from toolkit.astro_tools import images
 import astropy.stats as apystats
 import astropy.units as u
 import numpy as np
 
 # Type aliases
+Map = TypeVar('Map', u.Quantity, 'astropy.io.PrimaryHDU')
 Quantity = Union[u.Quantity, float, np.array]
 
 # Classes
@@ -42,6 +44,19 @@ def get_data_type(data: Quantity, default: Optional[str] = None) -> str:
         data_type = default
 
     return data_type
+
+def get_extent(data: Map,
+               wcs: Optional['astropy.wcs.WCS'] = None) -> List[u.Quantity]:
+    """Determine the data extent."""
+    if wcs is not None and not hasattr(data, 'header'):
+        image = fits.PrimaryHDU(data.value, header=wcs.to_header())
+    elif wcs is None and not hasattr(data, 'header'):
+        raise ValueError('Extent cannot be determined')
+    else:
+        image = data
+    xaxis, yaxis = images.get_coord_axes(image)
+
+    return [xaxis[0], xaxis[-1], yaxis[0], yaxis[-1]]
 
 def get_colorbar_ticks(vmin: u.Quantity,
                        vmax: u.Quantity,
