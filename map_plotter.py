@@ -836,14 +836,20 @@ class MapHandler(PhysPlotHandler):
         # Change axes 
         try:
             self.ax.coords[0].set_major_formatter(self.axes_props['xformat'])
+            self.ax.coords[0].set_format_unit(self.xunit)
+        except AttributeError:
+            fmt = f"{{x:.{self.axes_props['xformat']}f}}"
+            self.ax.xaxis.set_major_formatter(fmt)
         except ValueError:
             pass
         try:
             self.ax.coords[1].set_major_formatter(self.axes_props['yformat'])
+            self.ax.coords[1].set_format_unit(self.yunit)
+        except AttributeError:
+            fmt = f"{{x:.{self.axes_props['yformat']}f}}"
+            self.ax.yaxis.set_major_formatter(fmt)
         except ValueError:
             pass
-        self.ax.coords[0].set_format_unit(self.xunit)
-        self.ax.coords[1].set_format_unit(self.yunit)
 
         if self.axes_props.get('invertx'):
             self.ax.invert_xaxis()
