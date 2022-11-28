@@ -445,7 +445,7 @@ class MapHandler(PhysPlotHandler):
         if self_contours:
             self.plot_contours(valdata,
                                wcs=valwcs,
-                               extent=extent_val,
+                               extent=extent,
                                rms=rms,
                                levels=contour_levels,
                                colors=contour_colors,
