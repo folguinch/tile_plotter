@@ -411,7 +411,7 @@ def get_artist_positions(values: str, artist: str,
                     ra = u.Quantity(f'{ra} {unit}')
                     dec = u.Quantity(f'{dec} {unit}')
                 positions.append(LikeSkyCoord(ra, dec))
-        elif (artist in ['hlines', 'vlines'] and xycoords == 'data'):
+        elif artist in ['hlines', 'vlines'] and xycoords == 'data':
             positions.append(u.Quantity(val))
         else:
             positions.append(tuple(map(float, val.split())))
@@ -475,7 +475,7 @@ def get_artist_properties(artist: str, config: 'ConfigParserAdv',
             elif prop in ['zorder']:
                 val = config.getvalue(opt, n=i, dtype=int, allow_global=True,
                                       sep=separator)
-            elif prop in ['pa',]:
+            elif prop in ['pa', 'slope']:
                 val = config.getvalue(opt, n=i, dtype='quantity',
                                       allow_global=True, sep=separator)
             else:

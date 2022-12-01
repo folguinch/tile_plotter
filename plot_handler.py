@@ -200,27 +200,34 @@ class PlotHandler:
     def plot(self, *args, **kwargs) -> Plot:
         """Plot on the axis.
 
-        Arguments are the same as for the matplotlib.pyplot.plot() finction.
+        Arguments are the same as for the `matplotlib.pyplot.plot` function.
 
         Args:
           args: data to plot.
-          kwargs: arguments for matplotlib.pyplot.plot().
+          kwargs: arguments for `matplotlib.pyplot.plot`.
         """
         return self._simple_plt(self.axis.plot, *args, **kwargs)
 
     def axhline(self, *args, **kwargs) -> None:
         """Plot horizontal line.
 
-        Arguments are the same as for the matplotlib.pyplot.axhline function.
+        Arguments are the same as for the `matplotlib.pyplot.axhline` function.
         """
         self.axis.axhline(*args,**kwargs)
 
     def axvline(self, *args, **kwargs) -> None:
         """Plot vertical line.
 
-        Arguments are the same as for the matplotlib.pyplot.axvline function.
+        Arguments are the same as for the `matplotlib.pyplot.axvline` function.
         """
         self.axis.axvline(*args,**kwargs)
+
+    def axline(self, *args, **kwargs) -> None:
+        """Plot a line from position and slope.
+
+        Arguments are the same as for the `matplotlib.pyplot.axline` function.
+        """
+        self.axis.axline(*args, **kwargs)
 
     def axvspan(self, *args, **kwargs) -> None:
         """Axis vertical span."""
@@ -233,11 +240,11 @@ class PlotHandler:
     def errorbar(self, *args, **kwargs) -> Plot:
         """Plot on the axis.
 
-        Arguments are the same as for the matplotlib.pyplot.errorbar() finction.
+        Arguments are the same as for the `matplotlib.pyplot.errorbar` function.
 
         Args:
           args: data to plot.
-          kwargs: arguments for matplotlib.pyplot.errorbar().
+          kwargs: arguments for `matplotlib.pyplot.errorbar`.
         """
         return self._simple_plt(self.axis.errorbar, *args, **kwargs)
 
@@ -248,11 +255,11 @@ class PlotHandler:
     def annotate(self, *args, **kwargs) -> None:
         """Annotate the axis.
 
-        Arguments are the same as for the matplotlib.pyplot.annotate() finction.
+        Arguments are the same as for the `matplotlib.pyplot.annotate` function.
 
         Args:
           args: data to plot.
-          kwargs: arguments for matplotlib.pyplot.annotate().
+          kwargs: arguments for `matplotlib.pyplot.annotate`.
         """
         self.axis.annotate(*args, **kwargs)
 
@@ -268,7 +275,7 @@ class PlotHandler:
         Args:
           handlers: matplotlib plot handlers.
           labels: labels for each handler.
-          loc: legend position. See matplotlib.pyplot.lengend() documentation
+          loc: legend position. See `matplotlib.pyplot.lengend` documentation
             for available values and positions (default 0, i.e. best location).
           auto: use stored handlers.
           match_colors: match legend artist and legend text colors.

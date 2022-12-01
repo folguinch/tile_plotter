@@ -529,6 +529,12 @@ class MapHandler(PhysPlotHandler):
             elif artist == 'vlines':
                 pos = position.to(self.axes_props.xunit)
                 self.axvline(pos.value, **props)
+            elif artist == 'axlines':
+                pos = (position.ra.to(self.axes_props.xunit).value,
+                       position.dec.to(self.axes_props.yunit).value)
+                slope = props.pop('slope')
+                slope = slope.to(self.axes_props.yunit/self.axes_props.xunit)
+                self.axvline(pos, slope=slope.value, **props)
 
     def plot_artists(self) -> None:
         """Plot all the stored artists."""
@@ -841,36 +847,37 @@ class MapHandler(PhysPlotHandler):
     #        pass
     #    self.ax.plot(*args, **kwargs)
 
-    #def plot_scale(self, size, r, distance, x=0.1, y=0.1, dy=0.01, color='g',
-    #               zorder=10, unit=u.au, loc=3):
-    #    length = size.to(u.arcsec) / (2*r.to(u.arcsec))
-    #    label = distance.to(u.pc) * size.to(u.arcsec)
-    #    label = label.value * u.au
-    #    label = "%s" % label.to(unit)
-    #    label = label.lower()
-    #    self.annotate('', xy=(x,y), xytext=(x+length.value, y),
-    #            xycoords='axes fraction', arrowprops=dict(arrowstyle="|-|",
-    #                facecolor=color),
-    #            color=color)
-    #    xmid = x + length.value/2.
-    #    self.annotate(label, xy=(xmid,y+dy), xytext=(xmid, y+dy),
-    #            xycoords='axes fraction', color=color)
-    #    #bar = AnchoredSizeBar(self.ax.transData, size.to(u.deg), label, loc,
-    #    #        color=color)
-    #    #self.ax.add_artist(bar)
+    def phys_scale(self, x0: u.Quantity, y0: u.Quantity, length: u.Quantity,
+                   label: str, color: str = 'w', zorder: int = 10) -> None:
+        """Plot physical scale.
+        
+        Args:
+          x0, y0: position of the origin of the scale.
+          length: length of the scale.
+          label: scale label.
+          color: optional; scale color.
+          zorder: optional; plotting order.
+        """
+        # Plot bar
+        self.log._info('Plotting physical scale')
+        xval = [x0.to(self.axes_props.xunit).value] * 2
+        yval = y0.to(self.axes_props.yunit).value
+        yval = [yval, yval + length.to(self.axes_props.yunit).value]
+        self.plot(xval, yval, color=color, ls='-', lw=1, marker='_',
+                  zorder=zorder)
 
-    #def phys_scale(self, xstart, ystart, dy, label, color='w', zorder=10):
-    #    self.log.info('Plotting physical scale')
-    #    self.plot([xstart, xstart], [ystart, ystart+dy], color=color, ls='-',
-    #            lw=1, marker='_', zorder=zorder)
-    #    try:
-    #        xycoords = self.ax.get_transform('world')
-    #    except TypeError:
-    #        xycoords = 'data'
-    #    self.annotate(label, xy=[xstart, ystart],
-    #            xytext=[xstart, ystart], color=color,
-    #            horizontalalignment='right',
-    #            xycoords=xycoords, zorder=zorder)
+        # Plot label
+        try:
+            xycoords = self.ax.get_transform('world')
+        except TypeError:
+            xycoords = 'data'
+        self.annotate(label,
+                      xy=[xval[0], yval[0]],
+                      xytext=[xval[0], yval[0]],
+                      color=color,
+                      horizontalalignment='right',
+                      xycoords=xycoords,
+                      zorder=zorder)
 
     #def set_aspect(self, *args):
     #    """Set plot aspect ratio."""
@@ -974,25 +981,28 @@ class MapHandler(PhysPlotHandler):
         #if 'title' in config:
         #    self.title(config['title'])
 
-        ## Scale
-        #if 'scale_position' in config:
-        #    # From config
-        #    scale_pos = config.getskycoord('scale_position')
-        #    distance = config.getquantity('distance').to(u.pc)
-        #    length = config.getquantity('scale_length',
-        #            fallback=1*u.arcsec).to(u.arcsec)
-        #    scalecolor = config.get('scale_color', fallback='w')
+        # Scale
+        if 'scale' in config:
+            # From config
+            scale_pos = config.getskycoord('scale')
+            distance = config.getquantity('source_distance').to(u.pc)
+            if 'scale_size' in config:
+                size = config.getquantity('scale_size').to(u.au)
+                length = size.value / distance.value * u.arcsec
+            elif 'scale_length' in config:
+                length = config.getquantity('scale_length').to(u.arcsec)
+                size = distance.value * length.value * u.au
+            scalecolor = config.get('scale_color', fallback='w')
 
-        #    # Scale label
-        #    label = distance * length
-        #    label = label.value * u.au
-        #    label = '{0.value:.0f} {0.unit:latex_inline}  '.format(label)
-        #    label = label.lower()
-        #
-        #    # Plot scale
-        #    self.phys_scale(scale_pos.ra.degree, scale_pos.dec.degree,
-        #            length.to(u.degree).value, label,
-        #            color=scalecolor)
+            # Check size unit
+            size = size.to(u.Unit(config.get('scale_unit', fallback='au')))
+
+            # Scale label
+            label = f'{size.value:.0f} {size.unit:latex_inline}'
+        
+            # Plot scale
+            self.phys_scale(scale_pos.ra, scale_pos.dec, length, label,
+                            color=scalecolor)
 
     def brightness_temperature(self,
                                header: Mapping,
