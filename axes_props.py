@@ -15,33 +15,49 @@ Colormap = TypeVar('Colormap')
 class AxesProps:
     """Store Axes properties."""
     xname: str = 'x'
-    """x axis name."""
+    """X-axis name."""
     yname: str = 'y'
-    """y axis name."""
-    xlim: Union[None, Tuple[float, float], Tuple[None, float]] = None
-    ylim: Union[None, Tuple[float, float], Tuple[None, float]] = None
+    """Y-axis name."""
+    xlim: Optional[Tuple[float, float], Tuple[None, float]] = None
+    """X-axis limits."""
+    ylim: Optional[Tuple[float, float], Tuple[None, float]] = None
+    """Y-axis limits."""
     xscale: str = 'linear'
-    """x axis scale (linear or log)."""
+    """X-axis scale (linear or log)."""
     yscale: str = 'linear'
-    """y axis scale (linear or log)."""
-    xunit: Union[None, str] = None
-    """x axis unit."""
-    yunit: Union[None, str] = None
-    """y axis unit."""
-    xlabel: Union[None, str] = None
-    ylabel: Union[None, str] = None
+    """Y-axis scale (linear or log)."""
+    xunit: Optional[str] = None
+    """X-axis unit."""
+    yunit: Optional[str] = None
+    """Y-axis unit."""
+    xlabel: Optional[str] = None
+    """X-axis label."""
+    ylabel: Optional[str] = None
+    """Y-axis label."""
     label_xpad: float = 0
+    """Padding for the x-axis label."""
     label_ypad: float = 0
+    """Padding for the y-axis label."""
     set_xlabel: bool = True
+    """Draw x-axis label?"""
     set_ylabel: bool = True
+    """Draw y-axis label?"""
     set_xticks: bool = True
+    """Draw x-axis tick labels?"""
     set_yticks: bool = True
+    """Draw y-axis tick labels?"""
     invertx: bool = False
+    """Invert x axis direction?"""
     inverty: bool = False
+    """Invert y axis direction?"""
     ticks_color: str = 'k'
+    """Ticks color."""
     xticks_fmt: Union[None, str, Callable] = '{:.3f}'
+    """Ticks labe format for x-axis."""
     yticks_fmt: Union[None, str, Callable] = '{:.3f}'
+    """Ticks labe format for y-axis."""
     unit_fmt: str = '({})'
+    """Format for axes unit label."""
 
     def __post_init__(self):
         # Generate labels
