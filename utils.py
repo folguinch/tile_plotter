@@ -3,6 +3,7 @@ from typing import Union, Optional, Callable, Tuple, List, TypeVar
 from dataclasses import dataclass
 
 from astropy.coordinates import SkyCoord
+from astropy.io import fits
 from matplotlib.ticker import FuncFormatter
 from toolkit.astro_tools import images
 import astropy.stats as apystats
@@ -202,10 +203,10 @@ def auto_vmax(data: u.Quantity,
         return vmax.to(data.unit)
 
 def auto_vminmax(data: u.Quantity,
-                 map_type: str = 'intensity',
+                 data_type: str = 'intensity',
                  **kwargs) -> Tuple[u.Quantity, u.Quantity]:
     """Calculate vmin and vmax from data."""
-    return (auto_vmin(data, map_type=map_type, **kwargs),
+    return (auto_vmin(data, data_type=data_type, **kwargs),
             auto_vmax(data))
 
 def get_nlevels(max_val: u.Quantity, min_val: u.Quantity, stretch: str,
@@ -294,7 +295,7 @@ def auto_levels(data: Optional[u.Quantity] = None,
             nlevels = get_nlevels(max_val, base_level, 'log', base=base)
         if nlevels == 0:
             log(f'No contours over {nsigma}rms')
-            log(f'Using one level at rms level')
+            log('Using one level at rms level')
             nlevels = 1
             nsigma = 1
         elif min_nlevels and nlevels < min_nlevels and base == min_base:
@@ -406,7 +407,7 @@ def get_artist_positions(values: str, artist: str,
                     ra = u.Quantity(f'{ra} {raunit}')
                     dec = u.Quantity(f'{dec} {decunit}')
                 except ValueError:
-                    ra, dec, cunit = val.split()
+                    ra, dec, unit = val.split()
                     ra = u.Quantity(f'{ra} {unit}')
                     dec = u.Quantity(f'{dec} {unit}')
                 positions.append(LikeSkyCoord(ra, dec))

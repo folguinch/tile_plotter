@@ -1,19 +1,15 @@
 """Objects for plotting images."""
 from typing import (Sequence, Optional, TypeVar, Union, Tuple, Dict, Mapping,
-                    List, Callable)
+                    List)
 import pathlib
 
-from astropy.visualization import LogStretch, LinearStretch
-from astropy.visualization.mpl_normalize import ImageNormalize
-from astropy.visualization.wcsaxes import SphericalCircle
+#from astropy.visualization.wcsaxes import SphericalCircle
 from configparseradv.configparser import ConfigParserAdv
-from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
-from matplotlib.colors import TwoSlopeNorm
-from matplotlib.patches import Rectangle, Ellipse
+#from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
+from matplotlib.patches import Ellipse
 from matplotlib import cm
 from radio_beam import Beam
 import astropy.units as u
-import astropy.visualization as vis
 import astropy.wcs as apy_wcs
 import matplotlib as mpl
 import numpy as np
@@ -21,8 +17,7 @@ import numpy as np
 from .base_plotter import BasePlotter
 from .plot_handler import PhysPlotHandler
 from .utils import (get_artist_properties, auto_vmin, auto_vmax,
-                    generate_label, auto_levels, get_colorbar_ticks,
-                    get_extent)
+                    auto_levels, get_extent)
 
 # Type aliases
 Axes = TypeVar('Axes')
@@ -36,7 +31,7 @@ Position = TypeVar('Position', 'astroppy.SkyCoord', u.Quantity,
                    Tuple[u.Quantity, u.Quantity])
 
 def filter_config_data(config: ConfigParserAdv, keys: Sequence,
-                       ignore: Sequence = ['image', 'contour']) -> Dict:
+                       ignore: Sequence = ('image', 'contour')) -> Dict:
     """Filter the data options in `config` present in `skeleton`.
 
     Args:
@@ -96,28 +91,32 @@ class MapHandler(PhysPlotHandler):
                  axis: Axes,
                  cbaxis: Optional[Axes] = None,
                  radesys: Optional[str] = None,
-                 axes_props: Mapping = {},
-                 vscale: Mapping = {},
-                 artists: Mapping = {}):
+                 axes_props: Optional[Mapping] = None,
+                 vscale: Optional[Mapping] = None,
+                 #cbar_props: Mapping = {},
+                 artists: Optional[Mapping] = None):
         """Initiate a map plot handler."""
-        super().__init__(axis, cbaxis=cbaxis,
-                         xname=axes_props.pop('xname', 'RA'),
-                         yname=axes_props.pop('yname', 'Dec'),
+        # Copy colorbar properties
+        #vscale['name'] = cbar_props.get('bname', 'Intensity')
+        #vscale['unit'] = cbar_props.get('bunit', u.Unit(1))
+        #vscale['name2'] = cbar_props.get('bname_cbar2')
+        #vscale['unit2'] = cbar_props.get('bunit_cbar2')
+
+        # Initialize
+        super().__init__(axis, cbaxis=cbaxis, vscale=vscale,
+                         xname=axes_props.pop('xname', 'R.A.'),
+                         yname=axes_props.pop('yname', 'Dec.'),
                          xunit=axes_props.pop('xunit', u.deg),
-                         yunit=axes_props.pop('yunit', u.deg))
+                         yunit=axes_props.pop('yunit', u.deg),
+                         **axes_props)
+        self._log.info('Setting bunit (%s): %s',
+                       self.vscale.name, self.vscale.unit)
 
         # Units and names
         self._log.info('Creating map plot')
         self.im = None
-        self.bname = axes_props.pop('bname', 'Intensity')
-        self.bunit = axes_props.pop('bunit', u.Unit(1))
-        self._log.info(f'Setting bunit ({self.bname}): {self.bunit}')
-        self.bname_cbar2 = axes_props.pop('bname_cbar2')
-        self.bunit_cbar2 = axes_props.pop('bunit_cbar2')
-        self.axes_props = axes_props
 
-        # Store other options
-        self.vscale = vscale
+        # Store artists
         self.artists = artists
 
         # Projection system
@@ -125,7 +124,7 @@ class MapHandler(PhysPlotHandler):
             self.radesys = radesys.lower()
             if radesys.upper() == 'J2000':
                 self.radesys = 'fk5'
-            self._log.info(f'Setting RADESYS: {self.radesys}')
+            self._log.info('Setting RADESYS: %s', self.radesys)
         else:
             self.radesys = None
 
@@ -171,13 +170,28 @@ class MapHandler(PhysPlotHandler):
             if opt not in config and opt not in kwargs:
                 continue
             val = config.get(opt, vars=kwargs)
-            try:
-                split_val = val.split()
-                vscale[opt] = float(split_val[0]) * u.Unit(split_val[1])
-            except ValueError:
-                vscale[opt] = val
-            except IndexError:
-                vscale[opt] = float(val)
+            if 'unit' in opt:
+                try:
+                    val = u.Unit(val)
+                except ValueError:
+                    val = None
+            elif 'name' in opt or 'stretch' in opt:
+                pass
+            elif opt in ['ticks', 'ticklabels']:
+                val = val.split()
+                if opt == 'ticks':
+                    val = np.array(list(map(float, val[:-1]))) * u.Unit(val[-1])
+            elif opt in ['nticks']:
+                val = int(val)
+            else:
+                try:
+                    split_val = val.split()
+                    val = float(split_val[0]) * u.Unit(split_val[1])
+                except ValueError:
+                    pass
+                except IndexError:
+                    val = float(val)
+            vscale[opt] = val
 
         # Artists
         artists = {}
@@ -191,25 +205,25 @@ class MapHandler(PhysPlotHandler):
 
     @property
     def vmin(self):
-        if 'vmin' not in self.vscale:
-            return None
-        return self.vscale['vmin'].to(self.bunit)
+        #if 'vmin' not in self.vscale:
+        #    return None
+        return self.vscale.vmin
 
     @property
     def vmax(self):
-        if 'vmax' not in self.vscale:
-            return None
-        return self.vscale['vmax'].to(self.bunit)
+        #if 'vmax' not in self.vscale:
+        #    return None
+        return self.vscale.vmax
 
     @property
     def vcenter(self):
-        if 'vcenter' not in self.vscale:
-            return None
-        return self.vscale['vcenter'].to(self.bunit)
+        #if 'vcenter' not in self.vscale:
+        #    return None
+        return self.vscale.vcenter
 
     @property
     def stretch(self):
-        return self.vscale['stretch']
+        return self.vscale.stretch
 
     def _validate_data(self, data: Map,
                        wcs: apy_wcs.WCS,
@@ -229,24 +243,24 @@ class MapHandler(PhysPlotHandler):
         """
         if hasattr(data, 'unit'):
             # Check bunit
-            if not ignore_units and self.bunit is None:
-                self.bunit = data.bunit
-                self._log.info(f'Setting bunit to data unit: {self.bunit}')
+            if not ignore_units and self.vscale.unit is None:
+                self.vscale.set_unit(data.unit)
+                self._log.info('Setting bunit to data unit: %s', data.unit)
             elif not ignore_units:
-                valdata = data.to(self.bunit)
+                valdata = data.to(self.vscale.unit)
             else:
                 valdata = data
         elif hasattr(data, 'header'):
             # Check bunit
             bunit = u.Unit(data.header.get('BUNIT', 1))
             valdata = np.squeeze(data.data) * bunit
-            if not ignore_units and self.bunit is None:
-                self.bunit = bunit
-                self._log.info(f'Setting bunit to header unit: {bunit}')
+            if not ignore_units and self.vscale.unit is None:
+                self.vscale.set_unit(bunit)
+                self._log.info('Setting bunit to header unit: %s', bunit)
             elif not ignore_units:
                 self._log.info('Converting data unit: %s -> %s',
-                               valdata.unit, self.bunit)
-                valdata = valdata.to(self.bunit)
+                               valdata.unit, self.vscale.unit)
+                valdata = valdata.to(self.vscale.unit)
             else:
                 pass
 
@@ -260,17 +274,17 @@ class MapHandler(PhysPlotHandler):
                     self.radesys = data.header['RADESYS'].lower()
                     if self.radesys.upper() == 'J2000':
                         self.radesys = 'fk5'
-                    self._log.info(f'Setting RADESYS: {self.radesys}')
+                    self._log.info('Setting RADESYS: %s', self.radesys)
                 except KeyError:
-                    self._log.warn(f'Map does not have RADESYS')
+                    self._log.warning('Map does not have RADESYS')
                     self.radesys = ''
         elif not ignore_units:
-            if self.bunit is None:
+            if self.vscale.unit is None:
                 self._log.warning('Setting data as dimensionless')
-                self.bunit = u.Unit(1)
+                self.vscale.unit = u.Unit(1)
             else:
-                self._log.warning(f'Assuming data in {self.bunit} units')
-            valdata = data * self.bunit
+                self._log.warning('Assuming data in %s units', self.vscale.unit)
+            valdata = data * self.vscale.unit
         else:
             self._log.warning('Setting data as dimensionless')
             valdata = data * u.Unit(1)
@@ -291,11 +305,12 @@ class MapHandler(PhysPlotHandler):
           rms: optional; use this rms to determine the intensity limits.
         """
         if self.vmin is None:
-            self.vscale['vmin'] = auto_vmin(data, rms=rms, log=self._log.info)
-            self._log.info(f"Setting vmin from data: {self.vscale['vmin']}")
+            self.vscale.vmin = auto_vmin(data, rms=rms, log=self._log.info)
+            self._log.info('Setting vmin from data: %s', self.vscale.vmin)
         if self.vmax is None:
-            self.vscale['vmax'] = auto_vmax(data)
-            self._log.info(f"Setting vmax from data: {self.vscale['vmax']}")
+            self.vscale.vmax = auto_vmax(data)
+            self._log.info('Setting vmax from data: %s', self.vscale.vmax)
+        self.vscale.check_scale_units()
 
     def _validate_extent(self,
                          extent: Tuple[u.Quantity, u.Quantity,
@@ -306,43 +321,42 @@ class MapHandler(PhysPlotHandler):
         Convert the values in a extent sequence to the respective axis units
         and returns the quantity values.
         """
-        xextent = [ext.to(self.xunit).value for ext in extent[:2]]
-        yextent = [ext.to(self.yunit).value for ext in extent[2:]]
+        xextent = [ext.to(self.axes_props.xunit).value for ext in extent[:2]]
+        yextent = [ext.to(self.axes_props.yunit).value for ext in extent[2:]]
         self._log.info('Axes extent: %s, %s', xextent, yextent)
 
         return tuple(xextent + yextent)
 
     # Getters
-    def get_normalization(self,
-                          vmin: Optional[u.Quantity] = None,
-                          vmax: Optional[u.Quantity] = None) -> cm:
-        """Determine the normalization of the color stretch.
+    #def get_normalization(self,
+    #                      vmin: Optional[u.Quantity] = None,
+    #                      vmax: Optional[u.Quantity] = None) -> cm:
+    #    """Determine the normalization of the color stretch.
 
-        Args:
-          vmin: optional; scale minimum.
-          vmax: optional; scale maximum.
-        """
-        if vmin is None:
-            vmin = self.vmin
-        if vmax is None:
-            vmax = self.vmax
-        if self.stretch == 'log':
-            return ImageNormalize(vmin=vmin.value,
-                                  vmax=vmax.value,
-                                  stretch=LogStretch(a=self.vscale.get('a',
-                                                                       1000)))
-        elif self.stretch == 'midnorm':
-            return TwoSlopeNorm(self.vcenter.value,
-                                vmin=vmin.value,
-                                vmax=vmax.value)
-        else:
-            return ImageNormalize(vmin=vmin.value,
-                                  vmax=vmax.value,
-                                  stretch=LinearStretch())
+    #    Args:
+    #      vmin: optional; scale minimum.
+    #      vmax: optional; scale maximum.
+    #    """
+    #    if vmin is None:
+    #        vmin = self.vmin
+    #    if vmax is None:
+    #        vmax = self.vmax
+    #    if self.stretch == 'log':
+    #        return ImageNormalize(vmin=vmin.value,
+    #                              vmax=vmax.value,
+    #                              stretch=LogStretch(a=self.vscale.a))
+    #    elif self.stretch == 'midnorm':
+    #        return TwoSlopeNorm(self.vcenter.value,
+    #                            vmin=vmin.value,
+    #                            vmax=vmax.value)
+    #    else:
+    #        return ImageNormalize(vmin=vmin.value,
+    #                              vmax=vmax.value,
+    #                              stretch=LinearStretch())
 
-    def get_blabel(self, unit_fmt: str = '({:latex_inline})') -> str:
-        """Generate a string for the color bar label."""
-        return generate_label(self.bname, unit=self.bunit, unit_fmt=unit_fmt)
+    #def get_blabel(self, unit_fmt: str = '({:latex_inline})') -> str:
+    #    """Generate a string for the color bar label."""
+    #    return generate_label(self.bname, unit=self.bunit, unit_fmt=unit_fmt)
 
     # Plotters
     def plot_map(self,
@@ -402,7 +416,7 @@ class MapHandler(PhysPlotHandler):
 
         # Check vscale and get normalization
         self._validate_vscale(valdata, rms=rms)
-        norm = self.get_normalization()
+        norm = self.vscale.get_normalization()
 
         # Check extent
         if extent is not None:
@@ -526,12 +540,12 @@ class MapHandler(PhysPlotHandler):
             kwargs['colors'] = colors or self.skeleton.get('data',
                                                            'contour_colors')
         elif 'norm' not in kwargs:
-            kwargs['norm'] = self.get_normalization()
+            kwargs['norm'] = self.vscale.get_normalization()
         else:
             pass
 
         # Plot
-        zorder = kwargs.setdefault('zorder', 0)
+        kwargs.setdefault('zorder', 0)
         if valwcs is not None and extent_val is None:
             return super().contour(valdata,
                                    is_image=True,
@@ -552,18 +566,18 @@ class MapHandler(PhysPlotHandler):
             if self.radesys:
                 pos = position.transform_to(self.radesys)
             if artist == 'scatters':
-                art = self.scatter(pos.ra, pos.dec, **props)
+                self.scatter(pos.ra, pos.dec, **props)
             elif artist == 'texts':
                 text = props.pop('text')
-                art = self.text(pos.ra, pos.dec, text, nphys_args=2, **props)
+                self.text(pos.ra, pos.dec, text, nphys_args=2, **props)
             elif artist == 'arrows':
-                art = self.arrow(pos.ra, pos.dec, **props)
+                self.arrow(pos.ra, pos.dec, **props)
             elif artist == 'hlines':
                 pos = position.to(self.yunit)
-                art = self.axhline(pos.value, **props)
+                self.axhline(pos.value, **props)
             elif artist == 'vlines':
                 pos = position.to(self.xunit)
-                art = self.axvline(pos.value, **props)
+                self.axvline(pos.value, **props)
 
     def plot_artists(self) -> None:
         """Plot all the stored artists."""
@@ -590,81 +604,54 @@ class MapHandler(PhysPlotHandler):
         #                    height, color=color, zorder=zorder,
         #                    transform=self.ax.get_transform('world'), **kwargs)
 
-    def plot_cbar(self,
-                  fig: 'Figure',
-                  label: Optional[str] = None,
-                  ticks: Optional[List[u.Quantity]] = None,
-                  nticks: int = 5,
-                  ticklabels: Optional[List[str]] = None,
-                  tickstretch: Optional[str] = None,
-                  orientation: str = 'vertical',
-                  labelpad: float = 10,
-                  lines: Optional[Plot] = None,
-                  equivalency: Optional[Callable] = None,
-                  ) -> Optional[mpl.colorbar.Colorbar]:
-        """Plot the color bar.
+    #def plot_cbar(self,
+    #              fig: 'Figure',
+    #              lines: Optional[Plot] = None,
+    #              ) -> Optional[mpl.colorbar.Colorbar]:
+    #    """Plot the color bar.
 
-        If ticks are not given, they will be determined from the other
-        parameters (nticks, vmin, vmax, a, stretch, etc.) or use the defaults
-        from matplotlib.
+    #    If ticks are not given, they will be determined from the other
+    #    parameters (nticks, vmin, vmax, a, stretch, etc.) or use the defaults
+    #    from matplotlib.
 
-        When a second (clone) color bar axis is requested, the `equivalency`
-        argument can be used to convert the values of the color bar axis ticks.
+    #    When a second (clone) color bar axis is requested, the `equivalency`
+    #    argument can be used to convert the values of the color bar axis ticks.
 
-        Args:
-          fig: figure object.
-          label: optional; color bar label.
-          ticks: optional; color bar ticks.
-          nticks: optional; number of ticks for auto ticks.
-          ticklabels: optional; tick labels.
-          tickstretch: optional; stretch for the ticks.
-          orientation: optional; color bar orientation.
-          labelpad: optional; shift the color bar label.
-          lines: optional; lines from contour plot to overplot.
-          equivalency: optional; function to convert between intensity units.
-        """
-        # Verify input
-        kwargs = {
-            'a': self.vscale.get('a', 1000),
-            'label': label or self.get_blabel(),
-            'orientation': orientation,
-            'labelpad': labelpad,
-            'lines': lines,
-            'ticklabels': ticklabels,
-        }
+    #    Args:
+    #      fig: figure object.
+    #      lines: optional; lines from contour plot to overplot.
+    #    """
+    #    # Get ticks
+    #    #if ticks is None:
+    #    #    aux = get_colorbar_ticks(self.vmin, self.vmax,
+    #    #                             a=kwargs['a'],
+    #    #                             n=nticks,
+    #    #                             stretch=tickstretch or self.stretch)
+    #    #else:
+    #    #    aux = ticks.to(self.bunit)
+    #    #kwargs['ticks'] = aux
 
-        # Get ticks
-        if ticks is None:
-            aux = get_colorbar_ticks(self.vmin, self.vmax,
-                                     a=kwargs['a'],
-                                     n=nticks,
-                                     stretch=tickstretch or self.stretch)
-        else:
-            aux = ticks.to(self.bunit)
-        kwargs['ticks'] = aux
+    #    # Get ticks value
+    #    self.vscale.ticks = props.ticks.value
+    #    #if self.bunit_cbar2 is not None:
+    #    #    if equivalency is None and 'equivalency' in self.vscale:
+    #    #        equivalency = self.vscale['equivalency']
+    #    #    ticks_cbar2 = kwargs['ticks'].to(self.bunit_cbar2,
+    #    #                                     equivalencies=equivalency)
+    #    #    label_cbar2 = generate_label(self.bname_cbar2,
+    #    #                                 unit=self.bunit_cbar2,
+    #    #                                 unit_fmt='({:latex_inline})')
+    #    #    kwargs['ticks_cbar2'] = ticks_cbar2
+    #    #    kwargs['label_cbar2'] = label_cbar2
+    #    #    kwargs['norm_cbar2'] = self.get_normalization(
+    #    #        vmin=np.min(kwargs['ticks_cbar2']),
+    #    #        vmax=np.max(kwargs['ticks_cbar2']))
+    #    #    kwargs['ticks_cbar2'] = kwargs['ticks_cbar2'].value
+    #    if props.ticks_cbar2 is not None:
+    #        self._log.info('Color bar 2 ticks: %s', props.ticks_cbar2)
+    #        self.vscale.ticks_cbar2 = props.ticks_cbar2.value
 
-        # Ticks of cbar2
-        self._log.info('Color bar ticks: %s', kwargs['ticks'])
-        if self.bunit_cbar2 is not None:
-            if equivalency is None and 'equivalency' in self.vscale:
-                equivalency = self.vscale['equivalency']
-            ticks_cbar2 = kwargs['ticks'].to(self.bunit_cbar2,
-                                             equivalencies=equivalency)
-            label_cbar2 = generate_label(self.bname_cbar2,
-                                         unit=self.bunit_cbar2,
-                                         unit_fmt='({:latex_inline})')
-            kwargs['ticks_cbar2'] = ticks_cbar2
-            kwargs['label_cbar2'] = label_cbar2
-            kwargs['norm_cbar2'] = self.get_normalization(
-                vmin=np.min(kwargs['ticks_cbar2']),
-                vmax=np.max(kwargs['ticks_cbar2']))
-            self._log.info('Color bar 2 ticks: %s', kwargs['ticks_cbar2'])
-            kwargs['ticks_cbar2'] = kwargs['ticks_cbar2'].value
-
-        # Get value
-        kwargs['ticks'] = kwargs['ticks'].value
-
-        return super().plot_cbar(fig, self.im, **kwargs)
+    #    return super().plot_cbar(fig, self.im, lines=lines)
 
     def plot_beam(self,
                   header: Mapping,
@@ -694,13 +681,13 @@ class MapHandler(PhysPlotHandler):
         self._log.info('Plotting %s', beam)
 
         # Store beam equivalency
-        if 'equivalency' not in self.vscale:
+        if self.vscale.unit_equiv is None:
             try:
                 self.brightness_temperature(header, beam)
             except KeyError:
                 pass
         else:
-            self._log.warn('A bunit equivalency value has already been stored')
+            self._log.warning('Bunit equivalency already stored')
 
         # Convert to pixel
         pixsize = np.sqrt(wcs.proj_plane_pixel_area())
@@ -708,8 +695,8 @@ class MapHandler(PhysPlotHandler):
         bmin = beam.minor.cgs / pixsize.cgs
 
         # Define position
-        xmin, xmax = self.ax.get_xlim()
-        ymin, ymax = self.ax.get_ylim()
+        xmin, _ = self.ax.get_xlim()
+        ymin, _ = self.ax.get_ylim()
         xmin += dx
         ymin += dy
         size = bmaj + pad
@@ -833,7 +820,7 @@ class MapHandler(PhysPlotHandler):
 
     def config_plot(self, **kwargs) -> None:
         # Docs is inherited
-        # Change axes 
+        # Change axes
         try:
             self.ax.coords[0].set_major_formatter(self.axes_props['xformat'])
             self.ax.coords[0].set_format_unit(self.xunit)
@@ -856,6 +843,7 @@ class MapHandler(PhysPlotHandler):
         if self.axes_props.get('inverty'):
             self.ax.invert_yaxis()
 
+        kwargs.setdefault('ticks_color', self.axes_props['ticks_color'])
         super().config_plot(**kwargs)
 
     # Artist functions
@@ -1114,7 +1102,7 @@ class MapHandler(PhysPlotHandler):
         self._log.info('Storing brightness temperature equivalency:')
         self._log.info('Frequency: %s', freq.to(u.GHz))
         self._log.info('Beam: %s', beam)
-        self.vscale['equivalency'] = u.brightness_temperature(freq, beam)
+        self.vscale.unit_equiv = u.brightness_temperature(freq, beam)
 
 class MapsPlotter(BasePlotter):
     """Plotter for managing 2-D maps."""
@@ -1147,7 +1135,7 @@ class MapsPlotter(BasePlotter):
           A `MapHandler`.
         """
         if self.is_init(loc):
-            self._log.info(f'Axis {loc} already initialized')
+            self._log.info('Axis %s already initialized', loc)
             return self.axes[loc]
 
         # Projection system
@@ -1220,113 +1208,113 @@ class MapsPlotter(BasePlotter):
             self.switch_to(section)
             self.plot(projection=projection)
 
-    def plot_all(self,
-                 skip_loc: Sequence[Location] = (),
-                 projections: Mapping = {},
-                 ) -> None:
-        """
-        """
-        for loc in self:
-            # Skip locations
-            if loc in skip_loc:
-                continue
-
-            # Projection
-            projection = projections.get(loc, self.projection)
-
-            # Plot location
-            self.plot_loc(loc, projection=projection)
-
-    def apply_config(self, config=None, section='map_plot', legend=False,
-            dtype='intensity', **kwargs):
-        # Read new config if requested
-        if config is not None:
-            cfg = ConfigParser()
-            cfg.read(os.path.expanduser(config))
-            cfg = cfg['map_plot']
-        else:
-            cfg = self.config
-
-        # Config map options
-        xformat = kwargs.get('xformat',
-                cfg.get('xformat', fallback="hh:mm:ss.s"))
-        yformat = kwargs.get('yformat',
-                cfg.get('yformat', fallback="dd:mm:ss"))
-        tickscolors = kwargs.get('tickscolor',
-                cfg.get('tickscolor', fallback="k"))
-
-        # Config
-        for i,(loc,ax) in enumerate(self.axes.items()):
-            if not self.is_init(loc):
-                break
-
-            # Labels and ticks
-            xlabel, ylabel = self.has_axlabels(loc)
-            xticks, yticks = self.has_ticks(loc)
-            
-            # Ticks color
-            if len(tickscolors) == 1:
-                tickscolor = tickscolors
-            else:
-                try:
-                    tickscolor = tickscolors.replace(',',' ').split()[i]
-                except IndexError:
-                    tickscolor = tickscolors[0]
-
-            if self.config.getfloat('xsize')==self.config.getfloat('ysize'):
-                self.log.info('Setting equal axis aspect ratio')
-                ax.set_aspect(1./ax.ax.get_data_ratio())
-
-            if dtype=='pvmap':
-                try:
-                    xlim = map(float, self.get_value('xlim', (None,None), loc,
-                        sep=',').split())
-                except (TypeError, AttributeError):
-                    xlim = (None, None)
-                try:
-                    ylim = map(float, self.get_value('ylim', (None,None), loc,
-                        sep=',').split())
-                except (TypeError, AttributeError):
-                    ylim = (None, None)
-                #xlabel = 'Offset (arcsec)' if xlabel else ''
-                #ylabel = 'Velocity (km s$^{-1}$)' if ylabel else ''
-                ylabel = 'Offset (arcsec)' if xlabel else ''
-                xlabel = 'Velocity (km s$^{-1}$)' if ylabel else ''
-                ax.config_plot(xlim=tuple(xlim), xlabel=xlabel, 
-                        unset_xticks=not xticks,
-                        ylim=tuple(ylim), ylabel=ylabel, 
-                        unset_yticks=not yticks, 
-                        tickscolor=tickscolor)
-            else:
-                ax.config_map(xformat=xformat, yformat=yformat, xlabel=xlabel,
-                        ylabel=ylabel, xticks=xticks, yticks=yticks, 
-                        xpad=1., ypad=-0.7, tickscolor=tickscolor, xcoord='ra', ycoord='dec')
-
-            # Scale
-            if 'scale_position' in self.config:
-                # From config
-                scale_pos = self.config.getskycoord('scale_position')
-                distance = self.config.getquantity('distance').to(u.pc)
-                length = self.config.getquantity('scale_length', 
-                        fallback=1*u.arcsec).to(u.arcsec)
-                labeldy = self.config.getquantity('scale_label_dy',
-                        fallback=1*u.arcsec).to(u.deg)
-                scalecolor = self.config.get('scale_color', fallback='w')
-
-                # Scale label
-                label = distance * length
-                label = label.value * u.au
-                label = '{0.value:.0f} {0.unit:latex_inline}  '.format(label)
-                
-                # Plot scale
-                ax.phys_scale(scale_pos.ra.degree, scale_pos.dec.degree,
-                        length.to(u.degree).value, label, 
-                        color=scalecolor)
-
-            # Legend
-            if (legend or self.config.getboolean('legend', fallback=False)) and loc==(0,0):
-                ax.legend(auto=True, loc=4, match_colors=True,
-                        fancybox=self.config.getboolean('fancybox', fallback=False),
-                        framealpha=self.config.getfloat('framealpha', fallback=None),
-                        facecolor=self.config.get('facecolor', fallback=None))
-
+#    def plot_all(self,
+#                 skip_loc: Sequence[Location] = (),
+#                 projections: Mapping = {},
+#                 ) -> None:
+#        """
+#        """
+#        for loc in self:
+#            # Skip locations
+#            if loc in skip_loc:
+#                continue
+#
+#            # Projection
+#            projection = projections.get(loc, self.projection)
+#
+#            # Plot location
+#            self.plot_loc(loc, projection=projection)
+#
+#    def apply_config(self, config=None, section='map_plot', legend=False,
+#            dtype='intensity', **kwargs):
+#        # Read new config if requested
+#        if config is not None:
+#            cfg = ConfigParser()
+#            cfg.read(os.path.expanduser(config))
+#            cfg = cfg['map_plot']
+#        else:
+#            cfg = self.config
+#
+#        # Config map options
+#        xformat = kwargs.get('xformat',
+#                cfg.get('xformat', fallback="hh:mm:ss.s"))
+#        yformat = kwargs.get('yformat',
+#                cfg.get('yformat', fallback="dd:mm:ss"))
+#        tickscolors = kwargs.get('tickscolor',
+#                cfg.get('tickscolor', fallback="k"))
+#
+#        # Config
+#        for i,(loc,ax) in enumerate(self.axes.items()):
+#            if not self.is_init(loc):
+#                break
+#
+#            # Labels and ticks
+#            xlabel, ylabel = self.has_axlabels(loc)
+#            xticks, yticks = self.has_ticks(loc)
+#
+#            # Ticks color
+#            if len(tickscolors) == 1:
+#                tickscolor = tickscolors
+#            else:
+#                try:
+#                    tickscolor = tickscolors.replace(',',' ').split()[i]
+#                except IndexError:
+#                    tickscolor = tickscolors[0]
+#
+#            if self.config.getfloat('xsize')==self.config.getfloat('ysize'):
+#                self.log.info('Setting equal axis aspect ratio')
+#                ax.set_aspect(1./ax.ax.get_data_ratio())
+#
+#            if dtype=='pvmap':
+#                try:
+#                    xlim = map(float, self.get_value('xlim', (None,None), loc,
+#                        sep=',').split())
+#                except (TypeError, AttributeError):
+#                    xlim = (None, None)
+#                try:
+#                    ylim = map(float, self.get_value('ylim', (None,None), loc,
+#                        sep=',').split())
+#                except (TypeError, AttributeError):
+#                    ylim = (None, None)
+#                #xlabel = 'Offset (arcsec)' if xlabel else ''
+#                #ylabel = 'Velocity (km s$^{-1}$)' if ylabel else ''
+#                ylabel = 'Offset (arcsec)' if xlabel else ''
+#                xlabel = 'Velocity (km s$^{-1}$)' if ylabel else ''
+#                ax.config_plot(xlim=tuple(xlim), xlabel=xlabel,
+#                        unset_xticks=not xticks,
+#                        ylim=tuple(ylim), ylabel=ylabel,
+#                        unset_yticks=not yticks,
+#                        tickscolor=tickscolor)
+#            else:
+#                ax.config_map(xformat=xformat, yformat=yformat, xlabel=xlabel,
+#                        ylabel=ylabel, xticks=xticks, yticks=yticks,
+#                        xpad=1., ypad=-0.7, tickscolor=tickscolor, xcoord='ra', ycoord='dec')
+#
+#            # Scale
+#            if 'scale_position' in self.config:
+#                # From config
+#                scale_pos = self.config.getskycoord('scale_position')
+#                distance = self.config.getquantity('distance').to(u.pc)
+#                length = self.config.getquantity('scale_length', 
+#                        fallback=1*u.arcsec).to(u.arcsec)
+#                labeldy = self.config.getquantity('scale_label_dy',
+#                        fallback=1*u.arcsec).to(u.deg)
+#                scalecolor = self.config.get('scale_color', fallback='w')
+#
+#                # Scale label
+#                label = distance * length
+#                label = label.value * u.au
+#                label = '{0.value:.0f} {0.unit:latex_inline}  '.format(label)
+#                
+#                # Plot scale
+#                ax.phys_scale(scale_pos.ra.degree, scale_pos.dec.degree,
+#                        length.to(u.degree).value, label, 
+#                        color=scalecolor)
+#
+#            # Legend
+#            if (legend or self.config.getboolean('legend', fallback=False)) and loc==(0,0):
+#                ax.legend(auto=True, loc=4, match_colors=True,
+#                        fancybox=self.config.getboolean('fancybox', fallback=False),
+#                        framealpha=self.config.getfloat('framealpha', fallback=None),
+#                        facecolor=self.config.get('facecolor', fallback=None))
+#
