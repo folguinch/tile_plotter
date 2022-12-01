@@ -23,12 +23,11 @@ class MultiPlotter(BasePlotter):
 
     def __init__(self,
                  config: Optional['Path'] = None,
-                 config_parser: Optional[cfgparser.ConfigParserAdv] = None,
                  verbose: str = 'v',
                  **kwargs):
         """Initialize plotter."""
-        super().__init__(config=config, config_parser=config_parser,
-                         section='DEFAULT', verbose=verbose, **kwargs)
+        super().__init__(config=config, section='DEFAULT', verbose=verbose,
+                         **kwargs)
 
     @property
     def plot_type(self):
