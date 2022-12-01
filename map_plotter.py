@@ -824,17 +824,17 @@ class MapHandler(PhysPlotHandler):
         # Docs is inherited
         # Change axes
         try:
-            self.ax.coords[0].set_major_formatter(self.axes_props.xformat)
+            self.ax.coords[0].set_major_formatter(self.axes_props.xticks_fmt)
             self.ax.coords[0].set_format_unit(self.xunit)
         except AttributeError:
-            self.ax.xaxis.set_major_formatter(self.axes_props.xformat)
+            self.ax.xaxis.set_major_formatter(self.axes_props.xticks_fmt)
         except ValueError:
             pass
         try:
-            self.ax.coords[1].set_major_formatter(self.axes_props.yformat)
+            self.ax.coords[1].set_major_formatter(self.axes_props.yticks_fmt)
             self.ax.coords[1].set_format_unit(self.yunit)
         except AttributeError:
-            self.ax.yaxis.set_major_formatter(self.axes_props.yformat)
+            self.ax.yaxis.set_major_formatter(self.axes_props.yticks_fmt)
         except ValueError:
             pass
 
