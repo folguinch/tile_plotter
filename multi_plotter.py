@@ -72,15 +72,15 @@ class MultiPlotter(BasePlotter):
         # Title
         title = self.config.get('title', fallback=None)
         if title is not None:
-            self._log.debug(f'Plotting title: {title}')
+            self._log.debug('Plotting title: %s', title)
             handler.title(title)
 
         # Configuration
         set_xlabel, set_ylabel = self.has_axlabels(loc)
         set_xticks, set_yticks = self.has_ticks_labels(loc)
         if dtype in ['image', 'contour', 'moment']:
-            self._log.debug(f'Label switches: {set_xlabel}, {set_ylabel}')
-            self._log.debug(f'Tick switches: {set_xticks}, {set_yticks}')
+            self._log.debug('Label switches: %s, %s', set_xlabel, set_ylabel)
+            self._log.debug('Tick switches: %s, %s', set_xticks, set_yticks)
             handler.config_map(set_xlabel=set_xlabel, set_ylabel=set_ylabel,
                                set_xticks=set_xticks, set_yticks=set_yticks)
         else:
@@ -215,7 +215,7 @@ class OTFMultiPlotter(BasePlotter):
         return self.init_axis(loc, handler, projection=projection,
                               include_cbar=include_cbar)
 
-    def plot_all():
+    def plot_all(self):
         pass
 
     def apply_config(self, loc: Location, handler: 'PlotHandler', dtype: str,
@@ -224,15 +224,15 @@ class OTFMultiPlotter(BasePlotter):
         # Title
         title = self.config.get('title', fallback=None)
         if title is not None:
-            self._log.debug(f'Plotting title: {title}')
+            self._log.debug('Plotting title: %s', title)
             handler.title(title)
 
         # Configuration
         set_xlabel, set_ylabel = self.has_axlabels(loc)
         set_xticks, set_yticks = self.has_ticks_labels(loc)
         if dtype in ['image', 'contour', 'moment']:
-            self._log.debug(f'Label switches: {set_xlabel}, {set_ylabel}')
-            self._log.debug(f'Tick switches: {set_xticks}, {set_yticks}')
+            self._log.debug('Label switches: %s, %s', set_xlabel, set_ylabel)
+            self._log.debug('Tick switches: %s, %s', set_xticks, set_yticks)
             handler.config_map(set_xlabel=set_xlabel, set_ylabel=set_ylabel,
                                set_xticks=set_xticks, set_yticks=set_yticks)
         else:

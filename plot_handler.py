@@ -1,17 +1,18 @@
 """Objects for handling all type of plots."""
 from typing import (Optional, Tuple, TypeVar, Callable, Dict, List,
-                    Union, Sequence)
+                    Union, Sequence, Mapping)
+import dataclasses
 import pathlib
 
 from configparseradv.configparser import ConfigParserAdv
 from matplotlib import patches
 from toolkit.logger import get_logger
-import astropy.units as u
 import matplotlib as mpl
 #import matplotlib.lines as mlines
 import numpy as np
 
-from .utils import generate_label, get_colorbar_ticks, tick_formatter
+from .utils import tick_formatter
+from .axes_props import AxesProps, PhysAxesProps, VScaleProps, PhysVScaleProps
 
 # Type aliases
 Axes = type(mpl.axes.Axes)
@@ -28,13 +29,10 @@ class PlotHandler:
     Attributes:
       axis: axes of the plot (alias ax).
       cbaxis: color bar axes (alias cbax).
-      xscale: x axis scale (linear or log).
-      yscale: y axis scale (linear or log).
-      xname: x axis name.
-      yname: y axis name.
-      xunit: x axis unit.
-      yunit: y axis unit.
+      axes_props: properties of axes.
+      vscale: instensity scale and color bar properties.
       pltd: plotted objects tracker.
+      skeleton: base configuration.
     """
     # Common class attributes
     _log = get_logger(__name__, filename='plotter.log')
@@ -48,22 +46,20 @@ class PlotHandler:
     def __init__(self,
                  axis: Axes,
                  cbaxis: Optional[Axes] = None,
-                 xscale: str = 'linear',
-                 yscale: str = 'linear',
-                 xname: str = 'x',
-                 yname: str = 'y',
-                 xunit: Optional[str] = None,
-                 yunit: Optional[str] = None) -> None:
+                 vscale: Optional[Mapping] = None,
+                 **axes_props) -> None:
         """ Create a single plot container."""
+        self.pltd = {}
         self.axis = axis
         self.cbaxis = cbaxis
-        self.xscale = xscale
-        self.yscale = yscale
-        self.xname = xname
-        self.yname = yname
-        self.xunit = xunit
-        self.yunit = yunit
-        self.pltd = {}
+        if axes_props:
+            self.axes_props = AxesProps(**axes_props)
+        else:
+            self.axes_props = None
+        if vscale is not None:
+            self.vscale = VScaleProps(**vscale)
+        else:
+            self.vscale = None
 
     @property
     def ax(self) -> Axes:
@@ -125,112 +121,95 @@ class PlotHandler:
         return val
 
     def config_plot(self,
-                    xlim: Limits = None,
-                    ylim: Limits = None,
-                    xscale: Optional[str] = None,
-                    yscale: Optional[str] = None,
-                    xlabel: Optional[str] = None,
-                    ylabel: Optional[str] = None,
                     xticks: List[float] = None,
                     yticks: List[float] = None,
                     minor_xticks: List[float] = None,
                     minor_yticks: List[float] = None,
-                    xticks_fmt: str = '{:.3f}',
-                    yticks_fmt: str = '{:.3f}',
-                    unset_xtick_labels: bool = False,
-                    unset_ytick_labels: bool = False,
-                    ticks_color: str = 'k') -> None:
+                    **axes_props) -> None:
         """Configure the plot.
 
         Configures several aspects of the axes: limits, scales, labels and
         ticks. It overrides and updates some of the default parameters.
 
         Args:
-          xlim: optional; x axis limits.
-          ylim: optional; y axis limits.
-          xscale: optional; x axis scale (linear or log). Updates the stored
-            scale.
-          yscale: optional; y axis scale (linear or log). Updates the stored
-            scale.
-          xlabel: optional; x axis label.
-          ylabel: optional; y axis label.
           xticks: optional; x ticks values.
           yticks: optional; y ticks values.
           minor_xticks: optional; minor x ticks values.
           minor_yticks: optional; minor y ticks values.
-          xticks_fmt: optional; x axis ticks string format.
-          yticks_fmt: optional; y axis ticks string format.
-          unset_xtick_labels: optional; unset the x ticks labels?
-          unset_ytick_labels: optional; unset the y ticks labels?
-          ticks_color: optional; color of axis ticks.
+          axes_props: optional; any other axes property.
         """
+        # Updated version of axes_props
+        props = dataclasses.replace(self.axes_props, **axes_props)
+
         # Limits
-        if xlim is not None:
-            if hasattr(xlim, 'index'):
-                if len(xlim) != 2:
-                    raise ValueError(f'Could not set xlim: {xlim}')
-                xlim = dict(zip(['xmin', 'xmax'], xlim))
-            self._log.info('Setting xlim: %s', xlim)
-            self.set_xlim(**xlim)
-        if ylim is not None:
-            if hasattr(ylim, 'index'):
-                if len(ylim) != 2:
-                    raise ValueError(f'Could not set ylim: {ylim}')
-                ylim = dict(zip(['ymin', 'ymax'], ylim))
-            self._log.info('Setting ylim: %s', ylim)
-            self.set_ylim(**ylim)
+        if props.xlim is not None:
+            #if hasattr(xlim, 'index'):
+            #    if len(xlim) != 2:
+            #        raise ValueError(f'Could not set xlim: {xlim}')
+            #xlim = dict(zip(['xmin', 'xmax'], props.xlim))
+            self._log.info('Setting xlim: %s', props.xlim)
+            self.ax.set_xlim(**props.xlim)
+        if props.ylim is not None:
+            #if hasattr(ylim, 'index'):
+            #    if len(ylim) != 2:
+            #        raise ValueError(f'Could not set ylim: {ylim}')
+            #    ylim = dict(zip(['ymin', 'ymax'], ylim))
+            self._log.info('Setting ylim: %s', props.ylim)
+            self.ax.set_ylim(**props.ylim)
 
         # Axis scales
-        self.xscale = xscale or self.xscale
-        self.yscale = yscale or self.yscale
-        if self.xscale == 'log':
+        #self.xscale = xscale or self.xscale
+        #self.yscale = yscale or self.yscale
+        if props.xscale == 'log':
             self.ax.set_xscale('log')
             self.ax.xaxis.set_major_formatter(tick_formatter('log'))
-        if self.yscale == 'log':
+        if props.yscale == 'log':
             self.ax.set_yscale('log')
             self.ax.yaxis.set_major_formatter(tick_formatter('log'))
 
         # Labels
-        self.set_axlabels(xlabel=xlabel, ylabel=ylabel)
+        self.set_axlabels(xlabel=props.xlabel, ylabel=props.ylabel)
 
         # Ticks
-        if unset_xtick_labels:
-            self.ax.set_xticklabels([''] * len(self.ax.get_xticks()))
-        elif xticks:
+        if xticks:
             self.ax.set_xticks(xticks)
-            self.ax.set_xticklabels([xticks_fmt.format(x) for x in xticks])
+            fmt = props.xticks_fmt
+            self.ax.set_xticklabels([fmt.format(x) for x in xticks])
+        elif not props.set_xticks:
+            self.ax.set_xticklabels([''] * len(self.ax.get_xticks()))
         if minor_xticks:
             self.ax.set_xticks(minor_xticks, minor=True)
-        if unset_ytick_labels:
-            self.ax.set_yticklabels([''] * len(self.ax.get_yticks()))
         if yticks:
             self.ax.set_yticks(yticks)
-            self.ax.set_yticklabels([yticks_fmt.format(y) for y in yticks])
+            fmt = props.yticks_fmt
+            self.ax.set_yticklabels([fmt.format(y) for y in yticks])
+        elif not props.set_yticks:
+            self.ax.set_yticklabels([''] * len(self.ax.get_yticks()))
         if minor_yticks:
             self.ax.set_yticks(minor_yticks, minor=True)
 
         # Ticks colors
-        self.ax.tick_params('both', color=ticks_color)
+        self.ax.tick_params('both', color=props.ticks_color)
 
     # Getters
-    def get_xlabel(self, unit_fmt: str = '({})') -> str:
-        """Return the xlabel from stored values."""
-        return generate_label(self.xname, unit=self.xunit, unit_fmt=unit_fmt)
+    #def get_xlabel(self, unit_fmt: str = '({})') -> str:
+    #    """Return the xlabel from stored values."""
+    #    return generate_label(self.xname, unit=self.xunit, unit_fmt=unit_fmt)
 
-    def get_ylabel(self, unit_fmt: str = '({})') -> str:
-        """Return the ylabel from stored values."""
-        return generate_label(self.yname, unit=self.yunit, unit_fmt=unit_fmt)
+    #def get_ylabel(self, unit_fmt: str = '({})') -> str:
+    #    """Return the ylabel from stored values."""
+    #    return generate_label(self.yname, unit=self.yunit, unit_fmt=unit_fmt)
 
     # Setters
-    def set_xlim(self, xmin: Optional[float] = None,
-                 xmax: Optional[float] = None) -> None:
-        """Set the axis x limits."""
-        self.axis.set_xlim(left=xmin, right=xmax)
+    #def set_xlim(self, xmin: Optional[float] = None,
+    #             xmax: Optional[float] = None) -> None:
+    #    """Set the axis x limits."""
+    #    self.axis.set_xlim(left=xmin, right=xmax)
 
-    def set_ylim(self, ymin: Optional[float] = None,
-                 ymax: Optional[float] = None) -> None:
-        """Set the axis y limits."""
-        self.axis.set_ylim(bottom=ymin, top=ymax)
+    #def set_ylim(self, ymin: Optional[float] = None,
+    #             ymax: Optional[float] = None) -> None:
+    #    """Set the axis y limits."""
+    #    self.axis.set_ylim(bottom=ymin, top=ymax)
 
     def set_axlabels(self, xlabel: Optional[str] = None,
                      ylabel: Optional[str] = None) -> None:
@@ -240,8 +219,8 @@ class PlotHandler:
           xlabel: optional; x axis label.
           ylabel: optional; y axis label.
         """
-        self.ax.set_xlabel(xlabel or self.get_xlabel())
-        self.ax.set_ylabel(ylabel or self.get_ylabel())
+        self.ax.set_xlabel(xlabel or self.axes_props.xlabel)
+        self.ax.set_ylabel(ylabel or self.axes_props.ylabel)
 
     # Matplotlib plotting functions
     def plot(self, *args, **kwargs) -> Plot:
@@ -369,20 +348,9 @@ class PlotHandler:
     def plot_cbar(self,
                   fig: mpl.figure.Figure,
                   cs: mpl.colors.Colormap,
-                  label: Optional[str] = None,
-                  ticks: Optional[Sequence[float]] = None,
-                  nticks: int = 5,
-                  vmin: Optional[float] = None,
-                  vmax: Optional[float] = None,
-                  a: float = 1000,
-                  ticklabels: Optional[Sequence[str]] = None,
-                  tickstretch: Optional[str] = None,
-                  orientation: str = 'vertical',
-                  labelpad: float = 0,
                   lines: Optional[Plot] = None,
-                  label_cbar2: Optional[str] = None,
-                  ticks_cbar2: Optional[Sequence[float]] = None,
-                  norm_cbar2: Optional['Normalization'] = None,
+                  compute_ticks: Optional[bool] = None,
+                  **cbar_props
                   ) -> Optional[mpl.colorbar.Colorbar]:
         """Plot color bar.
 
@@ -390,109 +358,126 @@ class PlotHandler:
         parameters (nticks, vmin, vmax, a, stretch, etc.) or use the defaults
         from matplotlib.
 
+        When a second (clone) color bar axis is requested, the stored
+        `equivalency` can be used to convert the values of the color bar axis
+        ticks.
+
         Args:
           fig: figure object.
           cs: color map.
-          label: optional; color bar label.
-          ticks: optional; color bar ticks.
-          nticks: optional; number of ticks for auto ticks.
-          vmin: optional; lower limit for auto ticks.
-          vmax: optional; upper limit for auto ticks.
-          a: optional; scaling for log stretch for auto ticks.
-          ticklabels: optional; tick labels.
-          tickstretch: optional; stretch for the ticks.
-          orientation: optional; color bar orientation.
-          labelpad: optional; shift the color bar label.
           lines: optional; lines from contour plot to overplot.
-          label_cbar2: optional; label of the second axis of the color bar.
-          ticks_cbar2: optional; ticks of the second axis of the color bar.
+          compute_ticks: optional; compute ticks or use default?
+          cbar_props: optional; additional color bar properties.
         """
+        # Update color bar properties
+        if self.vscale is not None and cbar_props:
+            props = dataclasses.replace(self.vscale, **cbar_props)
+        elif self.vscale is not None:
+            props = self.vscale
+        else:
+            props = VScaleProps(**cbar_props)
+
+        # Compute ticks or use default?
+        if ((compute_ticks is not None and compute_ticks) or
+            self.vscale.compute_ticks):
+            props.generate_ticks()
+            self._log.info('Color bar ticks: %s', props.ticks)
+            if props.ticks_cbar2 is not None:
+                self._log.info('Color bar 2 ticks: %s', props.ticks_cbar2)
+
         # Check if cbax exists
         if self.cbaxis is None:
-            self._log.warn('Skipping color bar')
+            self._log.warning('Skipping color bar')
             return None
         self._log.info('Plotting color bar:')
 
         # Ticks
-        if ticks is None and vmin and vmax:
-            ticks = get_colorbar_ticks(vmin, vmax, a=a, n=nticks,
-                                       stretch=tickstretch)
-        self._log.info('Tick values: %s', ticks)
+        #if ticks is None and vmin and vmax:
+        #    ticks = get_colorbar_ticks(vmin, vmax, a=a, n=nticks,
+        #                               stretch=tickstretch)
+        self._log.info('Tick values: %s', props.ticks)
 
         # Create bar
         cbar = fig.colorbar(cs, ax=self.axis, cax=self.cbaxis,
-                            orientation=orientation, drawedges=False,
-                            ticks=ticks)
+                            orientation=props.orientation, drawedges=False,
+                            ticks=props.ticks)
         if lines is not None:
             cbar.add_lines(lines)
 
         # Bar position
-        if orientation == 'vertical':
+        if props.orientation == 'vertical':
             cbar.ax.yaxis.set_ticks_position('right')
-            if ticklabels is not None:
-                cbar.ax.yaxis.set_ticklabels(ticklabels)
-                self._log.info('Tick labels: %s', ticklabels)
-        elif orientation == 'horizontal':
+            if props.ticklabels is not None:
+                cbar.ax.yaxis.set_ticklabels(props.ticklabels)
+                self._log.info('Tick labels: %s', props.ticklabels)
+        elif props.orientation == 'horizontal':
             cbar.ax.xaxis.set_ticks_position('top')
-            if ticklabels is not None:
-                cbar.ax.xaxis.set_ticklabels(ticklabels)
-                self._log.info('Tick labels: %s', ticklabels)
+            if props.ticklabels is not None:
+                cbar.ax.xaxis.set_ticklabels(props.ticklabels)
+                self._log.info('Tick labels: %s', props.ticklabels)
 
         # Label
-        if label is not None:
-            if orientation == 'vertical':
+        if props.label is not None:
+            if props.orientation == 'vertical':
                 cbar.ax.yaxis.set_label_position('right')
                 cbar.set_label(
-                    label,
+                    props.label,
                     fontsize=self.ax.yaxis.get_label().get_fontsize(),
                     family=self.ax.yaxis.get_label().get_family(),
                     fontname=self.ax.yaxis.get_label().get_fontname(),
                     weight=self.ax.yaxis.get_label().get_weight(),
-                    labelpad=labelpad,
+                    labelpad=props.labelpad,
                     verticalalignment='top')
-            elif orientation == 'horizontal':
+            elif props.orientation == 'horizontal':
                 cbar.ax.xaxis.set_label_position('top')
                 cbar.set_label(
-                    label,
+                    props.label,
                     fontsize=self.ax.xaxis.get_label().get_fontsize(),
                     family=self.ax.xaxis.get_label().get_family(),
                     fontname=self.ax.xaxis.get_label().get_fontname(),
                     weight=self.ax.xaxis.get_label().get_weight(),
-                    labelpad=labelpad)
+                    labelpad=props.labelpad)
 
         # Secondary bar axis
-        if ticks_cbar2 is not None:
-            self._log.info('Secondary bar ticks: %s', ticks_cbar2)
-            vmin_cbar2 = np.min(ticks_cbar2)
-            vmax_cbar2 = np.max(ticks_cbar2)
-            if orientation=='vertical':
+        if props.ticks_cbar2 is not None:
+            self._log.info('Secondary bar ticks: %s', props.ticks_cbar2)
+            #vmin_cbar2 = np.min(props.ticks_cbar2)
+            #vmax_cbar2 = np.max(props.ticks_cbar2)
+            #vmin_cbar2 = props.vmin2.value
+            #vmax_cbar2 = props.vmax2.value
+            if props.orientation == 'vertical':
                 cbar2 = cbar.ax.twinx()
-                cbar2.set_ylim([vmin_cbar2, vmax_cbar2])
-                if label_cbar2 is not None:
+                cbar2.set_yscale(cbar.ax.get_yscale(),
+                                 functions=(props.norm_cbar2,
+                                            props.norm_cbar2.inverse))
+                cbar2.set_ylim(*props.get_vlim(axis=2))
+                if props.label_cbar2 is not None:
                     cbar2.yaxis.set_label_position('left')
-                    cbar2.set_ylabel(label_cbar2, labelpad=labelpad)
-                cbar2.yaxis.set_ticks(ticks_cbar2)
+                    cbar2.set_ylabel(props.label_cbar2,
+                                     labelpad=props.labelpad)
+                cbar2.yaxis.set_ticks(props.ticks_cbar2)
             else:
                 cbar2 = cbar.ax.twiny()
                 cbar2.set_xscale(cbar.ax.get_xscale(),
-                                 functions=(norm_cbar2, norm_cbar2.inverse))
-                cbar2.set_xlim([vmin_cbar2, vmax_cbar2])
-                if label_cbar2 is not None:
+                                 functions=(props.norm_cbar2,
+                                            props.norm_cbar2.inverse))
+                cbar2.set_xlim(*props.get_vlim(axis=2))
+                if props.label_cbar2 is not None:
                     cbar.ax.xaxis.set_label_position('bottom')
                     cbar2.xaxis.set_label_position('top')
-                    cbar2.set_xlabel(label_cbar2, labelpad=labelpad)
-                cbar2.xaxis.set_ticks(ticks_cbar2)
+                    cbar2.set_xlabel(props.label_cbar2, labelpad=props.labelpad)
+                cbar2.xaxis.set_ticks(props.ticks_cbar2)
 
         # Font
-        tlabels = (cbar.ax.xaxis.get_ticklabels(which='both') +
-                   cbar.ax.yaxis.get_ticklabels(which='both'))
-        for tlabel in tlabels:
-            tlabel.set_fontsize(
-                self.ax.xaxis.get_majorticklabels()[0].get_fontsize())
-            tlabel.set_family(
-                self.ax.xaxis.get_majorticklabels()[0].get_family())
-            tlabel.set_fontname(
-                self.ax.xaxis.get_majorticklabels()[0].get_fontname())
+        #tlabels = (cbar.ax.xaxis.get_ticklabels(which='both') +
+        #           cbar.ax.yaxis.get_ticklabels(which='both'))
+        #for tlabel in tlabels:
+        #    tlabel.set_fontsize(
+        #        self.ax.xaxis.get_majorticklabels()[0].get_fontsize())
+        #    tlabel.set_family(
+        #        self.ax.xaxis.get_majorticklabels()[0].get_family())
+        #    tlabel.set_fontname(
+        #        self.ax.xaxis.get_majorticklabels()[0].get_fontname())
 
         return cbar
 
@@ -587,24 +572,29 @@ class PhysPlotHandler(PlotHandler):
     """Plot handler to manage plots with astropy.quantity objects.
 
     Attributes:
-      xunit: `astropy.Unit` for x axis.
-      yunit: `astropy.Unit` for y axis.
+      axis: axes of the plot (alias ax).
+      cbaxis: color bar axes (alias cbax).
+      axes_props: properties of axes.
+      vscale: instensity scale and color bar properties.
+      pltd: plotted objects tracker.
+      skeleton: base configuration.
     """
 
     def __init__(self,
                  axis: Axes,
                  cbaxis: Optional[Axes] = None,
-                 xscale: str = 'linear',
-                 yscale: str = 'linear',
-                 xname: str = 'x',
-                 yname: str = 'y',
-                 xunit: u.Unit = u.Unit(1),
-                 yunit: u.Unit = u.Unit(1)) -> None:
+                 vscale: Optional[Mapping] = None,
+                 **axes_props) -> None:
         """Create a single plot container."""
-        super().__init__(axis, cbaxis=cbaxis, xscale=xscale, yscale=yscale,
-                         xname=xname, yname=yname)
-        self.xunit = xunit
-        self.yunit = yunit
+        super().__init__(axis, cbaxis=cbaxis)
+        if axes_props:
+            self.axes_props = PhysAxesProps(**axes_props)
+        else:
+            self.axes_props = None
+        if vscale:
+            self.vscale = PhysVScaleProps(**vscale)
+        else:
+            self.vscale = None
 
     def _simple_plt(self,
                     fn: Callable[[], Plot],
@@ -619,7 +609,7 @@ class PhysPlotHandler(PlotHandler):
         `args` that are physical quantities. If `args` consist of an image,
         then it is assumed that it is in the correct units and the `is_image`
         keyword can be used to skip the unit checking.
-        
+
         Args:
           fn: plotting function.
           args: arguments for the function.
@@ -632,17 +622,19 @@ class PhysPlotHandler(PlotHandler):
             nphys_args = len(args)
 
         # Cases
+        xunit = self.axes_props.xunit
+        yunit = self.axes_props.yunit
         if is_image:
             phys_args = (args[0].value,)
         elif nphys_args == 1:
-            phys_args = (args[0].to(self.yunit).value,)
+            phys_args = (args[0].to(yunit).value,)
         elif nphys_args == 2:
-            phys_args = (args[0].to(self.xunit).value,
-                         args[1].to(self.yunit).value)
+            phys_args = (args[0].to(xunit).value,
+                         args[1].to(yunit).value)
         elif nphys_args == 3:
-            phys_args = (args[0].to(self.xunit).value,
-                         args[1].to(self.yunit).value,
-                         args[2].to(self.yunit).value)
+            phys_args = (args[0].to(xunit).value,
+                         args[1].to(yunit).value,
+                         args[2].to(yunit).value)
         else:
             raise ValueError('Could not convert values')
 
@@ -653,40 +645,40 @@ class PhysPlotHandler(PlotHandler):
         return self.insert_plt(kwargs.get('label', None),
                                fn(*fn_args, **kwargs))
 
-    @staticmethod
-    def _check_unit(value: Union[u.Quantity, None],
-                    unit: u.Unit) -> Union[u.Quantity, None]:
-        """Convert the value to unit.
+    #@staticmethod
+    #def _check_unit(value: Union[u.Quantity, None],
+    #                unit: u.Unit) -> Union[u.Quantity, None]:
+    #    """Convert the value to unit.
 
-        Args:
-          value: quantity to check.
-          unit: unit to convert to.
+    #    Args:
+    #      value: quantity to check.
+    #      unit: unit to convert to.
 
-        Returns:
-          The value of the quantity value converted to unit or `None` if value
-          is `"None"`.
-        """
-        if value is None: return None
-        return value.to(unit).value
+    #    Returns:
+    #      The value of the quantity value converted to unit or `None` if value
+    #      is `"None"`.
+    #    """
+    #    if value is None: return None
+    #    return value.to(unit).value
 
     # Getters
-    def get_xlabel(self, unit_fmt: str = '({:latex_inline})') -> str:
-        """Return the xlabel from stored values."""
-        return super().get_xlabel(unit_fmt=unit_fmt)
+    #def get_xlabel(self, unit_fmt: str = '({:latex_inline})') -> str:
+    #    """Return the xlabel from stored values."""
+    #    return super().get_xlabel(unit_fmt=unit_fmt)
 
-    def get_ylabel(self, unit_fmt: str = '({:latex_inline})') -> str:
-        """Return the ylabel from stored values."""
-        return super().get_ylabel(unit_fmt=unit_fmt)
+    #def get_ylabel(self, unit_fmt: str = '({:latex_inline})') -> str:
+    #    """Return the ylabel from stored values."""
+    #    return super().get_ylabel(unit_fmt=unit_fmt)
 
     # Setters
-    def set_xlim(self, xmin: Optional[u.Quantity] = None,
-                 xmax: Optional[u.Quantity] = None) -> None:
-        """Set the axis x limits."""
-        super().set_xlim(xmin=self._check_unit(xmin, self.xunit),
-                         xmax=self._check_unit(xmax, self.xunit))
+    #def set_xlim(self, xmin: Optional[u.Quantity] = None,
+    #             xmax: Optional[u.Quantity] = None) -> None:
+    #    """Set the axis x limits."""
+    #    super().set_xlim(xmin=self._check_unit(xmin, self.xunit),
+    #                     xmax=self._check_unit(xmax, self.xunit))
 
-    def set_ylim(self, ymin: Optional[u.Quantity] = None,
-                 ymax: Optional[u.Quantity] = None) -> None:
-        """Set the axis y limits."""
-        super().set_ylim(ymin=self._check_unit(ymin, self.yunit),
-                         ymax=self._check_unit(ymax, self.yunit))
+    #def set_ylim(self, ymin: Optional[u.Quantity] = None,
+    #             ymax: Optional[u.Quantity] = None) -> None:
+    #    """Set the axis y limits."""
+    #    super().set_ylim(ymin=self._check_unit(ymin, self.yunit),
+    #                     ymax=self._check_unit(ymax, self.yunit))
