@@ -92,7 +92,6 @@ class MultiPlotter(BasePlotter):
         label_bkgc = self.config.getfloatlist('label_backgroundcolor',
                                               fallback='w')
         if len(self.axes) > 1:
-            #ind = list(reversed(self.axes.keys())).index(loc)
             nrows, ncols = self.shape
             ind = list(product(range(nrows), range(ncols))).index(loc)
             label = f"({chr(ord('a') + ind)}) {label}".strip()
@@ -121,13 +120,6 @@ class MultiPlotter(BasePlotter):
 
             # Get axis
             handler = self.init_axis(loc, projection=projection)
-
-            ## Update label
-            #if len(self.axes) > 1 and 'label' in handler.artists:
-            #    ind = self.axes.keys().index(loc)
-            #    label = self.artists[artist]['properties'][0].get('text', '')
-            #    label = f'({chr(ind+1)}) {label}'
-            #    self.artists[artist]['properties'][0] = label
 
             # Plot
             self._log.info('Plotting data')

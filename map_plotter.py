@@ -3,9 +3,7 @@ from typing import (Sequence, Optional, TypeVar, Union, Tuple, Dict, Mapping,
                     List)
 import pathlib
 
-#from astropy.visualization.wcsaxes import SphericalCircle
 from configparseradv.configparser import ConfigParserAdv
-#from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 from matplotlib.patches import Ellipse
 from matplotlib import cm
 from radio_beam import Beam
@@ -69,10 +67,6 @@ class MapHandler(PhysPlotHandler):
 
     Attributes:
       im: Object from `plt.imshow`.
-      bname
-      bunit
-      bname_cbar2
-      bunit_cbar2
       axes_props: axes properties.
       vscale: intensity scale parameters.
       artists: artists to plot.
@@ -96,12 +90,6 @@ class MapHandler(PhysPlotHandler):
                  #cbar_props: Mapping = {},
                  artists: Optional[Mapping] = None):
         """Initiate a map plot handler."""
-        # Copy colorbar properties
-        #vscale['name'] = cbar_props.get('bname', 'Intensity')
-        #vscale['unit'] = cbar_props.get('bunit', u.Unit(1))
-        #vscale['name2'] = cbar_props.get('bname_cbar2')
-        #vscale['unit2'] = cbar_props.get('bunit_cbar2')
-
         # Initialize
         super().__init__(axis, cbaxis=cbaxis, vscale=vscale,
                          xname=axes_props.pop('xname', 'R.A.'),
@@ -205,20 +193,14 @@ class MapHandler(PhysPlotHandler):
 
     @property
     def vmin(self):
-        #if 'vmin' not in self.vscale:
-        #    return None
         return self.vscale.vmin
 
     @property
     def vmax(self):
-        #if 'vmax' not in self.vscale:
-        #    return None
         return self.vscale.vmax
 
     @property
     def vcenter(self):
-        #if 'vcenter' not in self.vscale:
-        #    return None
         return self.vscale.vcenter
 
     @property
@@ -326,37 +308,6 @@ class MapHandler(PhysPlotHandler):
         self._log.info('Axes extent: %s, %s', xextent, yextent)
 
         return tuple(xextent + yextent)
-
-    # Getters
-    #def get_normalization(self,
-    #                      vmin: Optional[u.Quantity] = None,
-    #                      vmax: Optional[u.Quantity] = None) -> cm:
-    #    """Determine the normalization of the color stretch.
-
-    #    Args:
-    #      vmin: optional; scale minimum.
-    #      vmax: optional; scale maximum.
-    #    """
-    #    if vmin is None:
-    #        vmin = self.vmin
-    #    if vmax is None:
-    #        vmax = self.vmax
-    #    if self.stretch == 'log':
-    #        return ImageNormalize(vmin=vmin.value,
-    #                              vmax=vmax.value,
-    #                              stretch=LogStretch(a=self.vscale.a))
-    #    elif self.stretch == 'midnorm':
-    #        return TwoSlopeNorm(self.vcenter.value,
-    #                            vmin=vmin.value,
-    #                            vmax=vmax.value)
-    #    else:
-    #        return ImageNormalize(vmin=vmin.value,
-    #                              vmax=vmax.value,
-    #                              stretch=LinearStretch())
-
-    #def get_blabel(self, unit_fmt: str = '({:latex_inline})') -> str:
-    #    """Generate a string for the color bar label."""
-    #    return generate_label(self.bname, unit=self.bunit, unit_fmt=unit_fmt)
 
     # Plotters
     def plot_map(self,
@@ -499,7 +450,7 @@ class MapHandler(PhysPlotHandler):
           ignore_units: optional; ignore data units?
           **kwargs: optional; additional arguments for `pyplot.contours`.
         """
-        # Validate data: valdata is a quantity with self.bunit units
+        # Validate data
         valdata, valwcs = self._validate_data(data, wcs,
                                               ignore_units=ignore_units)
 
@@ -623,36 +574,6 @@ class MapHandler(PhysPlotHandler):
           orientation: orientation of the color bar.
           lines: optional; lines from contour plot to overplot.
         """
-    #    # Get ticks
-    #    #if ticks is None:
-    #    #    aux = get_colorbar_ticks(self.vmin, self.vmax,
-    #    #                             a=kwargs['a'],
-    #    #                             n=nticks,
-    #    #                             stretch=tickstretch or self.stretch)
-    #    #else:
-    #    #    aux = ticks.to(self.bunit)
-    #    #kwargs['ticks'] = aux
-
-    #    # Get ticks value
-    #    self.vscale.ticks = props.ticks.value
-    #    #if self.bunit_cbar2 is not None:
-    #    #    if equivalency is None and 'equivalency' in self.vscale:
-    #    #        equivalency = self.vscale['equivalency']
-    #    #    ticks_cbar2 = kwargs['ticks'].to(self.bunit_cbar2,
-    #    #                                     equivalencies=equivalency)
-    #    #    label_cbar2 = generate_label(self.bname_cbar2,
-    #    #                                 unit=self.bunit_cbar2,
-    #    #                                 unit_fmt='({:latex_inline})')
-    #    #    kwargs['ticks_cbar2'] = ticks_cbar2
-    #    #    kwargs['label_cbar2'] = label_cbar2
-    #    #    kwargs['norm_cbar2'] = self.get_normalization(
-    #    #        vmin=np.min(kwargs['ticks_cbar2']),
-    #    #        vmax=np.max(kwargs['ticks_cbar2']))
-    #    #    kwargs['ticks_cbar2'] = kwargs['ticks_cbar2'].value
-    #    if props.ticks_cbar2 is not None:
-    #        self._log.info('Color bar 2 ticks: %s', props.ticks_cbar2)
-    #        self.vscale.ticks_cbar2 = props.ticks_cbar2.value
-
         return super().plot_cbar(fig, self.im, orientation, lines=lines)
 
     def plot_beam(self,
@@ -755,21 +676,21 @@ class MapHandler(PhysPlotHandler):
         """
         # Update stored axes properties
         if set_xlabel is not None:
-            self.axes_props['set_xlabel'] = set_xlabel
+            self.axes_props.set_xlabel = set_xlabel
         else:
-            set_xlabel = self.axes_props['set_xlabel']
+            set_xlabel = self.axes_props.set_xlabel
         if set_ylabel is not None:
-            self.axes_props['set_ylabel'] = set_ylabel
+            self.axes_props.set_ylabel = set_ylabel
         else:
-            set_ylabel = self.axes_props['set_ylabel']
+            set_ylabel = self.axes_props.set_ylabel
         if set_xticks is not None:
-            self.axes_props['set_xticks'] = set_xticks
+            self.axes_props.set_xticks = set_xticks
         else:
-            set_xticks = self.axes_props['set_xticks']
+            set_xticks = self.axes_props.set_xticks
         if set_yticks is not None:
-            self.axes_props['set_yticks'] = set_yticks
+            self.axes_props.set_yticks = set_yticks
         else:
-            set_yticks = self.axes_props['set_yticks']
+            set_yticks = self.axes_props.set_yticks
 
         # Get axes
         ra, dec = self.ax.coords[xcoord], self.ax.coords[ycoord]
@@ -790,15 +711,15 @@ class MapHandler(PhysPlotHandler):
                           size=self.ax.xaxis.get_label().get_fontsize(),
                           family=self.ax.xaxis.get_label().get_family(),
                           fontname=self.ax.xaxis.get_label().get_fontname(),
-                          minpad=self.axes_props['label_ypad'])
+                          minpad=self.axes_props.label_ypad)
 
         # Ticks labels
-        ra.set_major_formatter(self.axes_props['xformat'])
+        ra.set_major_formatter(self.axes_props.xticks_fmt)
         ra.set_ticklabel_visible(set_xticks)
-        dec.set_major_formatter(self.axes_props['yformat'])
+        dec.set_major_formatter(self.axes_props.yticks_fmt)
         dec.set_ticklabel_visible(set_yticks)
-        ra.set_ticks(color=self.axes_props['ticks_color'])
-        dec.set_ticks(color=self.axes_props['ticks_color'])
+        ra.set_ticks(color=self.axes_props.ticks_color)
+        dec.set_ticks(color=self.axes_props.ticks_color)
 
         # Ticks fonts
         ra.set_ticklabel(
@@ -816,9 +737,6 @@ class MapHandler(PhysPlotHandler):
         # Minor ticks
         ra.display_minor_ticks(True)
         dec.display_minor_ticks(True)
-
-        # Apect ratio
-        #self.set_aspect(1./self.ax.get_data_ratio())
 
     def config_plot(self, **kwargs) -> None:
         # Docs is inherited
@@ -843,7 +761,6 @@ class MapHandler(PhysPlotHandler):
         if self.axes_props.inverty:
             self.ax.invert_yaxis()
 
-        #kwargs.setdefault('ticks_color', self.axes_props['ticks_color'])
         super().config_plot(**kwargs)
 
     # Artist functions
@@ -1076,11 +993,6 @@ class MapHandler(PhysPlotHandler):
         #    self.phys_scale(scale_pos.ra.degree, scale_pos.dec.degree,
         #            length.to(u.degree).value, label,
         #            color=scalecolor)
-
-        ## Label
-        #if 'label' in config:
-        #    self.label_axes(config['label'],
-        #            backgroundcolor=config.get('label_background', None))
 
     def brightness_temperature(self,
                                header: Mapping,

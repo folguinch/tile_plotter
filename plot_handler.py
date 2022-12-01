@@ -140,30 +140,20 @@ class PlotHandler:
         """
         # Updated version of axes_props
         if axes_props:
-            self._log.info('Replacing configurations: %s', axes_props)
+            self._log.info('Replacing plot configs: %s', axes_props)
             props = dataclasses.replace(self.axes_props, **axes_props)
         else:
             props = self.axes_props
 
         # Limits
         if props.xlim is not None:
-            #if hasattr(xlim, 'index'):
-            #    if len(xlim) != 2:
-            #        raise ValueError(f'Could not set xlim: {xlim}')
-            #xlim = dict(zip(['xmin', 'xmax'], props.xlim))
             self._log.info('Setting xlim: %s', props.xlim)
             self.ax.set_xlim(**props.xlim)
         if props.ylim is not None:
-            #if hasattr(ylim, 'index'):
-            #    if len(ylim) != 2:
-            #        raise ValueError(f'Could not set ylim: {ylim}')
-            #    ylim = dict(zip(['ymin', 'ymax'], ylim))
             self._log.info('Setting ylim: %s', props.ylim)
             self.ax.set_ylim(**props.ylim)
 
         # Axis scales
-        #self.xscale = xscale or self.xscale
-        #self.yscale = yscale or self.yscale
         if props.xscale == 'log':
             self.ax.set_xscale('log')
             self.ax.xaxis.set_major_formatter(tick_formatter('log'))
@@ -194,26 +184,6 @@ class PlotHandler:
 
         # Ticks colors
         self.ax.tick_params('both', color=props.ticks_color)
-
-    # Getters
-    #def get_xlabel(self, unit_fmt: str = '({})') -> str:
-    #    """Return the xlabel from stored values."""
-    #    return generate_label(self.xname, unit=self.xunit, unit_fmt=unit_fmt)
-
-    #def get_ylabel(self, unit_fmt: str = '({})') -> str:
-    #    """Return the ylabel from stored values."""
-    #    return generate_label(self.yname, unit=self.yunit, unit_fmt=unit_fmt)
-
-    # Setters
-    #def set_xlim(self, xmin: Optional[float] = None,
-    #             xmax: Optional[float] = None) -> None:
-    #    """Set the axis x limits."""
-    #    self.axis.set_xlim(left=xmin, right=xmax)
-
-    #def set_ylim(self, ymin: Optional[float] = None,
-    #             ymax: Optional[float] = None) -> None:
-    #    """Set the axis y limits."""
-    #    self.axis.set_ylim(bottom=ymin, top=ymax)
 
     def set_axlabels(self, xlabel: Optional[str] = None,
                      ylabel: Optional[str] = None) -> None:
@@ -398,9 +368,6 @@ class PlotHandler:
         self._log.info('Plotting color bar:')
 
         # Ticks
-        #if ticks is None and vmin and vmax:
-        #    ticks = get_colorbar_ticks(vmin, vmax, a=a, n=nticks,
-        #                               stretch=tickstretch)
         self._log.info('Tick values: %s', props.ticks)
 
         # Create bar
@@ -650,41 +617,3 @@ class PhysPlotHandler(PlotHandler):
 
         return self.insert_plt(kwargs.get('label', None),
                                fn(*fn_args, **kwargs))
-
-    #@staticmethod
-    #def _check_unit(value: Union[u.Quantity, None],
-    #                unit: u.Unit) -> Union[u.Quantity, None]:
-    #    """Convert the value to unit.
-
-    #    Args:
-    #      value: quantity to check.
-    #      unit: unit to convert to.
-
-    #    Returns:
-    #      The value of the quantity value converted to unit or `None` if value
-    #      is `"None"`.
-    #    """
-    #    if value is None: return None
-    #    return value.to(unit).value
-
-    # Getters
-    #def get_xlabel(self, unit_fmt: str = '({:latex_inline})') -> str:
-    #    """Return the xlabel from stored values."""
-    #    return super().get_xlabel(unit_fmt=unit_fmt)
-
-    #def get_ylabel(self, unit_fmt: str = '({:latex_inline})') -> str:
-    #    """Return the ylabel from stored values."""
-    #    return super().get_ylabel(unit_fmt=unit_fmt)
-
-    # Setters
-    #def set_xlim(self, xmin: Optional[u.Quantity] = None,
-    #             xmax: Optional[u.Quantity] = None) -> None:
-    #    """Set the axis x limits."""
-    #    super().set_xlim(xmin=self._check_unit(xmin, self.xunit),
-    #                     xmax=self._check_unit(xmax, self.xunit))
-
-    #def set_ylim(self, ymin: Optional[u.Quantity] = None,
-    #             ymax: Optional[u.Quantity] = None) -> None:
-    #    """Set the axis y limits."""
-    #    super().set_ylim(ymin=self._check_unit(ymin, self.yunit),
-    #                     ymax=self._check_unit(ymax, self.yunit))
