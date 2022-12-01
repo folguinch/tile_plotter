@@ -45,10 +45,10 @@ class AxesProps:
 
     def __post_init__(self):
         # Generate labels
-        if self.xlabel is None:
+        if set_xlabel and self.xlabel is None:
             self.xlabel = generate_label(self.xname, self.xunit,
                                          unit_fmt=self.unit_fmt)
-        if self.ylabel is None:
+        if set_ylabel and self.ylabel is None:
             self.ylabel = generate_label(self.yname, self.yunit,
                                          unit_fmt=self.unit_fmt)
 
@@ -68,8 +68,6 @@ class PhysAxesProps(AxesProps):
     unit_fmt: str = '({:latex_inline})'
 
     def __post_init__(self):
-        super().__post_init__()
-
         # Check units
         if self.xlim is not None:
             self.xlim = (self._check_unit(self.xlim[0], self.xunit),
@@ -77,6 +75,8 @@ class PhysAxesProps(AxesProps):
         if self.ylim is not None:
             self.ylim = (self._check_unit(self.ylim[0], self.yunit),
                          self._check_unit(self.ylim[1], self.yunit))
+
+        super().__post_init__()
 
     @staticmethod
     def _check_unit(value: Union[u.Quantity, None],
@@ -115,8 +115,6 @@ class VScaleProps:
     """Scaling for log stretch."""
     stretch: str = 'linear'
     """Stretch of color intensity."""
-    orientation: str = 'vertical'
-    """Color bar orientation."""
     compute_ticks: bool = False
     """Compute the ticks or use default?"""
     nticks: int = 5
@@ -209,7 +207,8 @@ class PhysVScaleProps(VScaleProps):
 
         # Generate ticks
         super().__post_init__()
-        self.ticks = self.ticks.to(self.unit)
+        if self.ticks is not None:
+            self.ticks = self.ticks.to(self.unit)
 
         # Generate label
         if self.label is None and self.unit is not None:

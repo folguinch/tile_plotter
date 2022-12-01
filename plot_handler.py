@@ -139,7 +139,11 @@ class PlotHandler:
           axes_props: optional; any other axes property.
         """
         # Updated version of axes_props
-        props = dataclasses.replace(self.axes_props, **axes_props)
+        if axes_props:
+            self._log.info('Replacing configurations: %s', axes_props)
+            props = dataclasses.replace(self.axes_props, **axes_props)
+        else:
+            props = self.axes_props
 
         # Limits
         if props.xlim is not None:
@@ -348,6 +352,7 @@ class PlotHandler:
     def plot_cbar(self,
                   fig: mpl.figure.Figure,
                   cs: mpl.colors.Colormap,
+                  orientation: str,
                   lines: Optional[Plot] = None,
                   compute_ticks: Optional[bool] = None,
                   **cbar_props
@@ -365,6 +370,7 @@ class PlotHandler:
         Args:
           fig: figure object.
           cs: color map.
+          orientation: color bar orientation.
           lines: optional; lines from contour plot to overplot.
           compute_ticks: optional; compute ticks or use default?
           cbar_props: optional; additional color bar properties.
@@ -399,18 +405,18 @@ class PlotHandler:
 
         # Create bar
         cbar = fig.colorbar(cs, ax=self.axis, cax=self.cbaxis,
-                            orientation=props.orientation, drawedges=False,
+                            orientation=orientation, drawedges=False,
                             ticks=props.ticks)
         if lines is not None:
             cbar.add_lines(lines)
 
         # Bar position
-        if props.orientation == 'vertical':
+        if orientation == 'vertical':
             cbar.ax.yaxis.set_ticks_position('right')
             if props.ticklabels is not None:
                 cbar.ax.yaxis.set_ticklabels(props.ticklabels)
                 self._log.info('Tick labels: %s', props.ticklabels)
-        elif props.orientation == 'horizontal':
+        elif orientation == 'horizontal':
             cbar.ax.xaxis.set_ticks_position('top')
             if props.ticklabels is not None:
                 cbar.ax.xaxis.set_ticklabels(props.ticklabels)
@@ -418,7 +424,7 @@ class PlotHandler:
 
         # Label
         if props.label is not None:
-            if props.orientation == 'vertical':
+            if orientation == 'vertical':
                 cbar.ax.yaxis.set_label_position('right')
                 cbar.set_label(
                     props.label,
@@ -428,7 +434,7 @@ class PlotHandler:
                     weight=self.ax.yaxis.get_label().get_weight(),
                     labelpad=props.labelpad,
                     verticalalignment='top')
-            elif props.orientation == 'horizontal':
+            elif orientation == 'horizontal':
                 cbar.ax.xaxis.set_label_position('top')
                 cbar.set_label(
                     props.label,
@@ -445,7 +451,7 @@ class PlotHandler:
             #vmax_cbar2 = np.max(props.ticks_cbar2)
             #vmin_cbar2 = props.vmin2.value
             #vmax_cbar2 = props.vmax2.value
-            if props.orientation == 'vertical':
+            if orientation == 'vertical':
                 cbar2 = cbar.ax.twinx()
                 cbar2.set_yscale(cbar.ax.get_yscale(),
                                  functions=(props.norm_cbar2,

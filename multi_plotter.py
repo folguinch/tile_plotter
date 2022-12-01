@@ -137,8 +137,7 @@ class MultiPlotter(BasePlotter):
             if self.has_cbar(loc) and not color_bars.get(loc, False):
                 self._log.info('Setting color bar')
                 color_bars[loc] = True
-                handler.plot_cbar(self.fig,
-                                  orientation=self.axes[loc].cborientation)
+                handler.plot_cbar(self.fig, self.axes[loc].cborientation)
 
             # Config plot
             if loc not in is_config:

@@ -573,10 +573,10 @@ class MapHandler(PhysPlotHandler):
             elif artist == 'arrows':
                 self.arrow(pos.ra, pos.dec, **props)
             elif artist == 'hlines':
-                pos = position.to(self.yunit)
+                pos = position.to(self.axes_props.yunit)
                 self.axhline(pos.value, **props)
             elif artist == 'vlines':
-                pos = position.to(self.xunit)
+                pos = position.to(self.axes_props.xunit)
                 self.axvline(pos.value, **props)
 
     def plot_artists(self) -> None:
@@ -604,23 +604,25 @@ class MapHandler(PhysPlotHandler):
         #                    height, color=color, zorder=zorder,
         #                    transform=self.ax.get_transform('world'), **kwargs)
 
-    #def plot_cbar(self,
-    #              fig: 'Figure',
-    #              lines: Optional[Plot] = None,
-    #              ) -> Optional[mpl.colorbar.Colorbar]:
-    #    """Plot the color bar.
+    def plot_cbar(self,
+                  fig: 'Figure',
+                  orientation: str,
+                  lines: Optional[Plot] = None,
+                  ) -> Optional[mpl.colorbar.Colorbar]:
+        """Plot the color bar.
 
-    #    If ticks are not given, they will be determined from the other
-    #    parameters (nticks, vmin, vmax, a, stretch, etc.) or use the defaults
-    #    from matplotlib.
+        If ticks are not given, they will be determined from the other
+        parameters (nticks, vmin, vmax, a, stretch, etc.) or use the defaults
+        from matplotlib.
 
-    #    When a second (clone) color bar axis is requested, the `equivalency`
-    #    argument can be used to convert the values of the color bar axis ticks.
+        When a second (clone) color bar axis is requested, the `equivalency`
+        argument can be used to convert the values of the color bar axis ticks.
 
-    #    Args:
-    #      fig: figure object.
-    #      lines: optional; lines from contour plot to overplot.
-    #    """
+        Args:
+          fig: figure object.
+          orientation: orientation of the color bar.
+          lines: optional; lines from contour plot to overplot.
+        """
     #    # Get ticks
     #    #if ticks is None:
     #    #    aux = get_colorbar_ticks(self.vmin, self.vmax,
@@ -651,7 +653,7 @@ class MapHandler(PhysPlotHandler):
     #        self._log.info('Color bar 2 ticks: %s', props.ticks_cbar2)
     #        self.vscale.ticks_cbar2 = props.ticks_cbar2.value
 
-    #    return super().plot_cbar(fig, self.im, lines=lines)
+        return super().plot_cbar(fig, self.im, orientation, lines=lines)
 
     def plot_beam(self,
                   header: Mapping,
@@ -822,28 +824,26 @@ class MapHandler(PhysPlotHandler):
         # Docs is inherited
         # Change axes
         try:
-            self.ax.coords[0].set_major_formatter(self.axes_props['xformat'])
+            self.ax.coords[0].set_major_formatter(self.axes_props.xformat)
             self.ax.coords[0].set_format_unit(self.xunit)
         except AttributeError:
-            fmt = f"{{x:.{self.axes_props['xformat']}f}}"
-            self.ax.xaxis.set_major_formatter(fmt)
+            self.ax.xaxis.set_major_formatter(self.axes_props.xformat)
         except ValueError:
             pass
         try:
-            self.ax.coords[1].set_major_formatter(self.axes_props['yformat'])
+            self.ax.coords[1].set_major_formatter(self.axes_props.yformat)
             self.ax.coords[1].set_format_unit(self.yunit)
         except AttributeError:
-            fmt = f"{{x:.{self.axes_props['yformat']}f}}"
-            self.ax.yaxis.set_major_formatter(fmt)
+            self.ax.yaxis.set_major_formatter(self.axes_props.yformat)
         except ValueError:
             pass
 
-        if self.axes_props.get('invertx'):
+        if self.axes_props.invertx:
             self.ax.invert_xaxis()
-        if self.axes_props.get('inverty'):
+        if self.axes_props.inverty:
             self.ax.invert_yaxis()
 
-        kwargs.setdefault('ticks_color', self.axes_props['ticks_color'])
+        #kwargs.setdefault('ticks_color', self.axes_props['ticks_color'])
         super().config_plot(**kwargs)
 
     # Artist functions
