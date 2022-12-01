@@ -45,10 +45,10 @@ class AxesProps:
 
     def __post_init__(self):
         # Generate labels
-        if set_xlabel and self.xlabel is None:
+        if self.set_xlabel and self.xlabel is None:
             self.xlabel = generate_label(self.xname, self.xunit,
                                          unit_fmt=self.unit_fmt)
-        if set_ylabel and self.ylabel is None:
+        if self.set_ylabel and self.ylabel is None:
             self.ylabel = generate_label(self.yname, self.yunit,
                                          unit_fmt=self.unit_fmt)
 
