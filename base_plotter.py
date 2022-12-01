@@ -174,6 +174,8 @@ class BasePlotter(LoggedObject, metaclass=abc.ABCMeta):
         # Color bar
         if include_cbar:
             cbaxis = self.init_cbar(loc)
+        else:
+            cbaxis = None
 
         # Create plotter object
         self.axes[loc].set_handler(handler.from_config(self.config, axis,
