@@ -624,3 +624,6 @@ class PhysPlotHandler(PlotHandler):
 
         return self.insert_plt(kwargs.get('label', None),
                                fn(*fn_args, **kwargs))
+
+    def plot(self, *args, **kwargs) -> Plot:
+        return self._simple_plt(self.axis.plot, *args, nphys_args=2, **kwargs)
