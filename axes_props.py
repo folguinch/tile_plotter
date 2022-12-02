@@ -279,7 +279,7 @@ class PhysVScaleProps(VScaleProps):
     def get_ticks(self, generate_cbar2: bool = False) -> Tuple:
         """Get the color bar ticks."""
         generate_cbar2 = self.unit_cbar2 is not None
-        super().generate_ticks(generate_cbar2=generate_cbar2)
+        super().get_ticks(generate_cbar2=generate_cbar2)
         self.ticks = self.ticks.to(self.unit)
 
         return self.ticks.to(self.unit).value, self.ticks_cbar2.value
