@@ -708,12 +708,20 @@ class MapHandler(PhysPlotHandler):
             system = '(J2000)'
         else:
             system = ''
-        ra.set_axislabel(f'{self.xname} {system}' if set_xlabel else ' ',
+        if set_xlabel:
+            xname = f'{self.axes_props.xname} {system}'
+        else:
+            xname ' '
+        if set_ylabel:
+            yname = f'{self.axes_props.yname} {system}'
+        else:
+            yname = ' '
+        ra.set_axislabel(xname,
                          size=self.ax.xaxis.get_label().get_fontsize(),
                          family=self.ax.xaxis.get_label().get_family(),
                          fontname=self.ax.xaxis.get_label().get_fontname(),
                          minpad=self.axes_props['label_xpad'])
-        dec.set_axislabel(f'{self.yname} {system}' if set_ylabel else ' ',
+        dec.set_axislabel(yname,
                           size=self.ax.xaxis.get_label().get_fontsize(),
                           family=self.ax.xaxis.get_label().get_family(),
                           fontname=self.ax.xaxis.get_label().get_fontname(),
