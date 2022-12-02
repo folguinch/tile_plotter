@@ -1011,7 +1011,7 @@ class MapHandler(PhysPlotHandler):
             size = size.to(u.Unit(config.get('scale_unit', fallback='au')))
 
             # Scale label
-            label = f'{size.value:.0f} {size.unit:latex_inline}'
+            label = f'{size.value:.0f} {size.unit:latex_inline}  '.lower()
         
             # Plot scale
             self.phys_scale(scale_pos.ra, scale_pos.dec, length, label,
