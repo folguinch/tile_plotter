@@ -711,7 +711,7 @@ class MapHandler(PhysPlotHandler):
         if set_xlabel:
             xname = f'{self.axes_props.xname} {system}'
         else:
-            xname ' '
+            xname = ' '
         if set_ylabel:
             yname = f'{self.axes_props.yname} {system}'
         else:
