@@ -300,8 +300,8 @@ class PhysVScaleProps(VScaleProps):
                                          equivalencies=self.unit_equiv)
         self.label_cbar2 = generate_label(self.name2, unit=self.unit2,
                                           unit_fmt=unit_fmt)
-        self.norm_cbar2 = self.get_normalization(vmin=self.vmin2.value,
-                                                 vmax=self.vmax2.value)
+        self.norm_cbar2 = self.get_normalization(vmin=self.vmin2,
+                                                 vmax=self.vmax2)
         #self.norm_cbar2 = self.get_normalization(
         #    vmin=np.min(self.ticks_cbar2),
         #    vmax=np.max(self.ticks_cbar2),
