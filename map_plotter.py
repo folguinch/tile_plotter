@@ -720,7 +720,7 @@ class MapHandler(PhysPlotHandler):
                          size=self.ax.xaxis.get_label().get_fontsize(),
                          family=self.ax.xaxis.get_label().get_family(),
                          fontname=self.ax.xaxis.get_label().get_fontname(),
-                         minpad=self.axes_props['label_xpad'])
+                         minpad=self.axes_props.label_xpad)
         dec.set_axislabel(yname,
                           size=self.ax.xaxis.get_label().get_fontsize(),
                           family=self.ax.xaxis.get_label().get_family(),
