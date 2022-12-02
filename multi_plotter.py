@@ -230,11 +230,11 @@ class OTFMultiPlotter(BasePlotter):
 
         # Axes label
         label = self.config.get('label', fallback=label)
-        label_loc = self.config.getfloatlist('label_position',
-                                             fallback=(0.1, 0.9))
-        label_bkgc = self.config.getfloatlist('label_backgroundcolor',
-                                              fallback='w')
         if label:
+            label_loc = self.config.getfloatlist('label_position',
+                                                 fallback=(0.1, 0.9))
+            label_bkgc = self.config.getfloatlist('label_backgroundcolor',
+                                                  fallback='w')
             handler.label_axes(label, loc=label_loc, backgroundcolor=label_bkgc)
 
 #    def get_plotter(self, axis, cbax, projection):
