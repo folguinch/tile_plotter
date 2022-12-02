@@ -160,16 +160,19 @@ class VScaleProps:
             self.tickstretch = self.stretch
         #self.generate_ticks()
 
-    def generate_ticks(self, generate_cbar2: bool = False) -> None:
+    def get_ticks(self, generate_cbar2: bool = False) -> Tuple:
         """Generate the colorbar ticks."""
         if (self.ticks is None and self.vmin is not None and
             self.vmax is not None):
             self.ticks = get_colorbar_ticks(self.vmin, self.vmax, a=self.a,
                                             n=self.nticks,
                                             stretch=self.tickstretch)
+            ticks = self.ticks
 
         if self.ticks_cbar2 is None and generate_cbar2:
             self.generate_cbar2()
+
+        return self.ticks, self.ticks_cbar2
 
     def generate_cbar2(self, unit_fmt: str = '({:latex_inline})'):
         """Generate second colorbar."""
@@ -276,6 +279,14 @@ class PhysVScaleProps(VScaleProps):
         return super().get_normalization(vmin=vmin.value, vmax=vmax.value,
                                          vcenter=vcenter)
 
+    def get_ticks(self, generate_cbar2: bool = False) -> Tuple:
+        """Get the color bar ticks."""
+        generate_cbar2 = self.unit2 is not None
+        super().generate_ticks(generate_cbar2=generate_cbar2)
+        self.ticks = self.ticks.to(self.unit)
+
+        return self.ticks.to(self.unit).value, self.ticks_cbar2.value
+
     def check_scale_units(self):
         """Check units of the values defining the intensity scale."""
         if self.unit is not None:
@@ -287,12 +298,6 @@ class PhysVScaleProps(VScaleProps):
                 self.vcenter = self.vcenter.to(self.unit)
             if self.ticks is not None:
                 self.ticks = self.ticks.to(self.unit)
-
-    def generate_ticks(self, generate_cbar2: bool = False) -> None:
-        """Generate the colorbar ticks."""
-        generate_cbar2 = self.unit2 is not None
-        super().generate_ticks(generate_cbar2=generate_cbar2)
-        self.ticks = self.ticks.to(self.unit)
 
     def generate_cbar2(self, unit_fmt: str = '({:latex_inline})'):
         """Fill the properties of second colorbar."""

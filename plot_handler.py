@@ -368,13 +368,16 @@ class PlotHandler:
         # Compute ticks or use default?
         if ((compute_ticks is not None and compute_ticks) or
             self.vscale.compute_ticks):
-            props.generate_ticks()
+            ticks, ticks_cbar2 = props.get_ticks()
             self._log.info('Color bar ticks: %s', props.ticks)
+            self._log.info('Color bar 2 ticks: %s', props.ticks_cbar2)
+        else:
+            ticks = ticks_cbar2 = None
 
         # Create bar
         cbar = fig.colorbar(cs, ax=self.axis, cax=self.cbaxis,
                             orientation=orientation, drawedges=False,
-                            ticks=props.ticks.value)
+                            ticks=ticks)
         if lines is not None:
             cbar.add_lines(lines)
 
@@ -413,8 +416,7 @@ class PlotHandler:
                     labelpad=props.labelpad)
 
         # Secondary bar axis
-        if props.ticks_cbar2 is not None:
-            self._log.info('Color bar 2 ticks: %s', props.ticks_cbar2)
+        if ticks_cbar2 is not None:
             #vmin_cbar2 = np.min(props.ticks_cbar2)
             #vmax_cbar2 = np.max(props.ticks_cbar2)
             #vmin_cbar2 = props.vmin2.value
@@ -429,7 +431,7 @@ class PlotHandler:
                     cbar2.yaxis.set_label_position('left')
                     cbar2.set_ylabel(props.label_cbar2,
                                      labelpad=props.labelpad2)
-                cbar2.yaxis.set_ticks(props.ticks_cbar2.value)
+                cbar2.yaxis.set_ticks(ticks_cbar2)
             else:
                 cbar2 = cbar.ax.twiny()
                 cbar2.set_xscale(cbar.ax.get_xscale(),
@@ -441,7 +443,7 @@ class PlotHandler:
                     cbar2.xaxis.set_label_position('top')
                     cbar2.set_xlabel(props.label_cbar2,
                                      labelpad=props.labelpad2)
-                cbar2.xaxis.set_ticks(props.ticks_cbar2.value)
+                cbar2.xaxis.set_ticks(ticks_cbar2)
 
         # Font
         #tlabels = (cbar.ax.xaxis.get_ticklabels(which='both') +
