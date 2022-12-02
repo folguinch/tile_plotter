@@ -115,15 +115,15 @@ class VScaleProps:
     """Store intensity scale and color bar properties."""
     name: str = 'Intensity'
     """Color bar name."""
-    name2: Optional[str] = None
+    name_cbar2: Optional[str] = None
     """Color bar name of second axis."""
     vmin: Optional[float] = None
     """Lower limit of color intensity."""
-    vmin2: Optional[float] = None
+    vmin_cbar2: Optional[float] = None
     """Lower limit of color intensity of bar second axis."""
     vmax: Optional[float] = None
     """Upper limit of color intensity."""
-    vmax2: Optional[float] = None
+    vmax_cbar2: Optional[float] = None
     """Upper limit of color intensity of bar second axis."""
     vcenter: Optional[float] = None
     """Mid value for midnorm stretch."""
@@ -145,7 +145,7 @@ class VScaleProps:
     """Color bar label."""
     labelpad: float = 0
     """Shift the color bar label."""
-    labelpad2: float = 0
+    labelpad_cbar2: float = 0
     """Shift the second color bar label."""
     label_cbar2: Optional[str] = None
     """Label of the second axis of the color bar."""
@@ -207,7 +207,7 @@ class PhysVScaleProps(VScaleProps):
     """Store intensity scale and color bar properties."""
     unit: Optional[u.Unit] = None
     """Intensity axis unit."""
-    unit2: Optional[u.Unit] = None
+    unit_cbar2: Optional[u.Unit] = None
     """Intensity axis unit for second color bar."""
     unit_equiv: Optional[Callable] = None
     """Equivalency between units of both color bars."""
@@ -235,9 +235,6 @@ class PhysVScaleProps(VScaleProps):
         if self.label is None and self.unit is not None:
             self.label = self.generate_cblabel()
 
-        #if self.ticks is not None and self.unit2 is not None:
-        #    self.generate_cbar2()
-
     def set_unit(self, value: u.Unit) -> None:
         """Safe unit setter.
 
@@ -255,7 +252,7 @@ class PhysVScaleProps(VScaleProps):
         if axis == 1:
             return self.vmin.value, self.vmax.value
         elif axis == 2:
-            return self.vmin2.value, self.vmax2.value
+            return self.vmin_cbar2.value, self.vmax_cbar2.value
         else:
             raise ValueError(f'Axis {axis} not recognized')
 
@@ -281,7 +278,7 @@ class PhysVScaleProps(VScaleProps):
 
     def get_ticks(self, generate_cbar2: bool = False) -> Tuple:
         """Get the color bar ticks."""
-        generate_cbar2 = self.unit2 is not None
+        generate_cbar2 = self.unit_cbar2 is not None
         super().generate_ticks(generate_cbar2=generate_cbar2)
         self.ticks = self.ticks.to(self.unit)
 
@@ -301,14 +298,16 @@ class PhysVScaleProps(VScaleProps):
 
     def generate_cbar2(self, unit_fmt: str = '({:latex_inline})'):
         """Fill the properties of second colorbar."""
-        self.vmin2 = self.vmin.to(self.unit2, equivalencies=self.unit_equiv)
-        self.vmax2 = self.vmax.to(self.unit2, equivalencies=self.unit_equiv)
-        self.ticks_cbar2 = self.ticks.to(self.unit2,
+        self.vmin_cbar2 = self.vmin.to(self.unit_cbar2,
+                                       equivalencies=self.unit_equiv)
+        self.vmax_cbar2 = self.vmax.to(self.unit_cbar2,
+                                  equivalencies=self.unit_equiv)
+        self.ticks_cbar2 = self.ticks.to(self.unit_cbar2,
                                          equivalencies=self.unit_equiv)
-        self.label_cbar2 = generate_label(self.name2, unit=self.unit2,
+        self.label_cbar2 = generate_label(self.name_cbar2, unit=self.unit_cbar2,
                                           unit_fmt=unit_fmt)
-        self.norm_cbar2 = self.get_normalization(vmin=self.vmin2,
-                                                 vmax=self.vmax2)
+        self.norm_cbar2 = self.get_normalization(vmin=self.vmin_cbar2,
+                                                 vmax=self.vmax_cbar2)
         #self.norm_cbar2 = self.get_normalization(
         #    vmin=np.min(self.ticks_cbar2),
         #    vmax=np.max(self.ticks_cbar2),

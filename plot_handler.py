@@ -430,7 +430,7 @@ class PlotHandler:
                 if props.label_cbar2 is not None:
                     cbar2.yaxis.set_label_position('left')
                     cbar2.set_ylabel(props.label_cbar2,
-                                     labelpad=props.labelpad2)
+                                     labelpad=props.labelpad_cbar2)
                 cbar2.yaxis.set_ticks(ticks_cbar2)
             else:
                 cbar2 = cbar.ax.twiny()
@@ -442,7 +442,7 @@ class PlotHandler:
                     cbar.ax.xaxis.set_label_position('bottom')
                     cbar2.xaxis.set_label_position('top')
                     cbar2.set_xlabel(props.label_cbar2,
-                                     labelpad=props.labelpad2)
+                                     labelpad=props.labelpad_cbar2)
                 cbar2.xaxis.set_ticks(ticks_cbar2)
 
         # Font
