@@ -874,7 +874,7 @@ class MapHandler(PhysPlotHandler):
         xval = np.array([x0.value, x0.value]) * x0.unit
         yval = np.array([y0.value, (y0 + length).value]) * y0.unit
         self.plot(xval, yval, color=color, ls='-', lw=1, marker='_',
-                  zorder=zorder)
+                  zorder=zorder, transform=self.ax.get_transform(self.radesys))
 
         # Plot label
         try:
