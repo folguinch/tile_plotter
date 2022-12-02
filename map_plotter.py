@@ -171,6 +171,8 @@ class MapHandler(PhysPlotHandler):
                     val = np.array(list(map(float, val[:-1]))) * u.Unit(val[-1])
             elif opt in ['nticks']:
                 val = int(val)
+            elif opt in ['compute_ticks']:
+                val = config.getboolean(opt, vars=kwargs)
             else:
                 try:
                     split_val = val.split()
