@@ -997,6 +997,7 @@ class MapHandler(PhysPlotHandler):
         if 'scale' in config:
             # From config
             scale_pos = config.getskycoord('scale')
+            scale_pos = scale_pos.transform_to(self.radesys)
             distance = config.getquantity('source_distance').to(u.pc)
             if 'scale_size' in config:
                 size = config.getquantity('scale_size').to(u.au)
