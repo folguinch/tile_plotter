@@ -352,6 +352,11 @@ class PlotHandler:
           compute_ticks: optional; compute ticks or use default?
           cbar_props: optional; additional color bar properties.
         """
+        # Check if cbax exists
+        if self.cbaxis is None:
+            self._log.warning('Skipping color bar')
+            return None
+
         # Update color bar properties
         if self.vscale is not None and cbar_props:
             props = dataclasses.replace(self.vscale, **cbar_props)
@@ -367,12 +372,6 @@ class PlotHandler:
             self._log.info('Color bar ticks: %s', props.ticks)
             if props.ticks_cbar2 is not None:
                 self._log.info('Color bar 2 ticks: %s', props.ticks_cbar2)
-
-        # Check if cbax exists
-        if self.cbaxis is None:
-            self._log.warning('Skipping color bar')
-            return None
-        self._log.info('Plotting color bar:')
 
         # Create bar
         cbar = fig.colorbar(cs, ax=self.axis, cax=self.cbaxis,
