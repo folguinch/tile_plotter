@@ -869,7 +869,8 @@ class MapHandler(PhysPlotHandler):
           zorder: optional; plotting order.
         """
         # Plot bar
-        self.log._info('Plotting physical scale')
+        self._log.info('Plotting physical scale')
+        self._log.info('Scale length: %s', length)
         xval = [x0.to(self.axes_props.xunit).value] * 2
         yval = y0.to(self.axes_props.yunit).value
         yval = [yval, yval + length.to(self.axes_props.yunit).value]
