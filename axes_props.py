@@ -18,9 +18,9 @@ class AxesProps:
     """X-axis name."""
     yname: str = 'y'
     """Y-axis name."""
-    xlim: Optional[Tuple[float, float], Tuple[None, float]] = None
+    xlim: Optional[Union[Tuple[float, float], Tuple[None, float]]] = None
     """X-axis limits."""
-    ylim: Optional[Tuple[float, float], Tuple[None, float]] = None
+    ylim: Optional[Union[Tuple[float, float], Tuple[None, float]]] = None
     """Y-axis limits."""
     xscale: str = 'linear'
     """X-axis scale (linear or log)."""
