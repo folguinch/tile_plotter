@@ -871,9 +871,8 @@ class MapHandler(PhysPlotHandler):
         # Plot bar
         self._log.info('Plotting physical scale')
         self._log.info('Scale length: %s', length)
-        xval = [x0.to(self.axes_props.xunit).value] * 2
-        yval = y0.to(self.axes_props.yunit).value
-        yval = [yval, yval + length.to(self.axes_props.yunit).value]
+        xval = np.array([x0.value, x0.value]) * x0.unit
+        yval = np.array([y0.value, (y0 + length).value]) * y0.unit
         self.plot(xval, yval, color=color, ls='-', lw=1, marker='_',
                   zorder=zorder)
 
@@ -882,6 +881,8 @@ class MapHandler(PhysPlotHandler):
             xycoords = self.ax.get_transform('world')
         except TypeError:
             xycoords = 'data'
+        xval = xval.to(self.axes_props.xunit).value
+        yval = yval.to(self.axes_props.yunit).value
         self.annotate(label,
                       xy=[xval[0], yval[0]],
                       xytext=[xval[0], yval[0]],
