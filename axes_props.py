@@ -145,6 +145,8 @@ class VScaleProps:
     """Color bar label."""
     labelpad: float = 0
     """Shift the color bar label."""
+    labelpad2: float = 0
+    """Shift the second color bar label."""
     label_cbar2: Optional[str] = None
     """Label of the second axis of the color bar."""
     ticks_cbar2: Optional[Sequence[float]] = None

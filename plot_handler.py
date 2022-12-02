@@ -370,8 +370,6 @@ class PlotHandler:
             self.vscale.compute_ticks):
             props.generate_ticks()
             self._log.info('Color bar ticks: %s', props.ticks)
-            if props.ticks_cbar2 is not None:
-                self._log.info('Color bar 2 ticks: %s', props.ticks_cbar2)
 
         # Create bar
         cbar = fig.colorbar(cs, ax=self.axis, cax=self.cbaxis,
@@ -416,7 +414,7 @@ class PlotHandler:
 
         # Secondary bar axis
         if props.ticks_cbar2 is not None:
-            self._log.info('Secondary bar ticks: %s', props.ticks_cbar2)
+            self._log.info('Color bar 2 ticks: %s', props.ticks_cbar2)
             #vmin_cbar2 = np.min(props.ticks_cbar2)
             #vmax_cbar2 = np.max(props.ticks_cbar2)
             #vmin_cbar2 = props.vmin2.value
@@ -430,7 +428,7 @@ class PlotHandler:
                 if props.label_cbar2 is not None:
                     cbar2.yaxis.set_label_position('left')
                     cbar2.set_ylabel(props.label_cbar2,
-                                     labelpad=props.labelpad)
+                                     labelpad=props.labelpad2)
                 cbar2.yaxis.set_ticks(props.ticks_cbar2.value)
             else:
                 cbar2 = cbar.ax.twiny()
@@ -441,7 +439,8 @@ class PlotHandler:
                 if props.label_cbar2 is not None:
                     cbar.ax.xaxis.set_label_position('bottom')
                     cbar2.xaxis.set_label_position('top')
-                    cbar2.set_xlabel(props.label_cbar2, labelpad=props.labelpad)
+                    cbar2.set_xlabel(props.label_cbar2,
+                                     labelpad=props.labelpad2)
                 cbar2.xaxis.set_ticks(props.ticks_cbar2.value)
 
         # Font
