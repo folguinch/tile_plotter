@@ -374,9 +374,6 @@ class PlotHandler:
             return None
         self._log.info('Plotting color bar:')
 
-        # Ticks
-        self._log.info('Tick values: %s', props.ticks)
-
         # Create bar
         cbar = fig.colorbar(cs, ax=self.axis, cax=self.cbaxis,
                             orientation=orientation, drawedges=False,

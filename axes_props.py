@@ -274,12 +274,6 @@ class PhysVScaleProps(VScaleProps):
         return super().get_normalization(vmin=vmin.value, vmax=vmax.value,
                                          vcenter=vcenter)
 
-    def generate_ticks(self, generate_cbar2: bool = False) -> None:
-        """Generate the colorbar ticks."""
-        generate_cbar2 = self.ticks is not None and self.unit2 is not None
-        super().generate_ticks(generate_cbar2=generate_cbar2)
-        self.ticks = self.ticks.to(self.unit)
-
     def check_scale_units(self):
         """Check units of the values defining the intensity scale."""
         if self.unit is not None:
@@ -291,6 +285,12 @@ class PhysVScaleProps(VScaleProps):
                 self.vcenter = self.vcenter.to(self.unit)
             if self.ticks is not None:
                 self.ticks = self.ticks.to(self.unit)
+
+    def generate_ticks(self, generate_cbar2: bool = False) -> None:
+        """Generate the colorbar ticks."""
+        generate_cbar2 = self.unit2 is not None
+        super().generate_ticks(generate_cbar2=generate_cbar2)
+        self.ticks = self.ticks.to(self.unit)
 
     def generate_cbar2(self, unit_fmt: str = '({:latex_inline})'):
         """Fill the properties of second colorbar."""
