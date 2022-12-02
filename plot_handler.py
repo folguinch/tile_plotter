@@ -376,7 +376,7 @@ class PlotHandler:
         # Create bar
         cbar = fig.colorbar(cs, ax=self.axis, cax=self.cbaxis,
                             orientation=orientation, drawedges=False,
-                            ticks=props.ticks)
+                            ticks=props.ticks.value)
         if lines is not None:
             cbar.add_lines(lines)
 
@@ -431,7 +431,7 @@ class PlotHandler:
                     cbar2.yaxis.set_label_position('left')
                     cbar2.set_ylabel(props.label_cbar2,
                                      labelpad=props.labelpad)
-                cbar2.yaxis.set_ticks(props.ticks_cbar2)
+                cbar2.yaxis.set_ticks(props.ticks_cbar2.value)
             else:
                 cbar2 = cbar.ax.twiny()
                 cbar2.set_xscale(cbar.ax.get_xscale(),
@@ -442,7 +442,7 @@ class PlotHandler:
                     cbar.ax.xaxis.set_label_position('bottom')
                     cbar2.xaxis.set_label_position('top')
                     cbar2.set_xlabel(props.label_cbar2, labelpad=props.labelpad)
-                cbar2.xaxis.set_ticks(props.ticks_cbar2)
+                cbar2.xaxis.set_ticks(props.ticks_cbar2.value)
 
         # Font
         #tlabels = (cbar.ax.xaxis.get_ticklabels(which='both') +
