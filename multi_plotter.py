@@ -135,7 +135,7 @@ class MultiPlotter(BasePlotter):
             if loc not in is_config:
                 # Plot artists
                 self._log.info('Plotting artists')
-                self.plot_artists()
+                handler.plot_artists()
 
                 # Config
                 self._log.info('Configuring plot')
