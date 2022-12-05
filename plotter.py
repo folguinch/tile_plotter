@@ -26,6 +26,8 @@ def multiplot(args):
     plot = MultiPlotter(args.config[0], verbose='v')
     plot.plot_all()
     plot.savefig(args.plotname[0])
+    if args.pdf:
+        plot.savefig(args.plotname[0].with_suffix('.pdf'))
 
 def plotter(args: Sequence):
     """Main program.
@@ -57,6 +59,8 @@ def plotter(args: Sequence):
         parents=args_parents,
         conflict_handler='resolve',
     )
+    parser.add_argument('--pdf', action='store_true',
+                        help='Store also as pdf?')
     parser.add_argument('plotname', nargs=1, action=actions.NormalizePath,
                         help='Plot file name')
 
