@@ -333,7 +333,7 @@ def auto_levels(data: Optional[u.Quantity] = None,
         # Geometric progression
         aux_levels = [nsigma * base**i for i in range(nlevels)]
     elif stretch == 'linear':
-        aux_levels = list(range(nsigma, nlevels))
+        aux_levels = list(range(int(nsigma), nlevels))
 
     # Negative contours
     if negative_nsigma is not None:
