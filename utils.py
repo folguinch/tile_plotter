@@ -293,7 +293,10 @@ def auto_levels(data: Optional[u.Quantity] = None,
 
     # Limits
     if max_val is not None:
-        base_level = nsigma * rms
+        if stretch == 'linear':
+            base_level = rms
+        else:
+            base_level = nsigma * rms
         max_val = max_val.to(rms.unit)
         if nlevels is None:
             nlevels = get_nlevels(max_val, base_level, stretch, base=base)
@@ -330,7 +333,7 @@ def auto_levels(data: Optional[u.Quantity] = None,
         # Geometric progression
         aux_levels = [nsigma * base**i for i in range(nlevels)]
     elif stretch == 'linear':
-        aux_levels = [nsigma * i for i in range(nlevels)]
+        aux_levels = list(range(nsigma, nlevels))
 
     # Negative contours
     if negative_nsigma is not None:
