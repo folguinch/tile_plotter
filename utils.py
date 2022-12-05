@@ -236,6 +236,7 @@ def auto_levels(data: Optional[u.Quantity] = None,
                 max_val: Optional[u.Quantity] = None,
                 min_val: Optional[u.Quantity] = None,
                 nsigma: float = 5.,
+                stretch: str = 'linear',
                 base: float = 2.,
                 nlevels: Optional[int] = None,
                 min_nlevels: int = 1,
@@ -251,6 +252,7 @@ def auto_levels(data: Optional[u.Quantity] = None,
       max_val: optional; maximum contour.
       min_val: optional; minumum contour.
       nsigma: optional; minimum contour over rms value.
+      stretch: optional; stretch of the contours.
       negative_nsigma: optional; maximum contour for negative levels.
       base: optional; logarithmic base.
       nlevels: optional; number of levels.
@@ -261,7 +263,9 @@ def auto_levels(data: Optional[u.Quantity] = None,
     """
     # Value checks
     log('Calculating levels')
-    if min_base > base:
+    if stretch == 'linear':
+        base = 1
+    elif min_base > base:
         log('Minimum base > base, setting min_base = base')
         min_base = base
     if nlevels and nlevels < min_nlevels:
@@ -292,36 +296,41 @@ def auto_levels(data: Optional[u.Quantity] = None,
         base_level = nsigma * rms
         max_val = max_val.to(rms.unit)
         if nlevels is None:
-            nlevels = get_nlevels(max_val, base_level, 'log', base=base)
+            nlevels = get_nlevels(max_val, base_level, stretch, base=base)
         if nlevels == 0:
             log(f'No contours over {nsigma}rms')
             log('Using one level at rms level')
             nlevels = 1
             nsigma = 1
-        elif min_nlevels and nlevels < min_nlevels and base == min_base:
-            log('Minimum number of levels not achieved with min_base')
-            log(f'Setting min_nlevels value = {nlevels}')
-            min_nlevels = nlevels
-        elif min_nlevels and nlevels < min_nlevels and base > min_base:
-            log('Minimum number of levels not achieved, refining base')
-            ratio = max_val.value / base_level.value
-            new_base = to_sigfig(np.exp(np.log(ratio) / (min_nlevels-1)))
-            if new_base < min_base:
-                log(f'Estimated base {new_base} smaller than min_base')
-                log(f'Changing base to {min_base}')
-                base = min_base
-            else:
-                log(f'New base = {new_base}')
-                base = new_base
-            nlevels = get_nlevels(max_val, base_level, 'log', base=base)
+        elif nlevels < min_nlevels:
+            if (stretch == 'log' and base == min_base) or stretch == 'linear':
+                log('Minimum number of levels not achieved with min_base')
+                log(f'Setting min_nlevels value = {nlevels}')
+                min_nlevels = nlevels
+            elif stretch == 'log' and base > min_base:
+                log('Minimum number of levels not achieved, refining base')
+                ratio = max_val.value / base_level.value
+                new_base = to_sigfig(np.exp(np.log(ratio) / (min_nlevels-1)))
+                if new_base < min_base:
+                    log(f'Estimated base {new_base} smaller than min_base')
+                    log(f'Changing base to {min_base}')
+                    base = min_base
+                else:
+                    log(f'New base = {new_base}')
+                    base = new_base
+                nlevels = get_nlevels(max_val, base_level, stretch, base=base)
         log(f'Number of levels = {nlevels}')
     elif nlevels:
         log(f'Using nlevels = {nlevels}')
     else:
         raise ValueError('Could not determine nlevels')
 
-    # Geometric progression
-    aux_levels = [nsigma * base**i for i in range(nlevels)]
+    # Calculate positive levels
+    if stretch == 'log':
+        # Geometric progression
+        aux_levels = [nsigma * base**i for i in range(nlevels)]
+    elif stretch == 'linear':
+        aux_levels = [nsigma * i for i in range(nlevels)]
 
     # Negative contours
     if negative_nsigma is not None:
@@ -350,7 +359,10 @@ def auto_levels(data: Optional[u.Quantity] = None,
                 break
             elif factor not in aux_levels:
                 aux_levels = [factor] + aux_levels
-            i = i * base
+            if stretch == 'log':
+                i = i * base
+            elif stretch == 'linear':
+                i = i - 1
 
     # Levels
     levels = np.array(aux_levels) * rms

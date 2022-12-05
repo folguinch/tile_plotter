@@ -433,6 +433,7 @@ class MapHandler(PhysPlotHandler):
                       nsigma: float = 5.,
                       negative_nsigma: Optional[float] = None,
                       nsigmalevel: Optional[float] = None,
+                      stretch: Optional[str] = None,
                       ignore_units: bool = False,
                       **kwargs):
         """Plot a contour map.
@@ -449,12 +450,18 @@ class MapHandler(PhysPlotHandler):
           negative_nsigma: optional; level of the highest negative contour.
           nsigmalevel: optional; plot only one contour at this level times the
             rms value.
+          stretch: optional; stretch of contour levels (default:
+            `axes_props.stretch`)
           ignore_units: optional; ignore data units?
           **kwargs: optional; additional arguments for `pyplot.contours`.
         """
         # Validate data
         valdata, valwcs = self._validate_data(data, wcs,
                                               ignore_units=ignore_units)
+
+        # Stretch
+        if stretch is None:
+            stretch = self.stretch
 
         # Check extent
         if extent is not None:
@@ -480,6 +487,7 @@ class MapHandler(PhysPlotHandler):
                                      nsigma=nsigma,
                                      nsigmalevel=nsigmalevel,
                                      nlevels=nlevels,
+                                     stretch=stretch,
                                      negative_nsigma=negative_nsigma,
                                      log=self._log.info)
                 levels_val = levels.to(valdata.unit).value
@@ -914,6 +922,7 @@ class MapHandler(PhysPlotHandler):
         use_extent = config.getboolean('use_extent', fallback=False)
         contour_colors = config.get('contour_colors', fallback=None)
         contour_linewidth = config.getfloat('contour_linewidth', fallback=None)
+        contour_stretch = config.getfloat('contour_stretch', fallback=None)
         ignore_units = config.getboolean('ignore_units', fallback=False)
         rms = config.getquantity('rms', fallback=None)
         levels = config.getquantity('levels', fallback=None)
@@ -933,6 +942,7 @@ class MapHandler(PhysPlotHandler):
                                levels=levels, colors=contour_colors,
                                nsigma=nsigma, negative_nsigma=negative_nsigma,
                                ignore_units=ignore_units,
+                               stretch=contour_stretch,
                                linewidths=contour_linewidth, zorder=2)
         elif 'with_style' in config:
             self._log.info('Changing style: %s', config['with_style'])
