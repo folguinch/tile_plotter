@@ -922,7 +922,7 @@ class MapHandler(PhysPlotHandler):
         use_extent = config.getboolean('use_extent', fallback=False)
         contour_colors = config.get('contour_colors', fallback=None)
         contour_linewidth = config.getfloat('contour_linewidth', fallback=None)
-        contour_stretch = config.getfloat('contour_stretch', fallback=None)
+        contour_stretch = config.get('contour_stretch', fallback=None)
         ignore_units = config.getboolean('ignore_units', fallback=False)
         rms = config.getquantity('rms', fallback=None)
         levels = config.getquantity('levels', fallback=None)
