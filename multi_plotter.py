@@ -133,7 +133,12 @@ class MultiPlotter(BasePlotter):
 
             # Config plot
             if loc not in is_config:
-                self._log.debug('Configuring plot')
+                # Plot artists
+                self._log.info('Plotting artists')
+                self.plot_artists()
+
+                # Config
+                self._log.info('Configuring plot')
                 self.apply_config(loc, handler, dtype)
                 is_config += (loc,)
 

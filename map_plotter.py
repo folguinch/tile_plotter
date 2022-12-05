@@ -965,9 +965,6 @@ class MapHandler(PhysPlotHandler):
                           contour_negative_nsigma=negative_nsigma,
                           contour_nsigmalevel=nsigma_level)
 
-        # Plot artists
-        self.plot_artists()
-
         # Plot beam
         plot_beam = self.skeleton.getboolean('data', 'plot_beam')
         if (config.getboolean('plot_beam', fallback=plot_beam) and

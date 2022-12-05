@@ -6,14 +6,14 @@ try:
     import matplotlib as mpl
 
     print(('Registering color maps: '
-           f'{cm.broc.name}'
-           f'{cm.vik.name}'
-           f'{cm.imola.name}'
-           f'{cm.oslo_r.name}'
-           f'{cm.bamako.name}'
-           f'{cm.nuuk.name}'
-           f'{cm.tokyo.name}'
-           f'{cm.turku.name}'
+           f'{cm.broc.name} '
+           f'{cm.vik.name} '
+           f'{cm.imola.name} '
+           f'{cm.oslo_r.name} '
+           f'{cm.bamako.name} '
+           f'{cm.nuuk.name} '
+           f'{cm.tokyo.name} '
+           f'{cm.turku.name} '
            ))
     mpl.colormaps.register(cm.broc)
     mpl.colormaps.register(cm.vik)
