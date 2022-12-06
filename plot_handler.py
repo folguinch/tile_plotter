@@ -32,6 +32,7 @@ class PlotHandler:
       axes_props: properties of axes.
       vscale: instensity scale and color bar properties.
       pltd: plotted objects tracker.
+      is_config: set to `True` when configuration has been applied.
       skeleton: base configuration.
     """
     # Common class attributes
@@ -60,6 +61,7 @@ class PlotHandler:
             self.vscale = VScaleProps(**vscale)
         else:
             self.vscale = None
+        self.is_config = False
 
     @property
     def ax(self) -> Axes:
@@ -138,6 +140,11 @@ class PlotHandler:
           minor_yticks: optional; minor y ticks values.
           axes_props: optional; any other axes property.
         """
+        # Check config
+        if self.is_config:
+            self._log.warning('Plot already configured, skipping')
+            return self.is_config
+
         # Updated version of axes_props
         if axes_props:
             self._log.info('Replacing plot configs: %s', axes_props)
@@ -184,6 +191,10 @@ class PlotHandler:
 
         # Ticks colors
         self.ax.tick_params('both', color=props.ticks_color)
+
+        # Update is_config
+        self.is_config = True
+        return self.is_config
 
     def set_axlabels(self, xlabel: Optional[str] = None,
                      ylabel: Optional[str] = None) -> None:
