@@ -829,7 +829,7 @@ class MapHandler(PhysPlotHandler):
                y: Union[float, u.Quantity],
                **kwargs):
         """Plot a region."""
-        return self.plot(x.to(u.deg).value, y.to(u.deg).value, ls='-', lw=1
+        return self.plot(x.to(u.deg).value, y.to(u.deg).value, ls='-', lw=1,
                          color=kwargs.get('color', 'g'),
                          zorder=kwargs.get('zorder', 8),
                          transform=self.ax.get_transform(self.radesys))
