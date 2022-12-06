@@ -417,7 +417,7 @@ def get_artist_positions(values: str, artist: str,
     vals = values.split(separator)
     positions = []
     for val in vals:
-        if (artist in ['scatters', 'arcs', 'texts', 'arrows'] and
+        if (artist in ['scatters', 'arcs', 'texts', 'arrows', 'scale'] and
             xycoords == 'data'):
             if phys_frame == 'sky':
                 try:
