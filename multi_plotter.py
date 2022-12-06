@@ -106,7 +106,6 @@ class MultiPlotter(BasePlotter):
           loc: location where the sections are plotted.
         """
         color_bars = {}
-        is_config = ()
         for section in sections:
             print('-' * 50)
             # Reset config
@@ -131,8 +130,8 @@ class MultiPlotter(BasePlotter):
                 color_bars[loc] = True
                 handler.plot_cbar(self.fig, self.axes[loc].cborientation)
 
-            # Config plot
-            if loc not in is_config:
+            # Config plot: things that need to be plotted once
+            if not handler.is_config:
                 # Plot artists
                 self._log.info('Plotting artists')
                 handler.plot_artists()
