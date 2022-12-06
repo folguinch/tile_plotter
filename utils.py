@@ -1,5 +1,5 @@
 """Plotting utilities."""
-from typing import Union, Optional, Callable, Tuple, List, TypeVar
+from typing import Union, Optional, Callable, Tuple, List, TypeVar, Sequence
 from dataclasses import dataclass
 
 from astropy.coordinates import SkyCoord
