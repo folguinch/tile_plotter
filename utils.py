@@ -394,7 +394,7 @@ def positions_from_region(regions: str,
     """Read positions from region file."""
     positions = []
     for region in regions.split(separator):
-        reg = Regions.read(region, format='crtf').pop()
+        reg = Regions.read(region.strip(), format='crtf').pop()
         positions.append(reg.vertices)
 
     return positions
