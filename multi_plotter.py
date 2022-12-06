@@ -139,7 +139,6 @@ class MultiPlotter(BasePlotter):
                 # Config
                 self._log.info('Configuring plot')
                 self.apply_config(loc, handler, dtype)
-                is_config += (loc,)
 
 class OTFMultiPlotter(BasePlotter):
     """On-the-fly multiple plot manager.
