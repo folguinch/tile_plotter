@@ -433,8 +433,14 @@ def get_artist_positions(values: str, artist: str,
 
     return positions
 
-def get_artist_properties(artist: str, config: 'ConfigParserAdv',
-                          separator: str = ',' ) -> dict:
+def get_artist_properties(
+    artist: str,
+    config: 'ConfigParserAdv',
+    separator: str = ',',
+    float_props: Sequence[str] = ('size', 'width', 'height', 'angle', 's',
+                                  'alpha', 'length', 'linewidth'),
+    quantity_props: Sequence[str] = ('pa', 'slope'),
+) -> dict:
     """Extract the properties of the artists from `config`.
 
     This function creates a dictionary that contain the markers positions as
@@ -463,6 +469,8 @@ def get_artist_properties(artist: str, config: 'ConfigParserAdv',
       artist: name of the artist.
       config: configuration parser proxy.
       separator: optional; separator between values of an config option.
+      float_props: optional; list of properties to be converted to float.
+      quantity_props: optional; list of properties that are `Quantity`.
     """
     # Position
     xycoords = config.get(f'{artist}_xycoords', fallback='data')
@@ -480,8 +488,6 @@ def get_artist_properties(artist: str, config: 'ConfigParserAdv',
             continue
 
         # Iterate over positions
-        float_props = ['size', 'width', 'height', 'angle', 's', 'alpha',
-                       'length', 'linewidth']
         prop = opt.split('_')[-1]
         for i in range(nprops):
             if prop in float_props:
@@ -490,12 +496,14 @@ def get_artist_properties(artist: str, config: 'ConfigParserAdv',
             elif prop in ['zorder']:
                 val = config.getvalue(opt, n=i, dtype=int, allow_global=True,
                                       sep=separator)
-            elif prop in ['pa', 'slope']:
+            elif prop in quantity_props:
                 val = config.getvalue(opt, n=i, dtype='quantity',
                                       allow_global=True, sep=separator)
             else:
                 val = config.getvalue(opt, n=i, allow_global=True,
                                       sep=separator)
+                if 'unit' in prop:
+                    val = u.Unit(val)
 
             # Special value
             if val == 'none' and prop != 'fillstyle':

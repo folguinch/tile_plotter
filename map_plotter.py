@@ -188,7 +188,14 @@ class MapHandler(PhysPlotHandler):
         for opt in cls.skeleton.options('artists'):
             if opt not in config and opt not in kwargs:
                 continue
-            artists[opt] = get_artist_properties(opt, config)
+            # Scale is a special artist
+            if opt == 'scale':
+                props = ('length', 'size', 'distance')
+                artists[opt] = get_artist_properties(opt, config,
+                                                     float_props=(),
+                                                     quantity_props=props)
+            else:
+                artists[opt] = get_artist_properties(opt, config)
 
         return cls(axis, cbaxis, radesys=radesys, axes_props=axes_props,
                    vscale=vscale, artists=artists)
@@ -533,6 +540,9 @@ class MapHandler(PhysPlotHandler):
                 self.text(pos.ra, pos.dec, text, nphys_args=2, **props)
             elif artist == 'arrows':
                 self.arrow(pos.ra, pos.dec, **props)
+            elif artist == 'scale':
+                distance = props.pop('distance')
+                self.scale(pos.ra, pos.dec, distance, **props)
             elif artist == 'hlines':
                 pos = position.to(self.axes_props.yunit)
                 self.axhline(pos.value, **props)
@@ -690,6 +700,11 @@ class MapHandler(PhysPlotHandler):
           xcoord: optional; name of the `x` coordinate axis.
           ycoord: optional; name of the `y` coordinate axis.
         """
+        # Check config
+        if self.is_config:
+            self._log.warning('Plot already configured, skipping')
+            return self.is_config
+
         # Update stored axes properties
         if set_xlabel is not None:
             self.axes_props.set_xlabel = set_xlabel
@@ -761,6 +776,7 @@ class MapHandler(PhysPlotHandler):
         # Minor ticks
         ra.display_minor_ticks(True)
         dec.display_minor_ticks(True)
+        self.is_config = True
 
     def config_plot(self, **kwargs) -> None:
         # Docs is inherited
@@ -843,7 +859,6 @@ class MapHandler(PhysPlotHandler):
             xy_axes = (x, y)
             vals = (pa.to(u.deg).value, length)
 
-
         return super().arrow(xy_axes + vals, **kwargs)
 
     #def circle(self, x, y, r, color='g', facecolor='none', zorder=0):
@@ -865,26 +880,48 @@ class MapHandler(PhysPlotHandler):
     #        pass
     #    self.ax.plot(*args, **kwargs)
 
-    def phys_scale(self, x0: u.Quantity, y0: u.Quantity, length: u.Quantity,
-                   label: str, color: str = 'w', zorder: int = 10) -> None:
+    def scale(self,
+              x0: u.Quantity,
+              y0: u.Quantity,
+              distance: u.Quantity,
+              size: Optional[u.Quantity] = None,
+              length: Optional[u.Quantity] = None,
+              unit: u.Unit = u.au,
+              **kwargs) -> None:
         """Plot physical scale.
+
+        Either `size` or `length` must be set to determine the size and value
+        for the label of the scale.
         
         Args:
           x0, y0: position of the origin of the scale.
-          length: length of the scale.
-          label: scale label.
-          color: optional; scale color.
-          zorder: optional; plotting order.
+          distance: distance to the source.
+          size: physical size of the scale.
+          length: angular length of the scale.
+          kwargs: additional properties (e.g. `color`, `zorder`)
         """
-        # Plot bar
+        # Determine scale properties
         self._log.info('Plotting physical scale')
+        distance = distance.to(u.pc)
+        if size is not None:
+            size = size.to(u.au)
+            length = size.value / distance.value * u.arcsec
+        elif length is not None:
+            length = length.to(u.arcsec)
+            size = distance.value * length.value * u.au
+        color = kwargs.get('color', 'w')
+        zorder = kwargs.get('zorder', 10)
         self._log.info('Scale length: %s', length)
+
+        # Plot scale
         xval = np.array([x0.value, x0.value]) * x0.unit
-        yval = np.array([y0.value, (y0 + length).value]) * y0.unit
+        yval = np.array([y0.value, (y0 + length).to(y0.unit).value]) * y0.unit
         self.plot(xval, yval, color=color, ls='-', lw=1, marker='_',
                   zorder=zorder, transform=self.ax.get_transform(self.radesys))
 
         # Plot label
+        size = size.to(unit)
+        label = f'{size.value:.0f} {size.unit:latex_inline}  '.lower()
         try:
             xycoords = self.ax.get_transform('world')
         except TypeError:
@@ -1000,29 +1037,6 @@ class MapHandler(PhysPlotHandler):
         #if 'title' in config:
         #    self.title(config['title'])
 
-        # Scale
-        if 'scale' in config:
-            # From config
-            scale_pos = config.getskycoord('scale')
-            scale_pos = scale_pos.transform_to(self.radesys)
-            distance = config.getquantity('source_distance').to(u.pc)
-            if 'scale_size' in config:
-                size = config.getquantity('scale_size').to(u.au)
-                length = size.value / distance.value * u.arcsec
-            elif 'scale_length' in config:
-                length = config.getquantity('scale_length').to(u.arcsec)
-                size = distance.value * length.value * u.au
-            scalecolor = config.get('scale_color', fallback='w')
-
-            # Check size unit
-            size = size.to(u.Unit(config.get('scale_unit', fallback='au')))
-
-            # Scale label
-            label = f'{size.value:.0f} {size.unit:latex_inline}  '.lower()
-        
-            # Plot scale
-            self.phys_scale(scale_pos.ra, scale_pos.dec, length, label,
-                            color=scalecolor)
 
     def brightness_temperature(self,
                                header: Mapping,
