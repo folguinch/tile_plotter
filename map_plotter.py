@@ -195,7 +195,8 @@ class MapHandler(PhysPlotHandler):
                                                      float_props=(),
                                                      quantity_props=props)
             else:
-                artists[opt] = get_artist_properties(opt, config)
+                artists[opt] = get_artist_properties(opt, config,
+                                                     from_region=opt=='regions')
 
         return cls(axis, cbaxis, radesys=radesys, axes_props=axes_props,
                    vscale=vscale, artists=artists)
@@ -543,6 +544,8 @@ class MapHandler(PhysPlotHandler):
             elif artist == 'scale':
                 distance = props.pop('distance')
                 self.scale(pos.ra, pos.dec, distance, **props)
+            elif artist == 'regions':
+                self.region(pos.ra, pos.dec, **props)
             elif artist == 'hlines':
                 pos = position.to(self.axes_props.yunit)
                 self.axhline(pos.value, **props)
@@ -821,6 +824,16 @@ class MapHandler(PhysPlotHandler):
                             transform=self.ax.get_transform(self.radesys),
                             **kwargs)
 
+    def region(self,
+               x: Union[float, u.Quantity],
+               y: Union[float, u.Quantity],
+               **kwargs):
+        """Plot a region."""
+        return self.plot(x.to(u.deg).value, y.to(u.deg).value, ls='-', lw=1
+                         color=kwargs.get('color', 'g'),
+                         zorder=kwargs.get('zorder', 8),
+                         transform=self.ax.get_transform(self.radesys))
+
     def arrow(self,
               x: Union[u.Quantity, float],
               y: Union[u.Quantity, float],
@@ -1036,7 +1049,6 @@ class MapHandler(PhysPlotHandler):
         ## Title
         #if 'title' in config:
         #    self.title(config['title'])
-
 
     def brightness_temperature(self,
                                header: Mapping,

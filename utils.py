@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from matplotlib.ticker import FuncFormatter
+from regions import Regions
 from toolkit.astro_tools import images
 import astropy.stats as apystats
 import astropy.units as u
@@ -388,6 +389,16 @@ def generate_label(name: str, unit: Optional[u.Unit] = None,
         label.append(unit_fmt.format(unit))
     return ' '.join(label)
 
+def positions_from_region(regions: str,
+                          separator: str = ',') -> List:
+    """Read positions from region file."""
+    positions = []
+    for region in regions.split(separator):
+        reg = Regions.read(region, format='crtf').pop()
+        positions.append(reg.vertices)
+
+    return positions
+
 def get_artist_positions(values: str, artist: str,
                          separator: str = ',',
                          xycoords: str = 'data',
@@ -440,6 +451,7 @@ def get_artist_properties(
     float_props: Sequence[str] = ('size', 'width', 'height', 'angle', 's',
                                   'alpha', 'length', 'linewidth'),
     quantity_props: Sequence[str] = ('pa', 'slope'),
+    from_region: bool = False,
 ) -> dict:
     """Extract the properties of the artists from `config`.
 
@@ -471,13 +483,18 @@ def get_artist_properties(
       separator: optional; separator between values of an config option.
       float_props: optional; list of properties to be converted to float.
       quantity_props: optional; list of properties that are `Quantity`.
+      from_region: optional; read positions from region?
     """
     # Position
-    xycoords = config.get(f'{artist}_xycoords', fallback='data')
-    phys_frame = config.get(f'{artist}_physframe', fallback='sky')
-    positions = get_artist_positions(config[artist], artist,
-                                     separator=separator, xycoords=xycoords,
-                                     phys_frame=phys_frame)
+    if from_region:
+        positions = positions_from_region(config[artist])
+    else:
+        xycoords = config.get(f'{artist}_xycoords', fallback='data')
+        phys_frame = config.get(f'{artist}_physframe', fallback='sky')
+        positions = get_artist_positions(config[artist], artist,
+                                         separator=separator,
+                                         xycoords=xycoords,
+                                         phys_frame=phys_frame)
     nprops = len(positions)
 
     # Iterate over properties
