@@ -835,8 +835,11 @@ class MapHandler(PhysPlotHandler):
              y: Union[float, u.Quantity],
              text: str,
              **kwargs):
-        return super().text(x, y, text, transform=self.get_transform(),
-                            **kwargs)
+        transform = self.get_transform()
+        if transform is None:
+            return super().text(x, y, text, **kwargs)
+        else:
+            return super().text(x, y, text, transform=transform, **kwargs)
 
     def region(self,
                x: Union[float, u.Quantity],
