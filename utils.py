@@ -513,6 +513,8 @@ def get_artist_properties(
 
         # Iterate over positions
         prop = opt.split('_')[-1]
+        if prop == 'physframe':
+            continue
         for i in range(nprops):
             if prop in float_props:
                 val = config.getvalue(opt, n=i, dtype=float, allow_global=True,
