@@ -338,6 +338,7 @@ class MapHandler(PhysPlotHandler):
                  contour_nsigma: float = 5.,
                  contour_negative_nsigma: Optional[float] = None,
                  contour_nsigmalevel: Optional[float] = None,
+                 contour_stretch: Optional[str] = None,
                  **kwargs) -> None:
         """Plot image data.
 
@@ -366,6 +367,7 @@ class MapHandler(PhysPlotHandler):
             contour.
           contour_nsigmalevel: optional; plot only one contour at this level
             times the rms value.
+          contour_colors: optional; self contour stretch.
           **kwargs: optional; additional arguments for `pyplot.imshow`.
         """
         # Validate data: valdata is a quantity with self.bunit units
@@ -428,6 +430,7 @@ class MapHandler(PhysPlotHandler):
                                negative_nsigma=contour_negative_nsigma,
                                nsigmalevel=contour_nsigmalevel,
                                linewidths=contour_linewidths,
+                               stretch=contour_stretch,
                                zorder=zorder+1)
 
     def plot_contours(self,
@@ -1010,7 +1013,8 @@ class MapHandler(PhysPlotHandler):
                               contour_linewidths=contour_linewidth,
                               contour_nsigma=nsigma,
                               contour_negative_nsigma=negative_nsigma,
-                              contour_nsigmalevel=nsigma_level)
+                              contour_nsigmalevel=nsigma_level,
+                              contour_stretch=contour_stretch)
         else:
             self.plot_map(data,
                           use_extent=use_extent,
@@ -1024,7 +1028,8 @@ class MapHandler(PhysPlotHandler):
                           contour_linewidths=contour_linewidth,
                           contour_nsigma=nsigma,
                           contour_negative_nsigma=negative_nsigma,
-                          contour_nsigmalevel=nsigma_level)
+                          contour_nsigmalevel=nsigma_level,
+                          contour_stretch=contour_stretch)
 
         # Plot beam
         plot_beam = self.skeleton.getboolean('data', 'plot_beam')
