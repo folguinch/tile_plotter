@@ -1,6 +1,6 @@
 """Objects for plotting images."""
 from typing import (Sequence, Optional, TypeVar, Union, Tuple, Dict, Mapping,
-                    List)
+                    List, Any)
 import pathlib
 
 from configparseradv.configparser import ConfigParserAdv
@@ -216,6 +216,14 @@ class MapHandler(PhysPlotHandler):
     @property
     def stretch(self):
         return self.vscale.stretch
+
+    def get_transform(self, value: Optional[Any] = None):
+        if value is not None:
+            return self.ax.get_transform(value)
+        elif self.radesys:
+            return self.ax.get_transform(self.radesys)
+        else:
+            return None
 
     def _validate_data(self, data: Map,
                        wcs: apy_wcs.WCS,
@@ -522,7 +530,7 @@ class MapHandler(PhysPlotHandler):
             return super().contour(valdata,
                                    is_image=True,
                                    levels=levels_val,
-                                   transform=self.ax.get_transform(valwcs),
+                                   transform=self.get_transform(valwcs),
                                    **kwargs)
         else:
             return super().contour(valdata,
@@ -666,7 +674,7 @@ class MapHandler(PhysPlotHandler):
         kwargs.setdefault('zorder', 4)
         beam = Ellipse((xmin + size/2., ymin + size/2.), bmin.value, bmaj.value,
                        angle=beam.pa.to(u.deg).value, fc=color,
-                       transform=self.ax.get_transform(wcs), **kwargs)
+                       transform=self.get_transform(wcs), **kwargs)
         #ax.add_patch(rect)
         self.ax.add_patch(beam)
 
@@ -819,8 +827,7 @@ class MapHandler(PhysPlotHandler):
                 x: Union[float, u.Quantity],
                 y: Union[float, u.Quantity],
                 **kwargs):
-        return super().scatter(x, y,
-                               transform=self.ax.get_transform(self.radesys),
+        return super().scatter(x, y, transform=self.get_transform(),
                                **kwargs)
 
     def text(self,
@@ -828,8 +835,7 @@ class MapHandler(PhysPlotHandler):
              y: Union[float, u.Quantity],
              text: str,
              **kwargs):
-        return super().text(x, y, text,
-                            transform=self.ax.get_transform(self.radesys),
+        return super().text(x, y, text, transform=self.get_transform(),
                             **kwargs)
 
     def region(self,
@@ -840,7 +846,7 @@ class MapHandler(PhysPlotHandler):
         return self.plot(x, y, ls='-', lw=1,
                          color=kwargs.get('color', 'g'),
                          zorder=kwargs.get('zorder', 8),
-                         transform=self.ax.get_transform(self.radesys))
+                         transform=self.get_transform())
 
     def axline(self,
                x: u.Quantity,
@@ -886,7 +892,7 @@ class MapHandler(PhysPlotHandler):
             vals = (pa.to(u.deg).value, length)
 
             # Transform to axes coordinates
-            xy_disp = self.ax.get_transform(self.radesys).transform(xy)
+            xy_disp = self.get_transform().transform(xy)
             xy_axes = tuple(self.ax.transAxes.inverted().transform(xy_disp))
         else:
             xy_axes = (x, y)
@@ -950,13 +956,13 @@ class MapHandler(PhysPlotHandler):
         xval = np.array([x0.value, x0.value]) * x0.unit
         yval = np.array([y0.value, (y0 + length).to(y0.unit).value]) * y0.unit
         self.plot(xval, yval, color=color, ls='-', lw=1, marker='_',
-                  zorder=zorder, transform=self.ax.get_transform(self.radesys))
+                  zorder=zorder, transform=self.get_transform())
 
         # Plot label
         size = size.to(unit)
         label = f'{size.value:.0f} {size.unit:latex_inline}  '.lower()
         try:
-            xycoords = self.ax.get_transform('world')
+            xycoords = self.get_transform('world')
         except TypeError:
             xycoords = 'data'
         xval = xval.to(self.axes_props.xunit).value
