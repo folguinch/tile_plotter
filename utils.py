@@ -414,11 +414,12 @@ def get_artist_positions(values: str, artist: str,
       xycoords: optional; type of coordinates.
       phys_frame: optional; physical frame of the data (`sky` or `projection`)
     """
+    quantity_artists = ('scatters', 'arcs', 'texts', 'arrows', 'scale',
+                        'axlines')
     vals = values.split(separator)
     positions = []
     for val in vals:
-        if (artist in ['scatters', 'arcs', 'texts', 'arrows', 'scale'] and
-            xycoords == 'data'):
+        if artist in quantity_artists and xycoords == 'data':
             if phys_frame == 'sky':
                 try:
                     ra, dec, frame = val.split()
