@@ -540,7 +540,8 @@ class MapHandler(PhysPlotHandler):
                 text = props.pop('text')
                 self.text(pos.ra, pos.dec, text, nphys_args=2, **props)
             elif artist == 'arrows':
-                self.arrow(pos.ra, pos.dec, **props)
+                pa = props.pop('pa')
+                self.arrow(pos.ra, pos.dec, pa, **props)
             elif artist == 'scale':
                 distance = props.pop('distance')
                 self.scale(pos.ra, pos.dec, distance, **props)
