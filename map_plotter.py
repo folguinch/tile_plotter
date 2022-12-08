@@ -557,11 +557,8 @@ class MapHandler(PhysPlotHandler):
                 pos = position.to(self.axes_props.xunit)
                 self.axvline(pos.value, **props)
             elif artist == 'axlines':
-                pos = (position.ra.to(self.axes_props.xunit).value,
-                       position.dec.to(self.axes_props.yunit).value)
                 slope = props.pop('slope')
-                slope = slope.to(self.axes_props.yunit/self.axes_props.xunit)
-                self.axvline(pos, slope=slope.value, **props)
+                self.axline(position.ra, position.dec, slope=slope, **props)
 
     def plot_artists(self) -> None:
         """Plot all the stored artists."""
@@ -837,6 +834,18 @@ class MapHandler(PhysPlotHandler):
                          color=kwargs.get('color', 'g'),
                          zorder=kwargs.get('zorder', 8),
                          transform=self.ax.get_transform(self.radesys))
+
+    def axline(self,
+               x: u.Quantity,
+               y: u.Quantity,
+               slope: u.Quantity,
+               **kwargs):
+        """Plot a line with given slope passing through `x, y`."""
+        xunit = self.axes_props.xunit
+        yunit = self.axes_props.yunit
+        sunit = yunit / xunit
+        super().axline((x.to(xunit).value, y.to(yunit).value),
+                       slope=slope.to(sunit).value, **kwargs)
 
     def arrow(self,
               x: Union[u.Quantity, float],

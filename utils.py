@@ -433,9 +433,15 @@ def get_artist_positions(values: str, artist: str,
                     ra = u.Quantity(f'{ra} {raunit}')
                     dec = u.Quantity(f'{dec} {decunit}')
                 except ValueError:
-                    ra, dec, unit = val.split()
-                    ra = u.Quantity(f'{ra} {unit}')
-                    dec = u.Quantity(f'{dec} {unit}')
+                    val_split = val.split()
+                    if len(val_split) == 3:
+                        ra, dec, unit = val_split
+                        ra = u.Quantity(f'{ra} {unit}')
+                        dec = u.Quantity(f'{dec} {unit}')
+                    elif len(val_split) == 4:
+                        ra, raunit, dec, decunit = val_split
+                        ra = u.Quantity(f'{ra} {raunit}')
+                        dec = u.Quantity(f'{dec} {decunit}')
                 positions.append(LikeSkyCoord(ra, dec))
         elif artist in ['hlines', 'vlines'] and xycoords == 'data':
             positions.append(u.Quantity(val))
