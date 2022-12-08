@@ -987,11 +987,11 @@ class MapHandler(PhysPlotHandler):
         shift_data = config.getquantity('shift_data', fallback=None)
 
         # Special cases
-        if dtype == 'pvmap':
+        if 'pvmap' in dtype:
             use_extent = True
 
         # Plot contours or map
-        if dtype == 'contour':
+        if 'contour' in dtype:
             self.plot_contours(data, use_extent=use_extent, rms=rms,
                                levels=levels, colors=contour_colors,
                                nsigma=nsigma, negative_nsigma=negative_nsigma,

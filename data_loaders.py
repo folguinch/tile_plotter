@@ -24,6 +24,7 @@ LOADERS = {
     'image': load_image,
     'contour': load_image,
     'pvmap': load_pvimage,
+    'pvmap_contour': load_pvimage,
     'moment': load_image,
 }
 

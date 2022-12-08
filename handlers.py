@@ -6,6 +6,7 @@ HANDLERS = {
     'contour': MapHandler,
     'moment': MapHandler,
     'pvmap': MapHandler,
+    'pvmap_contour': MapHandler,
 }
 
 def get_handler(config: 'ConfigParser') -> 'Handler':
