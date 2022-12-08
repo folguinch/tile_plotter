@@ -537,6 +537,13 @@ class MapHandler(PhysPlotHandler):
                                    self.artists[artist]['properties']):
             if self.radesys:
                 pos = position.transform_to(self.radesys)
+            else:
+                try:
+                    position.ra = position.ra.to(self.axes_props.xunit)
+                    position.dec = position.dec.to(self.axes_props.yunit)
+                    pos = position
+                except AttributeError:
+                    pos = position
             if artist == 'scatters':
                 self.scatter(pos.ra, pos.dec, **props)
             elif artist == 'texts':
@@ -558,7 +565,7 @@ class MapHandler(PhysPlotHandler):
                 self.axvline(pos.value, **props)
             elif artist == 'axlines':
                 slope = props.pop('slope')
-                self.axline(position.ra, position.dec, slope=slope, **props)
+                self.axline(pos.ra, pos.dec, slope=slope, **props)
 
     def plot_artists(self) -> None:
         """Plot all the stored artists."""
