@@ -223,7 +223,7 @@ class MapHandler(PhysPlotHandler):
         elif self.radesys:
             return self.ax.get_transform(self.radesys)
         else:
-            return None
+            return self.ax.transData
 
     def _validate_data(self, data: Map,
                        wcs: apy_wcs.WCS,
@@ -835,11 +835,8 @@ class MapHandler(PhysPlotHandler):
              y: Union[float, u.Quantity],
              text: str,
              **kwargs):
-        transform = self.get_transform()
-        if transform is None:
-            return super().text(x, y, text, **kwargs)
-        else:
-            return super().text(x, y, text, transform=transform, **kwargs)
+        kwargs.setdefault('transform', self.get_transform())
+        return super().text(x, y, text, **kwargs)
 
     def region(self,
                x: Union[float, u.Quantity],
