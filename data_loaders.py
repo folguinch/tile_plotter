@@ -1,5 +1,5 @@
 """Implement loaders for different types of data."""
-from typing import Callable, Tuple
+from typing import Callable, Tuple, TypeVar
 
 from astropy.io import fits
 from astropy import wcs

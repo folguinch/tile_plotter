@@ -1,5 +1,5 @@
 """Objects to configure and manage plot geometries."""
-from typing import List, Optional, Sequence, Union, Tuple, TypeVar
+from typing import List, Optional, Sequence, Union, Tuple
 import collections
 import itertools
 from dataclasses import dataclass, field

@@ -1,5 +1,5 @@
 """Define the base plotter file for all the plotting tools."""
-from typing import Any, Optional, Tuple, Dict, TypeVar
+from typing import Any, Optional, Tuple, Dict
 import abc
 import pathlib
 

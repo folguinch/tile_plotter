@@ -1,4 +1,6 @@
 """Manage the available plot handlers."""
+from typing import TypeVar
+
 from .map_plotter import MapHandler
 
 # Types
