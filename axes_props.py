@@ -167,7 +167,6 @@ class VScaleProps:
             self.ticks = get_colorbar_ticks(self.vmin, self.vmax, a=self.a,
                                             n=self.nticks,
                                             stretch=self.tickstretch)
-            ticks = self.ticks
 
         if self.ticks_cbar2 is None and generate_cbar2:
             self.generate_cbar2()

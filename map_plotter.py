@@ -3,6 +3,7 @@ from typing import (Sequence, Optional, TypeVar, Union, Tuple, Dict, Mapping,
                     List, Any)
 import pathlib
 
+from astropy.io import fits
 from configparseradv.configparser import ConfigParserAdv
 from matplotlib.patches import Ellipse
 from matplotlib import cm
@@ -931,7 +932,7 @@ class MapHandler(PhysPlotHandler):
 
         Either `size` or `length` must be set to determine the size and value
         for the label of the scale.
-        
+
         Args:
           x0, y0: position of the origin of the scale.
           distance: distance to the source.
@@ -1118,7 +1119,8 @@ class MapsPlotter(BasePlotter):
     def init_axis(self,
                   loc: Location,
                   projection: Optional[Projection] = None,
-                  include_cbar: Optional[bool] = None) -> MapHandler:
+                  include_cbar: Optional[bool] = None,
+                  **kwargs) -> MapHandler:
         """Initialize the axis.
 
         Args:
@@ -1178,9 +1180,9 @@ class MapsPlotter(BasePlotter):
         # Check data
         if projection is None:
             try:
-                wcs = WCS(image.header).sub(['longitude', 'latitude'])
-            except:
-                wcs = WCS(contour.header).sub(['longitude', 'latitude'])
+                wcs = apy_wcs.WCS(image.header).sub(['longitude', 'latitude'])
+            except NameError:
+                wcs = apy_wcs.WCS(contour.header).sub(['longitude', 'latitude'])
             projection = wcs
 
         # Get axis
