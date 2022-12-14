@@ -533,7 +533,7 @@ class GeometryHandler(LoggedObject, collections.OrderedDict):
             self.hcbarpos = tuple(map(int, hcbarpos.replace(',',' ').split()))
 
     def fill_from_config(self,
-                         config: 'conifgparseradv.configarser.ConfigParserAdv'
+                         config: 'configparseradv.configarser.ConfigParserAdv'
                          ) -> None:
         """Fill the dictionary with `AxisHandler` from configuration parser."""
         # Update stored values
@@ -567,7 +567,7 @@ class GeometryHandler(LoggedObject, collections.OrderedDict):
 
     def init_loc(self,
                  loc: Location,
-                 config: 'ConfigParserAdv',
+                 config: 'configparseradv.configarser.ConfigParserAdv',
                  xshift: float = 0,
                  yshift: float = 0) -> Tuple[float, float]:
         """Initiate a single `AxisHandler` at given location from configuration.

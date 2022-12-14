@@ -682,7 +682,7 @@ class MapHandler(PhysPlotHandler):
     # Configurations
     def recenter(self,
                  r: u.Quantity,
-                 position: 'astroppy.SkyCoord',
+                 position: 'astropy.coordinates.SkyCoord',
                  wcs: apy_wcs.WCS) -> None:
         """Recenter and zoom the plot.
 
