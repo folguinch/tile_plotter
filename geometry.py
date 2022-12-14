@@ -7,11 +7,7 @@ from dataclasses import dataclass, field
 from toolkit.logger import LoggedObject
 import configparseradv.utils as cfgutils
 
-from .handlers import PlotHandler
-
-# Type Aliases
-Position = Tuple[float, float]
-Location = Tuple[int, int]
+from .common_types import PlotHandler, Location, Position
 
 @dataclass
 class BaseGeometry:

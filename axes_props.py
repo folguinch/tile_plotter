@@ -10,7 +10,7 @@ import astropy.units as u
 from .utils import generate_label, get_colorbar_ticks
 
 Colormap = TypeVar('Colormap')
-Normalization = TypeVar('Normalization')
+Normalization = TypeVar('Normalization', ImageNormalize, TwoSlopeNorm)
 
 @dataclasses.dataclass
 class AxesProps:

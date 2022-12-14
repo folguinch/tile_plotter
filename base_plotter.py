@@ -8,10 +8,7 @@ import configparseradv.configparser as cfgparser
 import matplotlib.pyplot as plt
 
 from .geometry import GeometryHandler
-from .handlers import PlotHandler
-
-# Type aliases
-Location = Tuple[int, int]
+from .common_types import PlotHandler, Location
 
 class BasePlotter(LoggedObject, metaclass=abc.ABCMeta):
     """Figure axes collection base class.

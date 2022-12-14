@@ -1,10 +1,6 @@
 """Manage the available plot handlers."""
-from typing import TypeVar
-
 from .map_plotter import MapHandler
-
-# Types
-PlotHandler = TypeVar('PlotHandler')
+from .common_types import PlotHandler
 
 HANDLERS = {
     'image': MapHandler,

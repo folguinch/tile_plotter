@@ -2,9 +2,10 @@
 from typing import Optional, Sequence
 from itertools import product
 
-from .base_plotter import BasePlotter, Location
+from .base_plotter import BasePlotter
 from .data_loaders import data_loader
-from .handlers import get_handler, HANDLERS, PlotHandler
+from .handlers import get_handler, HANDLERS
+from .common_types import PlotHandler, Location
 
 class MultiPlotter(BasePlotter):
     """Multiple plot manager.

@@ -1,5 +1,5 @@
 """Plotting utilities."""
-from typing import Union, Optional, Callable, Tuple, List, TypeVar, Sequence
+from typing import Optional, Callable, Tuple, List, Sequence
 from dataclasses import dataclass
 
 from astropy.coordinates import SkyCoord
@@ -11,9 +11,7 @@ import astropy.stats as apystats
 import astropy.units as u
 import numpy as np
 
-# Type aliases
-Map = TypeVar('Map', u.Quantity, 'astropy.io.PrimaryHDU')
-Quantity = Union[u.Quantity, float, np.array]
+from .common_types import Map, Quantity
 
 # Classes
 @dataclass
