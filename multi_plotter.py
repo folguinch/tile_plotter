@@ -4,7 +4,7 @@ from itertools import product
 
 from .base_plotter import BasePlotter, Location
 from .data_loaders import data_loader
-from .handlers import get_handler, HANDLERS
+from .handlers import get_handler, HANDLERS, PlotHandler
 
 class MultiPlotter(BasePlotter):
     """Multiple plot manager.
@@ -20,7 +20,7 @@ class MultiPlotter(BasePlotter):
     """
 
     def __init__(self,
-                 config: Optional['Path'] = None,
+                 config: Optional['pathlib.Path'] = None,
                  verbose: str = 'v',
                  **kwargs):
         """Initialize plotter."""
@@ -37,7 +37,7 @@ class MultiPlotter(BasePlotter):
                   loc: Location,
                   projection: Optional[str] = None,
                   include_cbar: Optional[bool] = None,
-                  **kwargs) -> 'PlotHandler':
+                  **kwargs) -> PlotHandler:
         """Initialize axis by assigning a plot handler.
 
         If the axis is not initialized, it replaces the axis geometry
@@ -64,7 +64,7 @@ class MultiPlotter(BasePlotter):
         for loc, sections in self:
             self.plot_sections(sections, loc)
 
-    def apply_config(self, loc: Location, handler: 'PlotHandler', dtype: str):
+    def apply_config(self, loc: Location, handler: PlotHandler, dtype: str):
         """Apply the plot configuration."""
         # Title
         title = self.config.get('title', fallback=None)
@@ -162,7 +162,7 @@ class OTFMultiPlotter(BasePlotter):
                   handler: str,
                   projection: Optional[str] = None,
                   include_cbar: Optional[bool] = None,
-                  ) -> 'PlotHandler':
+                  ) -> PlotHandler:
         """Initialize axis by assigning a plot handler.
 
         If the axis is not initialized, it replaces the axis geometry
@@ -186,7 +186,7 @@ class OTFMultiPlotter(BasePlotter):
                     handler: str,
                     projection: Optional[str] = None,
                     include_cbar: Optional[bool] = None,
-                    **props) -> 'PlotHandler':
+                    **props) -> PlotHandler:
         """Generate a handler with the given properties.
 
         Args:
@@ -209,7 +209,7 @@ class OTFMultiPlotter(BasePlotter):
     def plot_all(self):
         pass
 
-    def apply_config(self, loc: Location, handler: 'PlotHandler', dtype: str,
+    def apply_config(self, loc: Location, handler: PlotHandler, dtype: str,
                      label: str = '', **kwargs):
         """Apply the plot configuration."""
         # Title

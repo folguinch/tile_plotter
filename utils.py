@@ -453,7 +453,7 @@ def get_artist_positions(values: str, artist: str,
 
 def get_artist_properties(
     artist: str,
-    config: 'ConfigParserAdv',
+    config: 'configparseradv.configparser.ConfigParserAdv',
     separator: str = ',',
     float_props: Sequence[str] = ('size', 'width', 'height', 'angle', 's',
                                   'alpha', 'length', 'linewidth'),

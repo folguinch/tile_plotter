@@ -26,7 +26,7 @@ Location = Tuple[int, int]
 Plot = TypeVar('Plot')
 Projection = TypeVar('Projection', apy_wcs.WCS, str)
 Map = TypeVar('Map', u.Quantity, 'astropy.io.PrimaryHDU')
-Position = TypeVar('Position', 'astroppy.SkyCoord', u.Quantity,
+Position = TypeVar('Position', 'astropy.coordinates.SkyCoord', u.Quantity,
                    Tuple[u.Quantity, u.Quantity])
 
 def filter_config_data(config: ConfigParserAdv, keys: Sequence,
@@ -337,7 +337,7 @@ class MapHandler(PhysPlotHandler):
                  rms: Optional[u.Quantity] = None,
                  mask_bad: bool = False,
                  mask_color: str = 'w',
-                 position: Optional['astropy.SkyCoord'] = None,
+                 position: Optional['astropy.coordinates.SkyCoord'] = None,
                  radius: Optional[u.Quantity] = None,
                  shift_data: Optional[u.Quantity] = None,
                  self_contours: bool = False,
@@ -602,7 +602,7 @@ class MapHandler(PhysPlotHandler):
         #                    transform=self.ax.get_transform('world'), **kwargs)
 
     def plot_cbar(self,
-                  fig: 'Figure',
+                  fig: 'matplotlib.figure.Figure',
                   orientation: str,
                   lines: Optional[Plot] = None,
                   ) -> Optional[mpl.colorbar.Colorbar]:

@@ -1,5 +1,5 @@
 """Define the base plotter file for all the plotting tools."""
-from typing import Any, Optional, Tuple, Dict
+from typing import Any, Optional, Tuple, Dict, TypeVar
 import abc
 import pathlib
 
@@ -8,6 +8,7 @@ import configparseradv.configparser as cfgparser
 import matplotlib.pyplot as plt
 
 from .geometry import GeometryHandler
+from .handlers import PlotHandler
 
 # Type aliases
 Location = Tuple[int, int]
@@ -134,10 +135,10 @@ class BasePlotter(LoggedObject, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def init_axis(self,
                   loc: Location,
-                  handler: 'PlotHandler',
+                  handler: PlotHandler,
                   projection: Optional[str] = None,
                   include_cbar: Optional[bool] = None,
-                  **kwargs) -> 'PlotHandler':
+                  **kwargs) -> PlotHandler:
         """Initialize axis by assigning a plot handler.
 
         If the axis is not initialized, it replaces the axis geometry

@@ -4,15 +4,18 @@ from typing import Callable, Tuple
 from astropy.io import fits
 from astropy import wcs
 
+Data = TypeVar('Data')
+Projection = TypeVar('Projection')
+
 # Loader functions
-def load_image(filename: 'Path') -> Tuple[fits.PrimaryHDU, wcs.WCS]:
+def load_image(filename: 'pathlib.Path') -> Tuple[fits.PrimaryHDU, wcs.WCS]:
     """Load FITS file."""
     image = fits.open(filename)[0]
     proj = wcs.WCS(image.header, naxis=2)
 
     return image, proj
 
-def load_pvimage(filename: 'Path') -> Tuple[fits.PrimaryHDU, str]:
+def load_pvimage(filename: 'pathlib.Path') -> Tuple[fits.PrimaryHDU, str]:
     """Load FITS file."""
     image = fits.open(filename)[0]
     proj = 'rectilinear'
@@ -29,8 +32,8 @@ LOADERS = {
 }
 
 # General purpose loader
-def data_loader(config: 'ConfigParserAdv',
-                log: Callable = print) -> Tuple['Data', 'Projection', str]:
+def data_loader(config: 'configparseradv.configparser.ConfigParserAdv',
+                log: Callable = print) -> Tuple[Data, Projection, str]:
     """Find a loader and loads the data from a config parser proxy.
 
     If the `loader` option is given in the configuration, then this is used to

@@ -1,6 +1,9 @@
 """Manage the available plot handlers."""
 from .map_plotter import MapHandler
 
+# Types
+PlotHandler = TypeVar('PlotHandler')
+
 HANDLERS = {
     'image': MapHandler,
     'contour': MapHandler,
@@ -9,7 +12,7 @@ HANDLERS = {
     'pvmap_contour': MapHandler,
 }
 
-def get_handler(config: 'ConfigParser') -> 'Handler':
+def get_handler(config: 'configparser.ConfigParser') -> PlotHandler:
     """Find a plotting handler based on the `config` proxy options.
 
     If a `handler` option is given in the configuration, then this is used to

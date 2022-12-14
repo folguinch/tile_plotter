@@ -10,6 +10,7 @@ import astropy.units as u
 from .utils import generate_label, get_colorbar_ticks
 
 Colormap = TypeVar('Colormap')
+Normalization = TypeVar('Normalization')
 
 @dataclasses.dataclass
 class AxesProps:
@@ -151,7 +152,7 @@ class VScaleProps:
     """Label of the second axis of the color bar."""
     ticks_cbar2: Optional[Sequence[float]] = None
     """Ticks of the second axis of the color bar."""
-    norm_cbar2: Optional['Normalization'] = None
+    norm_cbar2: Optional[Normalization] = None
     """Normalization function of the second axis of the color bar."""
 
     def __post_init__(self):

@@ -1,11 +1,13 @@
 """Objects to configure and manage plot geometries."""
-from typing import List, Optional, Sequence, Union, Tuple
+from typing import List, Optional, Sequence, Union, Tuple, TypeVar
 import collections
 import itertools
 from dataclasses import dataclass, field
 
 from toolkit.logger import LoggedObject
 import configparseradv.utils as cfgutils
+
+from .handlers import PlotHandler
 
 # Type Aliases
 Position = Tuple[float, float]
@@ -233,7 +235,7 @@ class AxisHandler:
         return self.width, self.height
 
     @property
-    def handler(self) -> 'PlotHandler':
+    def handler(self) -> PlotHandler:
         return self._handler
 
     def set_cbar(self, orientation: Union[None, str]) -> None:
@@ -284,7 +286,7 @@ class AxisHandler:
     def has_horizontal_cbar(self) -> bool:
         return self.has_cbar() and self.cborientation.lower() == 'horizontal'
 
-    def set_handler(self, handler: 'PlotHandler') -> None:
+    def set_handler(self, handler: PlotHandler) -> None:
         """Set the handler value."""
         self._handler = handler
 
@@ -534,7 +536,9 @@ class GeometryHandler(LoggedObject, collections.OrderedDict):
         else:
             self.hcbarpos = tuple(map(int, hcbarpos.replace(',',' ').split()))
 
-    def fill_from_config(self, config: 'ConfigParserAdv') -> None:
+    def fill_from_config(self,
+                         config: 'conifgparseradv.configarser.ConfigParserAdv'
+                         ) -> None:
         """Fill the dictionary with `AxisHandler` from configuration parser."""
         # Update stored values
         self.from_config(config)
