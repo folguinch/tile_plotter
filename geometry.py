@@ -546,7 +546,7 @@ class GeometryHandler(LoggedObject, collections.OrderedDict):
         ranges = range(self.nrows - 1, -1, -1),  range(self.ncols)
         for loc in itertools.product(*ranges):
             # Initialize and get dimensions
-            self._log.debug('Defining axis at location: %s', loc)
+            self.log.debug('Defining axis at location: %s', loc)
             self.init_loc(loc, config, cumx, cumy)
 
             # Cumulative sums
@@ -560,9 +560,9 @@ class GeometryHandler(LoggedObject, collections.OrderedDict):
                     ydim = cumy + self[loc].height
             else:
                 cumx += self[loc].width
-            self._log.debug('=====')
-            self._log.debug('Cumulative axis: %f, %f', cumx, cumy)
-            self._log.debug('=====')
+            self.log.debug('=====')
+            self.log.debug('Cumulative axis: %f, %f', cumx, cumy)
+            self.log.debug('=====')
         return xdim, ydim
 
     def init_loc(self,
@@ -584,7 +584,7 @@ class GeometryHandler(LoggedObject, collections.OrderedDict):
         # Initial value
         self[loc] = AxisHandler()
         self[loc].geometry_from_config(config)
-        self._log.debug('Initial new axes:\n%s', self[loc])
+        self.log.debug('Initial new axes:\n%s', self[loc])
 
         # Scale axis
         options = [f'{loc[0]}*', f'*{loc[1]}', ''.join(map(str,loc))]
@@ -595,26 +595,26 @@ class GeometryHandler(LoggedObject, collections.OrderedDict):
             xfactor = config.getfloat(key1, fallback=None)
             yfactor = config.getfloat(key2, fallback=None)
         if xfactor or yfactor:
-            self._log.debug('Scaling axes by %f x %f', xfactor, yfactor)
+            self.log.debug('Scaling axes by %f x %f', xfactor, yfactor)
             xfactor = xfactor or 1.0
             yfactor = yfactor or 1.0
             self[loc].scale_axes(xfactor, yfactor)
-            self._log.debug('Scaled axis:\n%s', self[loc])
+            self.log.debug('Scaled axis:\n%s', self[loc])
 
         # Set spacing
         self.set_spacing(loc)
-        self._log.debug('Set axes spacing:\n%s', self[loc])
+        self.log.debug('Set axes spacing:\n%s', self[loc])
 
         # Unset cbar
         self.remove_cbar(loc)
-        self._log.debug('Updated color bar:\n%s', self[loc])
+        self.log.debug('Updated color bar:\n%s', self[loc])
 
         # Shift position
         self[loc].shift_position(xshift=xshift, yshift=yshift)
-        self._log.debug('Shifted positions:\n%s', self[loc])
+        self.log.debug('Shifted positions:\n%s', self[loc])
 
         # Return dimensions
-        self._log.debug('New axis dimensions: %s', self[loc].dimensions)
+        self.log.debug('New axis dimensions: %s', self[loc].dimensions)
         return self[loc].dimensions
 
     def set_spacing(self, loc: Location) -> None:
@@ -649,6 +649,6 @@ class GeometryHandler(LoggedObject, collections.OrderedDict):
         else:
             has_cbar = False
         if not has_cbar:
-            self._log.debug('Unsetting cbar')
+            self.log.debug('Unsetting cbar')
             self[loc].unset_cbar(self.sharex, self.sharey)
 
