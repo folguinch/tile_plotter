@@ -54,32 +54,32 @@ class BasePlotter(LoggedObject, metaclass=abc.ABCMeta):
 
         # Update options
         self._config = cfgparser.ConfigParserAdv()
-        self._log.debug('Default config: %s', self._defconfig)
+        self.log.debug('Default config: %s', self._defconfig)
         self._config.read(self._defconfig)
         if config is None:
             pass
         else:
-            self._log.debug('Reading input config: %s', config)
+            self.log.debug('Reading input config: %s', config)
             self._config.read(config.expanduser().resolve())
         self._config.read_dict({section: kwargs})
 
         # Read geometry configuration
         if 'geometry_config' in self._config[section]:
-            self._log.debug('Reading geometry config: %s',
+            self.log.debug('Reading geometry config: %s',
                             self._config[section]['geometry_config'])
             self._config.read(self._config[section]['geometry_config'])
         self.config = self._config[section]
 
         # Set plot styles
         styles = self.config.get('styles').replace(',', ' ').split()
-        self._log.debug('Setting styles: %s', styles)
+        self.log.debug('Setting styles: %s', styles)
         plt.style.use(styles)
 
         # Get axes
-        self._log.debug('Initializing geometry handler')
+        self.log.debug('Initializing geometry handler')
         self.axes = GeometryHandler(verbose=verbose)
         self.figsize = self.axes.fill_from_config(self.config)
-        self._log.info('Figure size: w=%f, h=%f',
+        self.log.info('Figure size: w=%f, h=%f',
                        self.figsize[0], self.figsize[1])
 
         # Set the configuration mapping loc and config keys
@@ -158,12 +158,12 @@ class BasePlotter(LoggedObject, metaclass=abc.ABCMeta):
 
         # Initialize axis if needed
         if self.is_init(loc):
-            self._log.info('Axis %s already initialized', loc)
+            self.log.info('Axis %s already initialized', loc)
             if include_cbar:
                 cbaxis = self.init_cbar(loc)
             return self.axes[loc].handler
         else:
-            self._log.info('Initializing axis: %s', loc)
+            self.log.info('Initializing axis: %s', loc)
             self.axes[loc].axis.scalex(1./self.figsize[0])
             self.axes[loc].axis.scaley(1./self.figsize[1])
             axis = self.fig.add_axes(self.axes[loc].axis.pyplot_axis,
@@ -224,9 +224,9 @@ class BasePlotter(LoggedObject, metaclass=abc.ABCMeta):
     def init_cbar(self, loc: Location) -> None:
         """Initialize color bar."""
         if self.is_init(loc, cbaxis=True) or not self.has_cbar(loc):
-            self._log.info('Color bar axis %s already initialized', loc)
+            self.log.info('Color bar axis %s already initialized', loc)
         else:
-            self._log.info('Initializing color bar: %s', loc)
+            self.log.info('Initializing color bar: %s', loc)
             self.axes[loc].cbaxis.scalex(1. / self.figsize[0])
             self.axes[loc].cbaxis.scaley(1. / self.figsize[1])
             self.axes[loc].cbaxis = self.fig.add_axes(

@@ -70,15 +70,15 @@ class MultiPlotter(BasePlotter):
         # Title
         title = self.config.get('title', fallback=None)
         if title is not None:
-            self._log.debug('Plotting title: %s', title)
+            self.log.debug('Plotting title: %s', title)
             handler.title(title)
 
         # Configuration
         set_xlabel, set_ylabel = self.has_axlabels(loc)
         set_xticks, set_yticks = self.has_ticks_labels(loc)
         if dtype in ['image', 'contour', 'moment']:
-            self._log.debug('Label switches: %s, %s', set_xlabel, set_ylabel)
-            self._log.debug('Tick switches: %s, %s', set_xticks, set_yticks)
+            self.log.debug('Label switches: %s, %s', set_xlabel, set_ylabel)
+            self.log.debug('Tick switches: %s, %s', set_xticks, set_yticks)
             handler.config_map(set_xlabel=set_xlabel, set_ylabel=set_ylabel,
                                set_xticks=set_xticks, set_yticks=set_yticks)
         else:
@@ -108,35 +108,35 @@ class MultiPlotter(BasePlotter):
         for section in sections:
             print('-' * 50)
             # Reset config
-            self._log.info('Plotting %s in (%i, %i)', section, *loc)
+            self.log.info('Plotting %s in (%i, %i)', section, *loc)
             self.switch_to(section)
 
             # Load data
-            self._log.debug('Loading data')
+            self.log.debug('Loading data')
             data, projection, dtype = data_loader(self.config,
-                                                  log=self._log.info)
+                                                  log=self.log.info)
 
             # Get axis
             handler = self.init_axis(loc, projection=projection)
 
             # Plot
-            self._log.info('Plotting data')
+            self.log.info('Plotting data')
             handler.auto_plot(data, dtype, self.config)
 
             # Plot color bar
             if self.has_cbar(loc) and not color_bars.get(loc, False):
-                self._log.info('Setting color bar')
+                self.log.info('Setting color bar')
                 color_bars[loc] = True
                 handler.plot_cbar(self.fig, self.axes[loc].cborientation)
 
             # Config plot: things that need to be plotted once
             if not handler.is_config:
                 # Plot artists
-                self._log.info('Plotting artists')
+                self.log.info('Plotting artists')
                 handler.plot_artists()
 
                 # Config
-                self._log.info('Configuring plot')
+                self.log.info('Configuring plot')
                 self.apply_config(loc, handler, dtype)
 
 class OTFMultiPlotter(BasePlotter):
@@ -201,7 +201,7 @@ class OTFMultiPlotter(BasePlotter):
         section = f'section{loc[0]}{loc[1]}'
         props['loc'] = f'{loc[0]} {loc[1]}'
         props['handler'] = handler
-        self._log.info('Generating dummy %s for (%i, %i)', section, *loc)
+        self.log.info('Generating dummy %s for (%i, %i)', section, *loc)
         self.insert_section(section, value=props, switch=True)
 
         return self.init_axis(loc, handler, projection=projection,
@@ -216,15 +216,15 @@ class OTFMultiPlotter(BasePlotter):
         # Title
         title = self.config.get('title', fallback=None)
         if title is not None:
-            self._log.debug('Plotting title: %s', title)
+            self.log.debug('Plotting title: %s', title)
             handler.title(title)
 
         # Configuration
         set_xlabel, set_ylabel = self.has_axlabels(loc)
         set_xticks, set_yticks = self.has_ticks_labels(loc)
         if dtype in ['image', 'contour', 'moment']:
-            self._log.debug('Label switches: %s, %s', set_xlabel, set_ylabel)
-            self._log.debug('Tick switches: %s, %s', set_xticks, set_yticks)
+            self.log.debug('Label switches: %s, %s', set_xlabel, set_ylabel)
+            self.log.debug('Tick switches: %s, %s', set_xticks, set_yticks)
             handler.config_map(set_xlabel=set_xlabel, set_ylabel=set_ylabel,
                                set_xticks=set_xticks, set_yticks=set_yticks)
         else:
