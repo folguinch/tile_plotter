@@ -383,7 +383,7 @@ def generate_label(name: str, unit: Optional[u.Unit] = None,
       unit_fmt: optional; format of the unit string.
     """
     label = [f'{name.title()}']
-    if unit is not None:
+    if unit is not None and unit != u.dimensionless_unscaled:
         label.append(unit_fmt.format(unit))
     return ' '.join(label)
 

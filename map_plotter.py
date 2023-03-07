@@ -181,7 +181,7 @@ class MapHandler(PhysPlotHandler):
                 except ValueError:
                     pass
                 except IndexError:
-                    val = float(val)
+                    val = float(val) * u.Unit(1)
             vscale[opt] = val
 
         # Artists
