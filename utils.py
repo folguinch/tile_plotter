@@ -1,6 +1,7 @@
 """Plotting utilities."""
 from typing import Optional, Callable, Tuple, List, Sequence
 from dataclasses import dataclass
+from string import capwords
 
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
@@ -382,7 +383,7 @@ def generate_label(name: str, unit: Optional[u.Unit] = None,
       unit: optional; unit in the label.
       unit_fmt: optional; format of the unit string.
     """
-    label = [f'{name.title()}']
+    label = [f'{capwords(name)}']
     if unit is not None and unit != u.dimensionless_unscaled:
         label.append(unit_fmt.format(unit))
     return ' '.join(label)
