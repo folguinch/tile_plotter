@@ -130,6 +130,8 @@ class VScaleProps:
     """Mid value for midnorm stretch."""
     a: float = 1000
     """Scaling for log stretch."""
+    vfactor10: float = 1.
+    """Scaling factor of intensity scale (power of 10)."""
     stretch: str = 'linear'
     """Stretch of color intensity."""
     compute_ticks: bool = False
@@ -172,7 +174,7 @@ class VScaleProps:
         if self.ticks_cbar2 is None and generate_cbar2:
             self.generate_cbar2()
 
-        return self.ticks, self.ticks_cbar2
+        return self.ticks/self.vfactor10, self.ticks_cbar2
 
     def generate_cbar2(self, unit_fmt: str = '({:latex_inline})'):
         """Generate second colorbar."""
@@ -188,12 +190,20 @@ class VScaleProps:
           vmax: optional; scale maximum.
           vcenter: optional; `midnorm` scale center.
         """
+        # Replace from input
         if vmin is None:
             vmin = self.vmin
         if vmax is None:
             vmax = self.vmax
         if vcenter is None:
             vcenter = self.vcenter
+        
+        # Scale values
+        vmin = vmin / self.vfactor10
+        vmax = vmax / self.vfactor10
+        vcenter = vcenter / self.vfactor10
+
+        # Get stretch
         if self.stretch == 'log':
             return ImageNormalize(vmin=vmin, vmax=vmax,
                                   stretch=LogStretch(a=self.a))
@@ -318,7 +328,15 @@ class PhysVScaleProps(VScaleProps):
         #    vmax=np.max(self.ticks_cbar2),
         #)
 
-    def generate_cblabel(self, unit_fmt: str = '({:latex_inline})') -> str:
+    def generate_cblabel(self, unit_fmt: Optional[str] = None) -> str:
         """Generate color bar label."""
-        return generate_label(self.name, unit=self.unit, unit_fmt=unit_fmt)
+        if unit_fmt is None:
+            if self.vfactor10 =! 1:
+                unit_fmt = '({} {:latex_inline})'
+                factor = self.vfactor10
+            else:
+                unit_fmt = '({:latex_inline})'
+                factor = None
+        return generate_label(self.name, unit=self.unit, unit_fmt=unit_fmt,
+                              power10=factor)
 

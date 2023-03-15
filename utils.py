@@ -374,18 +374,42 @@ def auto_levels(data: Optional[u.Quantity] = None,
 
     return levels
 
-def generate_label(name: str, unit: Optional[u.Unit] = None,
-                   unit_fmt: str = '({})') -> str:
+def generate_label(name: str,
+                   unit: Optional[u.Unit] = None,
+                   unit_fmt: Optional[str] = None,
+                   power10: Optional[float] = None) -> str:
     """Generate a standard label from the input values.
 
     Args:
       name: name in the label.
       unit: optional; unit in the label.
       unit_fmt: optional; format of the unit string.
+      power10: optional; a multiplicative factor for the units.
     """
+    # Label
     label = [f'{capwords(name)}']
+
+    # Factor in label
+    if power10 is not None:
+        factor = f'$10^{{{int(np.log10(float(power10)))}}}$'
+    else:
+        factor = None
+
+    # Unit format
+    if unit_fmt is None:
+        if factor is None:
+            unit_fmt = '({})'
+        else:
+            unit_fmt = f'({} {{}})'
+
+    # Replace unit
     if unit is not None and unit != u.dimensionless_unscaled:
-        label.append(unit_fmt.format(unit))
+        if factor is None:
+            label.append(unit_fmt.format(unit))
+        else:
+            label.append(unit_fmt.format(factor, unit))
+    elif factor is not None:
+        label.append(factor)
     return ' '.join(label)
 
 def positions_from_region(regions: str,

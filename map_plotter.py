@@ -417,12 +417,12 @@ class MapHandler(PhysPlotHandler):
             cmap = cm.get_cmap()
             cmap.set_bad(mask_color, 1.0)
             maskdata = np.ma.array(valdata.value, mask=np.isnan(data))
-            self.im = self.ax.imshow(maskdata,
+            self.im = self.ax.imshow(maskdata / self.vscale.vfactor10,
                                      norm=norm,
                                      extent=extent_val,
                                      **kwargs)
         else:
-            self.im = self.ax.imshow(valdata.value,
+            self.im = self.ax.imshow(valdata.value / self.vscale.vfactor10,
                                      norm=norm,
                                      extent=extent_val,
                                      **kwargs)
