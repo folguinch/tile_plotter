@@ -201,7 +201,8 @@ class VScaleProps:
         # Scale values
         vmin = vmin / self.vfactor10
         vmax = vmax / self.vfactor10
-        vcenter = vcenter / self.vfactor10
+        if vcenter is not None:
+            vcenter = vcenter / self.vfactor10
 
         # Get stretch
         if self.stretch == 'log':
