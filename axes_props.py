@@ -331,7 +331,7 @@ class PhysVScaleProps(VScaleProps):
     def generate_cblabel(self, unit_fmt: Optional[str] = None) -> str:
         """Generate color bar label."""
         if unit_fmt is None:
-            if self.vfactor10 =! 1:
+            if self.vfactor10 != 1:
                 unit_fmt = '({} {:latex_inline})'
                 factor = self.vfactor10
             else:
