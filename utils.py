@@ -387,7 +387,7 @@ def generate_label(name: str,
       power10: optional; a multiplicative factor for the units.
     """
     # Label
-    label = [f'{capwords(name)}']
+    label = [f'{name}']
 
     # Factor in label
     if power10 is not None:
