@@ -400,7 +400,7 @@ def generate_label(name: str,
         if factor is None:
             unit_fmt = '({})'
         else:
-            unit_fmt = f'({} {{}})'
+            unit_fmt = '({} {{}})'
 
     # Replace unit
     if unit is not None and unit != u.dimensionless_unscaled:
