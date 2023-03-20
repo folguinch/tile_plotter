@@ -3,7 +3,7 @@
 
 Implements the tile plotting tools to plot data from the command line.
 """
-from typing import Sequence
+from typing import Sequence, Optional
 import argparse
 import sys
 
@@ -29,11 +29,11 @@ def multiplot(args):
     if args.pdf:
         plot.savefig(args.plotname[0].with_suffix('.pdf'))
 
-def plotter(args: Sequence):
-    """Main program.
+def plotter(args: Optional[Sequence] = None):
+    """Plotting script.
 
     Args:
-      args: list of command line inputs.
+      args: optional; list of command line inputs.
     """
     # Evaluate parser functions
     #subpar = {}
@@ -73,6 +73,8 @@ def plotter(args: Sequence):
     #    subparser = subparsers.add_parser(key, parents=[p], help=h)
 
     # Process arguments
+    if args is None:
+        args = sys.argv[1:]
     args = parser.parse_args(args)
     for step in pipe:
         step(args)
