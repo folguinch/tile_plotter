@@ -38,7 +38,7 @@ class BasePlotter(LoggedObject, metaclass=abc.ABCMeta):
     """
 
     _defconfig = (pathlib.Path(__file__).resolve().parent /
-                  pathlib.Path('configs/default.cfg'))
+                  pathlib.Path('../configs/default.cfg'))
 
     def __init__(self,
                  config: Optional[pathlib.Path] = None,

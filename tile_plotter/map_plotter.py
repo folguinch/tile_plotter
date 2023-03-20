@@ -76,7 +76,7 @@ class MapHandler(PhysPlotHandler):
     """
     # Common class attributes
     _defconfig = (pathlib.Path(__file__).resolve().parent /
-                  pathlib.Path('configs/map_default.cfg'))
+                  pathlib.Path('../configs/map_default.cfg'))
 
     # Read default skeleton
     skeleton = ConfigParserAdv()

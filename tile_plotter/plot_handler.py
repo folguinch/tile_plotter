@@ -38,7 +38,7 @@ class PlotHandler:
     # Common class attributes
     _log = get_logger(__name__, filename='plotter.log')
     _defconfig = (pathlib.Path(__file__).resolve().parent /
-                  pathlib.Path('configs/plot_default.cfg'))
+                  pathlib.Path('../configs/plot_default.cfg'))
 
     # Read default skeleton
     skeleton = ConfigParserAdv()

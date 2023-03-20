@@ -6,6 +6,7 @@ authors = ["Fernando Olguin <f.olguin.ch@gmail.com>"]
 license = "MIT"
 readme = "README.md"
 packages = [{include = "tile_plotter"}]
+include = ['config']
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.12"
