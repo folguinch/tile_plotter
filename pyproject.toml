@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "tile-plotter"
+version = "0.1.0"
+description = "Tools for creating tile plots"
+authors = ["Fernando Olguin <f.olguin.ch@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "tile_plotter"}]
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.12"
+numpy = "^1.24.2"
+matplotlib = "^3.7.1"
+astropy = "^5.2.1"
+radio-beam = "^0.3.4"
+configparseradv = {path = "../configparseradv"}
+toolkit = {path = "../toolkit"}
+regions = "^0.7"
+cmcrameri = "^1.5"
+
+[tool.poetry.scripts]
+plotter = 'tile_plotter.plotter:plotter'
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
