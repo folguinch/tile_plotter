@@ -90,11 +90,15 @@ class MultiPlotter(BasePlotter):
                                              fallback=(0.1, 0.9))
         label_bkgc = self.config.getfloatlist('label_backgroundcolor',
                                               fallback='w')
-        if len(self.axes) > 1:
+        enum = self.config.getboolean('enumerate')
+        if len(self.axes) > 1 and enum:
+            enum_fmt = self.config['enumerate_fmt']
             nrows, ncols = self.shape
             ind = list(product(range(nrows), range(ncols))).index(loc)
-            label = f"({chr(ord('a') + ind)}) {label}".strip()
-        if label:
+            number = enum_fmt.format(chr(ord('a') + ind))
+            label = f'{number} {label}'.strip()
+            #label = f"({chr(ord('a') + ind)}) {label}".strip()
+        if len(label) > 1:
             handler.label_axes(label, loc=label_loc, backgroundcolor=label_bkgc)
 
     def plot_sections(self, sections: Sequence, loc: Location):
