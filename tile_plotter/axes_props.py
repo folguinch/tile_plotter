@@ -298,7 +298,7 @@ class PhysVScaleProps(VScaleProps):
         else:
             ticks_cbar2 = None
 
-        return self.ticks.value, ticks_cbar2
+        return self.ticks.value/self.vfactor10, ticks_cbar2
 
     def check_scale_units(self):
         """Check units of the values defining the intensity scale."""
