@@ -377,8 +377,9 @@ class PlotHandler:
             props = VScaleProps(**cbar_props)
 
         # Compute ticks or use default?
-        if ((compute_ticks is not None and compute_ticks) or
-            self.vscale.compute_ticks):
+        if compute_ticks is None:
+            compute_ticks = self.vscale.compute_ticks
+        if (compute_ticks or props.ticks is not None):
             ticks, ticks_cbar2 = props.get_ticks()
             self._log.info('Color bar ticks: %s', props.ticks)
             self._log.info('Color bar 2 ticks: %s', props.ticks_cbar2)
