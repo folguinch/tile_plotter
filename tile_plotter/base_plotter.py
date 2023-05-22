@@ -240,22 +240,44 @@ class BasePlotter(LoggedObject, metaclass=abc.ABCMeta):
 
     def has_axlabels(self, loc: Location) -> Tuple[bool, bool]:
         """Check if axis has label or is shared."""
-        xlabel = (not self.sharex or
-                  (self.sharex and loc[1] == 0 and loc[0] == self.shape[0]-1))
-        ylabel = (not self.sharey or
-                  (self.sharey and loc[1] == 0 and loc[0] == self.shape[0]-1))
+        override_xlabel = self.get_value('override_xlabel', loc=loc,
+                                         dtype=bool, sep=',')
+        override_ylabel = self.get_value('override_ylabel', loc=loc,
+                                         dtype=bool, sep=',')
+        if not override_xlabel:
+            xlabel = (not self.sharex or
+                      (self.sharex and loc[1] == 0 and
+                       loc[0] == self.shape[0]-1))
+        else:
+            xlabel = None
+        if not override_ylabel:
+            ylabel = (not self.sharey or
+                      (self.sharey and loc[1] == 0 and
+                       loc[0] == self.shape[0]-1))
+        else:
+            ylabel = None
         return xlabel, ylabel
 
     def has_ticks_labels(self, loc: Location) -> Tuple[bool, bool]:
         """Check if axis has tick labels."""
-        xticks = (not self.sharex or
-                  (self.sharex and loc[0] == self.shape[0]-1))
-        yticks = not self.sharey or (self.sharey and loc[1] == 0)
+        override_xticks = self.get_value('override_xticks', loc=loc, dtype=bool,
+                                         sep=',')
+        override_yticks = self.get_value('override_yticks', loc=loc, dtype=bool,
+                                         sep=',')
+        if not override_xticks:
+            xticks = (not self.sharex or
+                      (self.sharex and loc[0] == self.shape[0]-1))
+        else:
+            xticks = None
+        if not override_yticks:
+            yticks = not self.sharey or (self.sharey and loc[1] == 0)
+        else:
+            yticks = None
         return xticks, yticks
 
     def get_loc_index(self, loc: Location) -> int:
         """Get the axis index of the given location."""
-        return self.axes.keys().index(loc)
+        return sorted(self.axes.keys()).index(loc)
 
     def get_value(self,
                   key: str,
