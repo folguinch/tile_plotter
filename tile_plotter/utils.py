@@ -438,7 +438,7 @@ def get_artist_positions(values: str, artist: str,
       phys_frame: optional; physical frame of the data (`sky` or `projection`)
     """
     quantity_artists = ('scatters', 'arcs', 'texts', 'arrows', 'scale',
-                        'axlines')
+                        'markers', 'axlines')
     vals = values.split(separator)
     positions = []
     for val in vals:

@@ -831,6 +831,13 @@ class MapHandler(PhysPlotHandler):
         return super().scatter(x, y, transform=self.get_transform(),
                                **kwargs)
 
+    def marker(self,
+               x: Union[float, u.Quantity],
+               y: Union[float, u.Quantity],
+               **kwargs):
+        return super().marker(x, y, transform=self.get_transform(),
+                              **kwargs)
+
     def text(self,
              x: Union[float, u.Quantity],
              y: Union[float, u.Quantity],

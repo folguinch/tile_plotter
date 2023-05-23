@@ -317,6 +317,13 @@ class PlotHandler:
 
     def scatter(self, *args, **kwargs) -> Plot:
         """Scatter plot."""
+        return self._simple_plt(self.axis.scatter, *args, **kwargs)
+
+    def marker(self, *args, **kwargs) -> Plot:
+        """Simple scatter plot.
+        
+        Similar to `scatter` but uses the plot function.
+        """
         return self._simple_plt(self.axis.plot, *args, **kwargs)
 
     def text(self, *args, **kwargs) -> Plot:
