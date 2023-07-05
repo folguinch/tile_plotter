@@ -3,6 +3,7 @@ from typing import Callable, Tuple, TypeVar
 
 from astropy.io import fits
 from astropy import wcs
+from line_little_helper.spectrum import Spectrum, CassisModelSpectra
 
 Data = TypeVar('Data')
 Projection = TypeVar('Projection')
@@ -22,6 +23,21 @@ def load_pvimage(filename: 'pathlib.Path') -> Tuple[fits.PrimaryHDU, str]:
 
     return image, proj
 
+def load_spectrum_cassis(filename: 'pathlib.Path') -> Tuple[Spectrum, str]:
+    """Load spectrum in CASSIS format."""
+    spectrum = Spectrum.from_cassis(filename)
+    proj = 'rectilinear'
+
+    return spectrum, proj
+
+def load_spectra_cassis_model(
+    filename: 'pathlib.Path') -> Tuple[CassisModelSpectra, str]:
+    """Load spectra from a CASSIS model."""
+    spectrum = CassisModelSpectra.read(filename)
+    proj = 'rectilinear'
+
+    return spectrum, proj
+
 # Available loaders
 LOADERS = {
     'image': load_image,
@@ -29,6 +45,8 @@ LOADERS = {
     'pvmap': load_pvimage,
     'pvmap_contour': load_pvimage,
     'moment': load_image,
+    'spectrum_cassis': load_spectrum_cassis,
+    'spectra_cassis_model': load_spectra_cassis_model,
 }
 
 # General purpose loader

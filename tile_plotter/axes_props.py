@@ -54,9 +54,9 @@ class AxesProps:
     ticks_color: str = 'k'
     """Ticks color."""
     xticks_fmt: Union[None, str, Callable] = '{:.3f}'
-    """Ticks labe format for x-axis."""
+    """Ticks label format for x-axis."""
     yticks_fmt: Union[None, str, Callable] = '{:.3f}'
-    """Ticks labe format for y-axis."""
+    """Ticks label format for y-axis."""
     unit_fmt: str = '({})'
     """Format for axes unit label."""
 

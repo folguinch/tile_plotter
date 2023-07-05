@@ -592,6 +592,73 @@ class PhysPlotHandler(PlotHandler):
         else:
             self.vscale = None
 
+    @classmethod
+    def from_config(cls,
+                    config: ConfigParserAdv,
+                    axis: Axes,
+                    cbaxis: Axes,
+                    **kwargs):
+        """Create a new `PhysPlotHandler` from a config proxy.
+
+        Args:
+          config: configuration parser proxy.
+          axis: matplotlib axis.
+          cbaxis: matplotlib color bar axis.
+          kwargs: replace values in the config.
+        """
+        # Get axes properties
+        axes_props = {}
+        for opt, val in cls.skeleton.items('axes_props'):
+            if 'unit' in opt:
+                value = config.get(opt, vars=kwargs, fallback=val)
+                try:
+                    value = u.Unit(value)
+                except ValueError:
+                    value = None
+            elif opt.startswith('set_') or opt.startswith('invert'):
+                fallback = cls.skeleton.getboolean('axes_props', opt)
+                value = config.getboolean(opt, vars=kwargs, fallback=fallback)
+            elif opt in ['label_xpad', 'label_ypad']:
+                value = config.getfloat(opt, vars=kwargs, fallback=float(val))
+            elif opt in ['xlim', 'ylim']:
+                value = config.getquantity(opt, vars=kwargs, fallback=None)
+            else:
+                value = config.get(opt, vars=kwargs, fallback=val)
+            axes_props[opt] = value
+
+        # Get vscale
+        vscale = {'stretch': cls.skeleton['vscale']['stretch']}
+        for opt in cls.skeleton.options('vscale'):
+            if opt not in config and opt not in kwargs:
+                continue
+            val = config.get(opt, vars=kwargs)
+            if 'unit' in opt:
+                try:
+                    val = u.Unit(val)
+                except ValueError:
+                    val = None
+            elif 'name' in opt or 'stretch' in opt:
+                pass
+            elif opt in ['ticks', 'ticklabels']:
+                val = val.split()
+                if opt == 'ticks':
+                    val = np.array(list(map(float, val[:-1]))) * u.Unit(val[-1])
+            elif opt in ['nticks']:
+                val = int(val)
+            elif opt in ['compute_ticks']:
+                val = config.getboolean(opt, vars=kwargs)
+            else:
+                try:
+                    split_val = val.split()
+                    val = float(split_val[0]) * u.Unit(split_val[1])
+                except ValueError:
+                    pass
+                except IndexError:
+                    val = float(val)
+            vscale[opt] = val
+
+        return cls(axis, cbaxis=cbaxis, vscale=vscale, **axes_props)
+
     def _simple_plt(self,
                     fn: Callable[[], Plot],
                     *args,

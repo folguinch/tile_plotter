@@ -8,6 +8,8 @@ HANDLERS = {
     'moment': MapHandler,
     'pvmap': MapHandler,
     'pvmap_contour': MapHandler,
+    'spectrum_cassis': None,
+    'spectra_cassis_model': None,
 }
 
 def get_handler(config: 'configparser.ConfigParser') -> PlotHandler:
