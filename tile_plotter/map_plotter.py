@@ -196,8 +196,12 @@ class MapHandler(PhysPlotHandler):
                                                      float_props=(),
                                                      quantity_props=props)
             else:
-                artists[opt] = get_artist_properties(opt, config,
-                                                     from_region=opt=='regions')
+                artists[opt] = get_artist_properties(
+                    opt,
+                    config,
+                    from_region=opt=='regions',
+                    from_table=opt=='streamers',
+                )
 
         return cls(axis, cbaxis, radesys=radesys, axes_props=axes_props,
                    vscale=vscale, artists=artists)
@@ -542,8 +546,9 @@ class MapHandler(PhysPlotHandler):
 
     def _plot_artist(self, artist: str) -> None:
         """Plot each value of the artist"""
-        for position, props in zip(self.artists[artist]['positions'],
-                                   self.artists[artist]['properties']):
+        zipiter = zip(self.artists[artist]['positions'],
+                      self.artists[artist]['properties'])
+        for i, (position, props) in enumerate(zipiter):
             if self.radesys:
                 pos = position.transform_to(self.radesys)
             else:
@@ -555,6 +560,8 @@ class MapHandler(PhysPlotHandler):
                     pos = position
             if artist == 'scatters':
                 self.scatter(pos.ra, pos.dec, **props)
+            elif artist == 'markers':
+                self.marker(pos.ra, pos.dec, **props)
             elif artist == 'texts':
                 text = props.pop('text')
                 self.text(pos.ra, pos.dec, text, nphys_args=2, **props)
@@ -575,6 +582,21 @@ class MapHandler(PhysPlotHandler):
             elif artist == 'axlines':
                 slope = props.pop('slope')
                 self.axline(pos.ra, pos.dec, slope=slope, **props)
+            elif artist == 'streamers':
+                vel = self.artists[artist]['velocity'][i]
+                zorder = props.setdefault('zorder', 5)
+                linewidth = props.pop('linewidth', 10)
+                bkg_color = props.pop('color', 'k')
+                props.update({'c': vel.to(self.vscale.unit).value})
+                props.setdefault('cmap', self.im.cmap)
+                props.setdefault('norm', self.vscale.get_normalization())
+                self.scatter(position.ra, position.dec, **props)
+                self.plot(position.ra, position.dec, linestyle='-',
+                          linewidth=linewidth, solid_capstyle='round',
+                          color=bkg_color, zorder=zorder-1,
+                          transform=self.get_transform())
+            else:
+                raise NotImplementedError(f'Artist {artist} not implemented yet')
 
     def plot_artists(self) -> None:
         """Plot all the stored artists."""

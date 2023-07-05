@@ -5,6 +5,7 @@ from string import capwords
 
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
+from astropy.table import QTable
 from matplotlib.ticker import FuncFormatter
 from regions import Regions
 from toolkit.astro_tools import images
@@ -422,6 +423,29 @@ def positions_from_region(regions: str,
 
     return positions
 
+def positions_from_table(tables: str,
+                         separator: str = ',') -> Tuple[List, List]:
+    """Read positions from `astropy.QTable`.
+    
+    If a velocity column (either `vel` or `vlsr`) is present then this is also
+    returned.
+    """
+    positions = []
+    vels = []
+    for tabname in tables.split(separator):
+        # Read table
+        table = QTable.read(tabname.strip())
+        if 'vel' in table.colnames:
+            vel = table['vel']
+        elif 'vlsr' in table.colnames:
+            vel = table['vlsr']
+        else:
+            vel = None
+        positions.append(SkyCoord(table['ra'], table['dec'], frame='icrs'))
+        vels.append(vel)
+
+    return positions, vels
+
 def get_artist_positions(values: str, artist: str,
                          separator: str = ',',
                          xycoords: str = 'data',
@@ -482,6 +506,7 @@ def get_artist_properties(
                                   'alpha', 'length', 'linewidth'),
     quantity_props: Sequence[str] = ('pa', 'slope'),
     from_region: bool = False,
+    from_table: bool = False,
 ) -> dict:
     """Extract the properties of the artists from `config`.
 
@@ -514,10 +539,15 @@ def get_artist_properties(
       float_props: optional; list of properties to be converted to float.
       quantity_props: optional; list of properties that are `Quantity`.
       from_region: optional; read positions from region?
+      from_table: optional; read positions from `astropy.QTable`?
     """
-    # Position
+    # Positions
+    artist_props = {}
     if from_region:
         positions = positions_from_region(config[artist])
+    elif from_table:
+        positions, vel = positions_from_table(config[artist])
+        artist_props['velocity'] = vel
     else:
         xycoords = config.get(f'{artist}_xycoords', fallback='data')
         phys_frame = config.get(f'{artist}_physframe', fallback='sky')
@@ -526,9 +556,10 @@ def get_artist_properties(
                                          xycoords=xycoords,
                                          phys_frame=phys_frame)
     nprops = len(positions)
+    artist_props['positions'] = positions
 
     # Iterate over properties
-    props = ()
+    props = [{} for i in range(nprops)]
     for opt in config:
         # Filter
         if not opt.startswith(artist) or opt == artist:
@@ -563,8 +594,9 @@ def get_artist_properties(
                 props[i].update({prop: val})
             except IndexError:
                 props += ({prop: val},)
+    artist_props['properties'] = props
 
-    return {'positions': positions, 'properties': props}
+    return artist_props
 
 def tick_formatter(stretch: str, sci: Tuple[int,int] = (-3, 4)) -> Callable:
     """Creates a tick formatter function based on `stretch`.
