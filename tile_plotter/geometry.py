@@ -1,13 +1,43 @@
 """Objects to configure and manage plot geometries."""
 from typing import List, Optional, Sequence, Union, Tuple
 import collections
-import itertools
+import itertools as itls
 from dataclasses import dataclass, field
 
 from toolkit.logger import LoggedObject
 import configparseradv.utils as cfgutils
 
 from .common_types import PlotHandler, Location, Position
+
+def get_iter_locs(nrows: int, ncols: int):
+    """Generate a location iterator."""
+    ranges = range(nrows - 1, -1, -1),  range(ncols)
+    return itls.product(*ranges):
+
+def get_location_tuple(val: str, nrows: int, ncols: int,
+                       wildcard: str = '*') -> Tuple[Location]:
+    """Convert a string to a tuple of locations."""
+    # Base case
+    if val == wildcard:
+        return tuple(get_iter_locs(nrows, ncols))
+    
+    # Separate values
+    vals = val.split(')')
+    vals = [v.strip(' ,(') for v in vals if v]
+    locs = ()
+    for val in vals:
+        row, col = val.split(',')
+        if row == wildcard:
+            if col == wildcard:
+                return tuple(get_iter_locs(nrows, ncols))
+            else:
+                locs += tuple(zip(range(nrows), itls.repeat(int(col))))
+        elif col == wildcard:
+            locs += tuple(zip(itls.repeat(int(row)), range(ncols)))
+        else:
+            locs += ((int(row), int(col)),)
+
+    return locs
 
 @dataclass
 class BaseGeometry:
@@ -476,8 +506,7 @@ class GeometryHandler(LoggedObject, collections.OrderedDict):
       sharey: are y axes shared?
       vspace: vertical spacing between axes.
       hspace: horizontal spacing between axes.
-      vcbarpos: vertical color bar positions.
-      hcbarpos: horizontal color bar positions.
+      cbarlocs: locations of color bars.
     """
     nrows: int = 0
     ncols: int = 0
@@ -485,8 +514,9 @@ class GeometryHandler(LoggedObject, collections.OrderedDict):
     sharey: bool = False
     vspace: int = 0
     hspace: int = 0
-    vcbarpos: Optional[Tuple[int]] = None
-    hcbarpos: Optional[Tuple[int]] = None
+    #vcbarpos: Optional[Tuple[Location]] = None
+    #hcbarpos: Optional[Tuple[Location]] = None
+    cbarlocs: Optional[Tuple[Location]] = None
     verbose: str = 'v'
     #single_dimensions = None
 
@@ -506,7 +536,7 @@ class GeometryHandler(LoggedObject, collections.OrderedDict):
         """Fill the handler with an empty geometry."""
         self.nrows = rows
         self.ncols = cols
-        for loc in itertools.product(range(rows, 0, -1), range(cols)):
+        for loc in itls.product(range(rows, 0, -1), range(cols)):
             self[loc] = AxisHandler(0, 0)
 
     def from_config(self, config: 'configparseradv') -> None:
@@ -519,18 +549,20 @@ class GeometryHandler(LoggedObject, collections.OrderedDict):
         # pylint: disable=unbalanced-tuple-unpacking
         self.sharex, self.sharey = cfgutils.get_boolkeys(config,
                                                          ['sharex', 'sharey'])
-        vcbarpos, hcbarpos = cfgutils.get_keys(config,
-                                               ['vcbarpos', 'hcbarpos'])
+        #vcbarpos, hcbarpos = cfgutils.get_keys(config,
+        #                                       ['vcbarpos', 'hcbarpos'])
+        cbarlocs = config.get('cbarlocs', '*')
 
         # Colorbar positions
-        if vcbarpos == '*':
-            self.vcbarpos = tuple(range(self.ncols))
-        else:
-            self.vcbarpos = tuple(map(int, vcbarpos.replace(',',' ').split()))
-        if hcbarpos == '*':
-            self.hcbarpos = tuple(range(self.nrows))
-        else:
-            self.hcbarpos = tuple(map(int, hcbarpos.replace(',',' ').split()))
+        self.cbarlocs = get_location_tuple(cbarlocs, self.nrows, self.ncols)
+        #if vcbarpos == '*':
+        #    self.vcbarpos = tuple(range(self.ncols))
+        #else:
+        #    self.vcbarpos = tuple(map(int, vcbarpos.replace(',',' ').split()))
+        #if hcbarpos == '*':
+        #    self.hcbarpos = tuple(range(self.nrows))
+        #else:
+        #    self.hcbarpos = tuple(map(int, hcbarpos.replace(',',' ').split()))
 
     def fill_from_config(self,
                          config: 'configparseradv.configparser.ConfigParserAdv'
@@ -543,8 +575,7 @@ class GeometryHandler(LoggedObject, collections.OrderedDict):
         cumx, cumy = 0, 0
         xdim = None
         # Star from the last row to accumulate the value of bottom
-        ranges = range(self.nrows - 1, -1, -1),  range(self.ncols)
-        for loc in itertools.product(*ranges):
+        for loc in get_iter_locs(self.nrows, self.ncols):
             # Initialize and get dimensions
             self.log.debug('Defining axis at location: %s', loc)
             self.init_loc(loc, config, cumx, cumy)
@@ -640,12 +671,16 @@ class GeometryHandler(LoggedObject, collections.OrderedDict):
             return
 
         # Remove cbar and apply corrections
-        if self[loc].has_vertical_cbar():
-            has_cbar = (loc[1] in self.vcbarpos or
-                        loc[1]-self.ncols in self.vcbarpos)
-        elif self[loc].has_horizontal_cbar():
-            has_cbar = (loc[0] in self.hcbarpos or
-                        loc[0]-self.nrows in self.hcbarpos)
+        if self.cbarlocs is None:
+            has_cbar = False
+        elif self[loc].has_vertical_cbar() or self[loc].has_horizontal_cbar():
+            has_cbar = loc in self.cbarlocs
+        #if self[loc].has_vertical_cbar():
+        #    has_cbar = (loc[1] in self.vcbarpos or
+        #                loc[1]-self.ncols in self.vcbarpos)
+        #elif self[loc].has_horizontal_cbar():
+        #    has_cbar = (loc[0] in self.hcbarpos or
+        #                loc[0]-self.nrows in self.hcbarpos)
         else:
             has_cbar = False
         if not has_cbar:
