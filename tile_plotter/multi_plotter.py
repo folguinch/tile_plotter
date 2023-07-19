@@ -76,13 +76,14 @@ class MultiPlotter(BasePlotter):
         # Configuration
         set_xlabel, set_ylabel = self.has_axlabels(loc)
         set_xticks, set_yticks = self.has_ticks_labels(loc)
+        self.log.debug('Label switches: %s, %s', set_xlabel, set_ylabel)
+        self.log.debug('Tick switches: %s, %s', set_xticks, set_yticks)
         if dtype in ['image', 'contour', 'moment']:
-            self.log.debug('Label switches: %s, %s', set_xlabel, set_ylabel)
-            self.log.debug('Tick switches: %s, %s', set_xticks, set_yticks)
             handler.config_map(set_xlabel=set_xlabel, set_ylabel=set_ylabel,
                                set_xticks=set_xticks, set_yticks=set_yticks)
         else:
-            handler.config_plot()
+            handler.config_plot(set_xlabel=set_xlabel, set_ylabel=set_ylabel,
+                                set_xticks=set_xticks, set_yticks=set_yticks)
 
         # Axes label
         label = self.config.get('label', fallback='')

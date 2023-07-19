@@ -169,7 +169,15 @@ class PlotHandler:
             self.ax.yaxis.set_major_formatter(tick_formatter('log'))
 
         # Labels
-        self.set_axlabels(xlabel=props.xlabel, ylabel=props.ylabel)
+        if props.set_xlabel:
+            xlabel = props.xlabel
+        else:
+            xlabel = ''
+        if props.set_ylabel:
+            ylabel = props.ylabel
+        else:
+            ylabel = ''
+        self.set_axlabels(xlabel=xlabel, ylabel=ylabel)
 
         # Ticks
         if xticks:
@@ -204,8 +212,18 @@ class PlotHandler:
           xlabel: optional; x axis label.
           ylabel: optional; y axis label.
         """
-        self.ax.set_xlabel(xlabel or self.axes_props.xlabel)
-        self.ax.set_ylabel(ylabel or self.axes_props.ylabel)
+        if xlabel == '':
+            pass
+        elif xlabel is not None:
+            self.ax.set_xlabel(xlabel)
+        elif self.axes_props.set_xlabel:
+            self.ax.set_xlabel(self.axes_props.xlabel)
+        if ylabel == '':
+            pass
+        elif ylabel is not None:
+            self.ax.set_ylabel(ylabel)
+        elif self.axes_props.set_ylabel:
+            self.ax.set_xlabel(self.axes_props.ylabel)
 
     # Matplotlib plotting functions
     def plot(self, *args, **kwargs) -> Plot:
