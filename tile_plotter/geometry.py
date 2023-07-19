@@ -6,13 +6,14 @@ from dataclasses import dataclass, field
 
 from toolkit.logger import LoggedObject
 import configparseradv.utils as cfgutils
+import numpy as np
 
 from .common_types import PlotHandler, Location, Position
 
 def get_iter_locs(nrows: int, ncols: int):
     """Generate a location iterator."""
     ranges = range(nrows - 1, -1, -1),  range(ncols)
-    return itls.product(*ranges):
+    return itls.product(*ranges)
 
 def get_location_tuple(val: str, nrows: int, ncols: int,
                        wildcard: str = '*') -> Tuple[Location]:
@@ -549,20 +550,10 @@ class GeometryHandler(LoggedObject, collections.OrderedDict):
         # pylint: disable=unbalanced-tuple-unpacking
         self.sharex, self.sharey = cfgutils.get_boolkeys(config,
                                                          ['sharex', 'sharey'])
-        #vcbarpos, hcbarpos = cfgutils.get_keys(config,
-        #                                       ['vcbarpos', 'hcbarpos'])
         cbarlocs = config.get('cbarlocs', '*')
 
         # Colorbar positions
         self.cbarlocs = get_location_tuple(cbarlocs, self.nrows, self.ncols)
-        #if vcbarpos == '*':
-        #    self.vcbarpos = tuple(range(self.ncols))
-        #else:
-        #    self.vcbarpos = tuple(map(int, vcbarpos.replace(',',' ').split()))
-        #if hcbarpos == '*':
-        #    self.hcbarpos = tuple(range(self.nrows))
-        #else:
-        #    self.hcbarpos = tuple(map(int, hcbarpos.replace(',',' ').split()))
 
     def fill_from_config(self,
                          config: 'configparseradv.configparser.ConfigParserAdv'
@@ -571,29 +562,38 @@ class GeometryHandler(LoggedObject, collections.OrderedDict):
         # Update stored values
         self.from_config(config)
 
+        # Create width/height matrices
+        widths = np.zeros((self.nrows, self.ncols))
+        heights = np.zeros((self.nrows, self.ncols))
+        for loc in get_iter_locs(self.nrows, self.ncols):
+            self.init_loc(loc, config)
+            widths[loc] = self[loc].width
+            heights[loc] = self[loc].height
+
+        # Get max values along axes
+        max_widths = np.max(widths, axis=0)
+        max_heights = np.max(heights, axis=1)
+        xdim = np.sum(max_widths)
+        ydim = np.sum(max_heights)
+
         # Fill the geometry
         cumx, cumy = 0, 0
-        xdim = None
         # Star from the last row to accumulate the value of bottom
         for loc in get_iter_locs(self.nrows, self.ncols):
             # Initialize and get dimensions
             self.log.debug('Defining axis at location: %s', loc)
-            self.init_loc(loc, config, cumx, cumy)
+            self[loc].shift_position(xshift=cumx, yshift=cumy)
 
             # Cumulative sums
             if loc[1] == self.ncols - 1:
-                if xdim is None:
-                    xdim = cumx + self[loc].width
-                cumx = 0
-                if loc[0] != 0:
-                    cumy += self[loc].height
-                else:
-                    ydim = cumy + self[loc].height
+                cumy += max_heights[loc[0]]
+                cumx = 0.
             else:
-                cumx += self[loc].width
+                cumx += max_widths[loc[1]]
             self.log.debug('=====')
             self.log.debug('Cumulative axis: %f, %f', cumx, cumy)
             self.log.debug('=====')
+
         return xdim, ydim
 
     def init_loc(self,
@@ -641,8 +641,9 @@ class GeometryHandler(LoggedObject, collections.OrderedDict):
         self.log.debug('Updated color bar:\n%s', self[loc])
 
         # Shift position
-        self[loc].shift_position(xshift=xshift, yshift=yshift)
-        self.log.debug('Shifted positions:\n%s', self[loc])
+        if xshift != 0 or yshift != 0:
+            self[loc].shift_position(xshift=xshift, yshift=yshift)
+            self.log.debug('Shifted positions:\n%s', self[loc])
 
         # Return dimensions
         self.log.debug('New axis dimensions: %s', self[loc].dimensions)
@@ -683,7 +684,7 @@ class GeometryHandler(LoggedObject, collections.OrderedDict):
         #                loc[0]-self.nrows in self.hcbarpos)
         else:
             has_cbar = False
+        print('*'*80, has_cbar)
         if not has_cbar:
             self.log.debug('Unsetting cbar')
             self[loc].unset_cbar(self.sharex, self.sharey)
-
