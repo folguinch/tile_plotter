@@ -684,7 +684,6 @@ class GeometryHandler(LoggedObject, collections.OrderedDict):
         #                loc[0]-self.nrows in self.hcbarpos)
         else:
             has_cbar = False
-        print('*'*80, has_cbar)
         if not has_cbar:
             self.log.debug('Unsetting cbar')
             self[loc].unset_cbar(self.sharex, self.sharey)
