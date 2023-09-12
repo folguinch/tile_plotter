@@ -522,8 +522,9 @@ class PlotHandler:
         """
         # Check input
         if arrowprops is None:
+            lw = kwargs.pop('linewidth', kwargs.pop('lw', 2))
             arrowprops = {'arrowstyle':'->', 'fc':'k', 'ec':'k', 'ls':'-',
-                          'lw':2}
+                          'lw':float(lw)}
 
         # Arrow specified as PA or (x y PA) or (PA len) or (x y PA len)
         try:
