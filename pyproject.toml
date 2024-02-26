@@ -9,10 +9,10 @@ packages = [{include = "tile_plotter"}]
 include = ['config']
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.12"
-numpy = "^1.24.2"
-matplotlib = "^3.7.1"
-astropy = "^5.2.1"
+python = ">=3.9,<4.0"
+numpy = "^1.26.3"
+matplotlib = "^3.8.3"
+astropy = "^6.0.0"
 radio-beam = "^0.3.4"
 configparseradv = {path = "../configparseradv"}
 toolkit = {path = "../toolkit"}
