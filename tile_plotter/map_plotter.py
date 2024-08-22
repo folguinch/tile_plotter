@@ -568,6 +568,11 @@ class MapHandler(PhysPlotHandler):
             elif artist == 'arrows':
                 pa = props.pop('pa')
                 self.arrow(pos.ra, pos.dec, pa, **props)
+            elif artist == 'ellipses':
+                minor = props.pop('minor')
+                major = props.pop('major')
+                pa = props.pop('pa')
+                self.ellipse(pos.ra, pos.dec, minor, major, pa, **props)
             elif artist == 'scale':
                 distance = props.pop('distance')
                 self.scale(pos.ra, pos.dec, distance, **props)
@@ -930,6 +935,22 @@ class MapHandler(PhysPlotHandler):
             vals = (pa.to(u.deg).value, length)
 
         return super().arrow(xy_axes + vals, **kwargs)
+
+    def ellipse(self,
+                x: Union[u.Quantity, float],
+                y: Union[u.Quantity, float],
+                minor: float,
+                major: float,
+                pa: u.Quantity,
+                **kwargs):
+        """Draw an ellipse at the given position."""
+        xunit = self.axes_props.xunit
+        yunit = self.axes_props.yunit
+        return super().ellipse((x.to(xunit).value, y.to(yunit).value),
+                               (minor*u.arcsec).to(xunit).value,
+                               (major*u.arcsec).to(yunit).value,
+                               angle=pa.to(u.deg).value,
+                               transform=self.get_transform('world'), **kwargs)
 
     #def circle(self, x, y, r, color='g', facecolor='none', zorder=0):
     #    cir = SphericalCircle((x, y), r, edgecolor=color, facecolor=facecolor,

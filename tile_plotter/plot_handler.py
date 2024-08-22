@@ -568,6 +568,11 @@ class PlotHandler:
         arcpatch = patches.Arc(*args, **kwargs)
         self.axis.add_patch(arcpatch)
 
+    def ellipse(self, *args, **kwargs):
+        """Draw an ellipse."""
+        ellipse_patch = patches.Ellipse(*args, **kwargs)
+        self.axis.add_patch(ellipse_patch)
+
     # Other utilities
     def label_axes(self,
                    text: str,

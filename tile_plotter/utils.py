@@ -462,7 +462,7 @@ def get_artist_positions(values: str, artist: str,
       phys_frame: optional; physical frame of the data (`sky` or `projection`)
     """
     quantity_artists = ('scatters', 'arcs', 'texts', 'arrows', 'scale',
-                        'markers', 'axlines')
+                        'markers', 'axlines', 'ellipses')
     vals = values.split(separator)
     positions = []
     for val in vals:
@@ -503,7 +503,8 @@ def get_artist_properties(
     config: 'configparseradv.configparser.ConfigParserAdv',
     separator: str = ',',
     float_props: Sequence[str] = ('size', 'width', 'height', 'angle', 's',
-                                  'alpha', 'length', 'linewidth'),
+                                  'alpha', 'length', 'linewidth', 'minor',
+                                  'major'),
     quantity_props: Sequence[str] = ('pa', 'slope'),
     from_region: bool = False,
     from_table: bool = False,
