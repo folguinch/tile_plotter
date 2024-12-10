@@ -563,7 +563,7 @@ class MapHandler(PhysPlotHandler):
         valwcs = []
         cmap_list = []
         shape = None
-        for i, (color, img) in enumrate(data.items()):
+        for i, (color, img) in enumerate(data.items()):
             vald, valw = self._validate_data(img, None, ignore_units=True)
             valdata.append(vald)
             valwcs.append(valw)
