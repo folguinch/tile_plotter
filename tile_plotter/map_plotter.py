@@ -29,6 +29,7 @@ Projection = TypeVar('Projection', apy_wcs.WCS, str)
 Map = TypeVar('Map', u.Quantity, 'astropy.io.PrimaryHDU')
 Position = TypeVar('Position', 'astropy.coordinates.SkyCoord', u.Quantity,
                    Tuple[u.Quantity, u.Quantity])
+SkyCoord = TypeVar('SkyCoord', 'astropy.coordinates.SkyCoord')
 
 def filter_config_data(config: ConfigParserAdv, keys: Sequence,
                        ignore: Sequence = ('image', 'contour')) -> Dict:
@@ -547,7 +548,7 @@ class MapHandler(PhysPlotHandler):
 
     def plot_composite(self,
                        data: Dict[str, Map],
-                       position: Optional['astropy.coordinates.SkyCoord'] = None,
+                       position: SkyCoord = None,
                        radius: Optional[u.Quantity] = None,
                        **kwargs) -> None:
         """Plot a composite map.
@@ -562,7 +563,7 @@ class MapHandler(PhysPlotHandler):
         valwcs = []
         shape = None
         for cmap, img in data:
-            vald, valw = self._validate_data(data, None, ignore_units=True)
+            vald, valw = self._validate_data(img, None, ignore_units=True)
             valdata.append(vald)
             valwcs.append(valw)
             if shape is None:
@@ -571,7 +572,7 @@ class MapHandler(PhysPlotHandler):
                 raise ValueError('Data for composite must be of the same shape')
 
         # Color maps
-        cmap_list = [] 
+        cmap_list = []
         for i, color in data:
             cmap_list.append(LinearSegmentedColormap.from_list(
                 f'cmap_{i}',
@@ -652,7 +653,7 @@ class MapHandler(PhysPlotHandler):
                           color=bkg_color, zorder=zorder-1,
                           transform=self.get_transform())
             else:
-                raise NotImplementedError(f'Artist {artist} not implemented yet')
+                raise NotImplementedError(f'Artist {artist} not implemented')
 
     def plot_artists(self) -> None:
         """Plot all the stored artists."""

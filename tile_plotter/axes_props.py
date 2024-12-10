@@ -197,7 +197,7 @@ class VScaleProps:
             vmax = self.vmax
         if vcenter is None:
             vcenter = self.vcenter
-        
+
         # Scale values
         vmin = vmin / self.vfactor10
         vmax = vmax / self.vfactor10

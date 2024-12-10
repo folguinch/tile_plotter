@@ -1,7 +1,6 @@
 """Plotting utilities."""
 from typing import Optional, Callable, Tuple, List, Sequence
 from dataclasses import dataclass
-from string import capwords
 
 from astropy.coordinates import SkyCoord
 from astropy.io import fits

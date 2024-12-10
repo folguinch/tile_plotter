@@ -21,13 +21,13 @@ def get_location_tuple(val: str, nrows: int, ncols: int,
     # Base case
     if val == wildcard:
         return tuple(get_iter_locs(nrows, ncols))
-    
+
     # Separate values
     vals = val.split(')')
     vals = [v.strip(' ,(') for v in vals if v]
     locs = ()
-    for val in vals:
-        row, col = val.split(',')
+    for value in vals:
+        row, col = value.split(',')
         if row == wildcard:
             if col == wildcard:
                 return tuple(get_iter_locs(nrows, ncols))

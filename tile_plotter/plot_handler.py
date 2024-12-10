@@ -7,9 +7,11 @@ import pathlib
 from configparseradv.configparser import ConfigParserAdv
 from matplotlib import patches
 from toolkit.logger import get_logger
+import astropy.units as u
 import matplotlib as mpl
 #import matplotlib.lines as mlines
 import numpy as np
+import numpy.typing as npt
 
 from .utils import tick_formatter
 from .axes_props import AxesProps, PhysAxesProps, VScaleProps, PhysVScaleProps
@@ -749,7 +751,7 @@ class PhysPlotHandler(PlotHandler):
           kwargs: Optional. Additional arguments for plot.
         """
         # Extract data
-        if hasattr(data, shape):
+        if hasattr(data, 'shape'):
             if usecols is None:
                 colx, coly = 0, 1
             x, y = data[:,colx], data[:,coly]
@@ -766,6 +768,8 @@ class PhysPlotHandler(PlotHandler):
 
         # Configure plot
         linestyle = config.get('linestyle', vars=kwargs, fallback='-')
-        color = config.get('color', vars=kwargs, fallback='r')
+        color = config.get('color', vars=kwargs, fallback='r',)
+        kwargs.setdeafult('linestyle', linestyle)
+        kwargs.setdeafult('color', color)
 
         return self.plot(x, y, **kwargs)

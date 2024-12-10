@@ -1,10 +1,11 @@
 """Implement loaders for different types of data."""
-from typing import Callable, Tuple, TypeVar
+from typing import Callable, Tuple, TypeVar, Sequence, Dict
 
 from astropy.io import fits
 from astropy import wcs
 from line_little_helper.spectrum import Spectrum, CassisModelSpectra
 from toolkit.array_utils import load_struct_array
+import numpy as np
 import numpy.typing as npt
 
 Data = TypeVar('Data')
