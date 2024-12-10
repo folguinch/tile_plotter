@@ -592,6 +592,7 @@ class MapHandler(PhysPlotHandler):
         self.im = self.ax.imshow(composite,
                                  interpolation='gaussian',
                                  vmax=0.8,
+                                 transform=self.get_transform(valwcs[0]),
                                  **kwargs)
 
     def _plot_artist(self, artist: str) -> None:
