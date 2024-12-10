@@ -1,5 +1,6 @@
 """Manage the available plot handlers."""
 from .map_plotter import MapHandler
+from .plot_handler import PhysPlotHandler
 from .common_types import PlotHandler
 
 HANDLERS = {
@@ -8,8 +9,10 @@ HANDLERS = {
     'moment': MapHandler,
     'pvmap': MapHandler,
     'pvmap_contour': MapHandler,
+    'composite': MapHandler,
     'spectrum_cassis': None,
     'spectra_cassis_model': None,
+    'structured_array': PhysPlotHandler,
 }
 
 def get_handler(config: 'configparser.ConfigParser') -> PlotHandler:

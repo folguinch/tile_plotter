@@ -5,6 +5,7 @@ import pathlib
 
 from astropy.io import fits
 from configparseradv.configparser import ConfigParserAdv
+from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.patches import Ellipse
 from matplotlib import cm
 from radio_beam import Beam
@@ -242,9 +243,9 @@ class MapHandler(PhysPlotHandler):
         considered dimensionless.
 
         Args:
-          data: input data.
+          data: Input data.
           wcs: WCS of the data.
-          ignore_units: optional; ignore data units?
+          ignore_units: Optional. Ignore data units?
         """
         if hasattr(data, 'unit'):
             # Check bunit
@@ -543,6 +544,56 @@ class MapHandler(PhysPlotHandler):
                                    levels=levels_val,
                                    extent=extent_val,
                                    **kwargs)
+
+    def plot_composite(self,
+                       data: Dict[str, Map],
+                       position: Optional['astropy.coordinates.SkyCoord'] = None,
+                       radius: Optional[u.Quantity] = None,
+                       **kwargs) -> None:
+        """Plot a composite map.
+
+        Args:
+          data: Map dictionary indexed by `matplotlib` color map.
+          position: optional; center of the map.
+          radius: optional; radius of the region shown.
+        """
+        # Validate data
+        valdata = []
+        valwcs = []
+        shape = None
+        for cmap, img in data:
+            vald, valw = self._validate_data(data, None, ignore_units=True)
+            valdata.append(vald)
+            valwcs.append(valw)
+            if shape is None:
+                shape = vald.shape
+            elif shape != vald.shape:
+                raise ValueError('Data for composite must be of the same shape')
+
+        # Color maps
+        cmap_list = [] 
+        for i, color in data:
+            cmap_list.append(LinearSegmentedColormap.from_list(
+                f'cmap_{i}',
+                ['black', color]),
+            )
+
+        # Build composite image
+        composite = np.zeros(shape + (3,))
+        for vald, cmap in zip(valdata, cmap_list):
+            composite += cmap(vald.value)[:,:,:3]
+
+        # Check wcs and re-center the image
+        if (valwcs[0] is not None and
+            radius is not None and
+            position is not None):
+            self.recenter(radius, position, valwcs[0])
+
+        # Plot data
+        self.im = self.ax.imshow(composite,
+                                 interpolation='gaussian',
+                                 vmax=0.8,
+                                 **kwargs)
 
     def _plot_artist(self, artist: str) -> None:
         """Plot each value of the artist"""
@@ -1039,9 +1090,9 @@ class MapHandler(PhysPlotHandler):
         """Plot the input data and the stored artists.
 
         Args:
-          data: data to plot.
-          dtype: type of plot.
-          config: config parser proxy.
+          data: Data to plot.
+          dtype: Type of plot.
+          config: Config parser proxy.
         """
         # Common options from config
         position = config.getskycoord('center', fallback=None)
@@ -1072,6 +1123,8 @@ class MapHandler(PhysPlotHandler):
                                ignore_units=ignore_units,
                                stretch=contour_stretch,
                                linewidths=contour_linewidth, zorder=2)
+        elif 'array' in dtype:
+            self.plot_array(data, config=config)
         elif 'with_style' in config:
             self._log.info('Changing style: %s', config['with_style'])
             with mpl.pyplot.style.context(config['with_style']):
@@ -1089,6 +1142,11 @@ class MapHandler(PhysPlotHandler):
                               contour_negative_nsigma=negative_nsigma,
                               contour_nsigmalevel=nsigma_level,
                               contour_stretch=contour_stretch)
+        elif dtype == 'composite':
+            self._log.info('Plotting composite map')
+            self.plot_composite(data,
+                                position=position,
+                                radius=radius)
         else:
             self.plot_map(data,
                           use_extent=use_extent,

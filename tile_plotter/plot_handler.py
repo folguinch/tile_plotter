@@ -734,3 +734,38 @@ class PhysPlotHandler(PlotHandler):
 
     def plot(self, *args, **kwargs) -> Plot:
         return self._simple_plt(self.axis.plot, *args, nphys_args=2, **kwargs)
+
+    def plot_array(self,
+                   data: Union[npt.ArrayLike, Tuple[npt.ArrayLike, Dict]],
+                   config: Optional[ConfigParserAdv] = None,
+                   usecols: Optional[Tuple[int,int]] = None,
+                   **kwargs) -> Plot:
+        """Plot numpy arrays or structured arrays with units.
+
+        Args:
+          data: A Quantity array or a tuple with an structured array and units.
+          config: Optional. Configuration parser proxy.
+          usecols: Optional. Columns to plot.
+          kwargs: Optional. Additional arguments for plot.
+        """
+        # Extract data
+        if hasattr(data, shape):
+            if usecols is None:
+                colx, coly = 0, 1
+            x, y = data[:,colx], data[:,coly]
+        else:
+            if usecols is not None:
+                xkey, ykey = usecols
+            elif config is not None:
+                keys = config.get('plot_keys').split(',')
+                xkey = keys[0].strip()
+                ykey = keys[1].strip()
+            else:
+                raise ValueError('Cannot determine columns')
+            x, y = data[0][xkey] * data[1][xkey], data[0][ykey] * data[1][ykey]
+
+        # Configure plot
+        linestyle = config.get('linestyle', vars=kwargs, fallback='-')
+        color = config.get('color', vars=kwargs, fallback='r')
+
+        return self.plot(x, y, **kwargs)
