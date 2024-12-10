@@ -29,7 +29,7 @@ Projection = TypeVar('Projection', apy_wcs.WCS, str)
 Map = TypeVar('Map', u.Quantity, 'astropy.io.PrimaryHDU')
 Position = TypeVar('Position', 'astropy.coordinates.SkyCoord', u.Quantity,
                    Tuple[u.Quantity, u.Quantity])
-SkyCoord = TypeVar('SkyCoord', 'astropy.coordinates.SkyCoord')
+SkyCoord = TypeVar('SkyCoord')
 
 def filter_config_data(config: ConfigParserAdv, keys: Sequence,
                        ignore: Sequence = ('image', 'contour')) -> Dict:
