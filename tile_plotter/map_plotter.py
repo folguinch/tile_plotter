@@ -558,11 +558,12 @@ class MapHandler(PhysPlotHandler):
           position: optional; center of the map.
           radius: optional; radius of the region shown.
         """
-        # Validate data
+        # Validate data and color maps
         valdata = []
         valwcs = []
+        cmap_list = []
         shape = None
-        for cmap, img in data:
+        for i, (color, img) in enumrate(data.items()):
             vald, valw = self._validate_data(img, None, ignore_units=True)
             valdata.append(vald)
             valwcs.append(valw)
@@ -571,9 +572,6 @@ class MapHandler(PhysPlotHandler):
             elif shape != vald.shape:
                 raise ValueError('Data for composite must be of the same shape')
 
-        # Color maps
-        cmap_list = []
-        for i, color in data:
             cmap_list.append(LinearSegmentedColormap.from_list(
                 f'cmap_{i}',
                 ['black', color]),
