@@ -140,17 +140,17 @@ def data_loader(config: 'configparseradv.configparser.ConfigParserAdv',
             if key in config:
                 log(f'Data option found: {key}')
                 if key == 'composite':
-                    loader_args = get_composite_args(config)
+                    loader_args = (get_composite_args(config),)
                 elif key == 'function':
                     loader_args = get_function_args(config)
                 else:
-                    loader_args = config.getpath(key)
+                    loader_args = (config.getpath(key),)
                 break
         else:
             raise KeyError('Cannot find loader for data')
 
     log(f'Loading data: {loader_args}')
-    data, proj = loader(loader_args)
+    data, proj = loader(*loader_args)
 
     return data, proj, key
 
