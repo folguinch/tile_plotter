@@ -1149,8 +1149,8 @@ class MapHandler(PhysPlotHandler):
                                 radius=radius)
         elif dtype == 'function':
             self._log.info('Plotting function values')
-            linestyle = config.get('linestyle', vars=kwargs, fallback='-')
-            color = config.get('color', vars=kwargs, fallback='r',)
+            linestyle = config.get('linestyle', fallback='-')
+            color = config.get('color', fallback='r',)
             kwargs.setdeafult('linestyle', linestyle)
             kwargs.setdeafult('color', color)
             self.plot(*data, **kwargs)
