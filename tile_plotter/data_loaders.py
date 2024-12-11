@@ -1,10 +1,11 @@
 """Implement loaders for different types of data."""
-from typing import Callable, Tuple, TypeVar, Sequence, Dict
+from typing import Callable, Tuple, TypeVar, Sequence, Dict, List
 
 from astropy.io import fits
 from astropy import wcs
 from line_little_helper.spectrum import Spectrum, CassisModelSpectra
 from toolkit.array_utils import load_struct_array
+import astropy.units as u
 import numpy as np
 import numpy.typing as npt
 
@@ -89,7 +90,7 @@ def eval_function(function: str,
     xrot = xval * np.cos(rotation) - yval * np.sin(rotation)
     yrot = xval * np.sin(rotation) + yval * np.cos(rotation)
 
-    return (xval, yval), 'rectilinear'
+    return (xrot, yrot), 'rectilinear'
 
 # Available loaders
 LOADERS = {
