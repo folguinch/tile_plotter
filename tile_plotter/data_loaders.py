@@ -172,7 +172,7 @@ def get_function_args(config: 'configparseradv.configparser.ConfigParserAdv'):
     function = config['function']
     x_low, x_high = config.getquantity('xrange')
     stretch = config.get('stretch', fallback='linear')
-    rotation = config.getquantity('rotate', fallback=0)
+    rotation = config.getquantity('rotate', fallback=0 * u.deg)
     sampling = config.getint('sampling', fallback=100)
     coef = config.getfloatlist('coeficients')
     
