@@ -78,10 +78,17 @@ def eval_function(function: str,
     Functions are:
     
     - `poly`: polynomial specified as in `np.poly1d`.
+    - `parabola_vertex`: parabola specified by the vertex `(h, k)` as
+      `y = a * (x - h)**2 + k` (coeficient order: `a`, `h`, `k`)
     """
     # Convert to functional form
     if function == 'poly':
         funct = np.poly1d(coeficients)
+    elif function == 'parabola_vertex':
+        c1 = coeficients[0]
+        c2 = coeficients[1]
+        c3 = coeficients[2]
+        funct = lambda x: c1 * (x - c2)**2 + c3
     else:
         raise NotImplementedError(f'Function {function} not implemented')
 
