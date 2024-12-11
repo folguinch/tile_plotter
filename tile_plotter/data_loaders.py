@@ -88,7 +88,11 @@ def eval_function(function: str,
         c1 = coeficients[0]
         c2 = coeficients[1]
         c3 = coeficients[2]
-        funct = lambda x: c1 * (x - c2)**2 + c3
+
+        # To keep the vertex at the input position
+        c2rot = c2 * np.cos(-rotation) - c3 * np.sin(-rotation)
+        c3rot = c2 * np.sin(-rotation) + c3 * np.cos(-rotation)
+        funct = lambda x: c1 * (x - c2rot)**2 + c3rot
     else:
         raise NotImplementedError(f'Function {function} not implemented')
 
