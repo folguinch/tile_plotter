@@ -1151,7 +1151,8 @@ class MapHandler(PhysPlotHandler):
             self._log.info('Plotting function values')
             linestyle = config.get('linestyle', fallback='-')
             color = config.get('color', fallback='r',)
-            self.plot(*data, linestyle=linestyle, color=color)
+            self.plot(*data, linestyle=linestyle, color=color,
+                      transform=self.get_transform())
         else:
             self.plot_map(data,
                           use_extent=use_extent,
