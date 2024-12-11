@@ -13,6 +13,7 @@ HANDLERS = {
     'spectrum_cassis': None,
     'spectra_cassis_model': None,
     'structured_array': PhysPlotHandler,
+    'function': PhysPlotHandler,
 }
 
 def get_handler(config: 'configparser.ConfigParser') -> PlotHandler:

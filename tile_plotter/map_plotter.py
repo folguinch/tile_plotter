@@ -1147,6 +1147,13 @@ class MapHandler(PhysPlotHandler):
             self.plot_composite(data,
                                 position=position,
                                 radius=radius)
+        elif dtype == 'function':
+            self._log.info('Plotting function values')
+            linestyle = config.get('linestyle', vars=kwargs, fallback='-')
+            color = config.get('color', vars=kwargs, fallback='r',)
+            kwargs.setdeafult('linestyle', linestyle)
+            kwargs.setdeafult('color', color)
+            self.plot(*data, **kwargs)
         else:
             self.plot_map(data,
                           use_extent=use_extent,

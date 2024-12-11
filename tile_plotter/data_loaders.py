@@ -68,6 +68,29 @@ def load_structured_array(
 
     return data, proj
 
+def eval_function(function: str,
+                  coeficients: List[float],
+                  xval: u.Quantity,
+                  rotation: u.Quantity):
+    """Evaluate a function.
+
+    Functions are:
+    
+    - `poly`: polynomial specified as in `np.poly1d`.
+    """
+    # Convert to functional form
+    if function == 'poly':
+        funct = np.poly1d(coeficients)
+    else:
+        raise NotImplementedError(f'Function {function} not implemented')
+
+    # Evaluate and rotate
+    yval = funct(xval.value) * xval.unit
+    xrot = xval * np.cos(rotation) - yval * np.sin(rotation)
+    yrot = xval * np.sin(rotation) + yval * np.cos(rotation)
+
+    return (xval, yval), 'rectilinear'
+
 # Available loaders
 LOADERS = {
     'image': load_image,
@@ -79,6 +102,7 @@ LOADERS = {
     'spectrum_cassis': load_spectrum_cassis,
     'spectra_cassis_model': load_spectra_cassis_model,
     'structured_array': load_structured_array,
+    'function': eval_function,
 }
 
 # General purpose loader
@@ -105,6 +129,8 @@ def data_loader(config: 'configparseradv.configparser.ConfigParserAdv',
         key = config['loader']
         if key == 'composite':
             loader_args = get_composite_args(config)
+        elif key == 'function':
+            loader_args = get_function_args(config)
         else:
             loader_args = config.getpath(key)
         loader = LOADERS[key]
@@ -114,6 +140,8 @@ def data_loader(config: 'configparseradv.configparser.ConfigParserAdv',
                 log(f'Data option found: {key}')
                 if key == 'composite':
                     loader_args = get_composite_args(config)
+                elif key == 'function':
+                    loader_args = get_function_args(config)
                 else:
                     loader_args = config.getpath(key)
                 break
@@ -136,3 +164,25 @@ def get_composite_args(config: 'configparseradv.configparser.ConfigParserAdv'):
         args.append((cmap, config.getpath(cmap)))
 
     return args
+
+def get_function_args(config: 'configparseradv.configparser.ConfigParserAdv'):
+    """Get axis poisitions for function."""
+    # Common parameters
+    function = config['function']
+    x_low, x_high = config.getquantity('xrange')
+    stretch = config.get('stretch', fallback='linear')
+    rotation = config.getquantity('rotate', fallback=0)
+    sampling = config.getint('sampling', fallback=100)
+    coef = config.getfloatlist('coeficients')
+    
+    # Calculate the x-axis values
+    if stretch == 'linear':
+        xval = np.linspace(x_low, x_high, sampling)
+    elif stretch == 'log':
+        xval = np.logspace(np.log10(x_low), np.log10(x_high), sampling)
+    else:
+        raise NotImplementedError(f'Stretch {stretch} not implemented')
+
+    return function, coef, xval, rotation
+
+    
