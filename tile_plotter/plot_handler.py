@@ -500,6 +500,7 @@ class PlotHandler:
     def arrow(self,
               arrow: Union[str, Tuple[float]],
               arrowprops: Optional[dict] = None,
+              origin: str = 'mid',
               color: Optional[str] = None,
               **kwargs) -> None:
         """Draw an arrow.
@@ -513,14 +514,15 @@ class PlotHandler:
 
         with PA the position angle (from axis y>0 towards axis x<0). The
         positions (x, y) are in axes fraction and their default value is
-        (0.5, 0.5). Similarly, the default legth is 0.5, i.e. half the axis
+        (0.5, 0.5). Similarly, the default length is 0.5, i.e. half the axis
         length.
 
         Args:
-          arrow: arrow position, angle and/or legth.
-          arrowprops: optional; arrow properties.
-          color: optional; use the default arrowprops but replace the color.
-          kwargs: other arrow properties. See `matplotlib.pyplot.annotate`.
+          arrow: Arrow position, angle and/or legth.
+          arrowprops: Optional. Arrow properties.
+          origin: Optional. Arrow origin (`mid` or `origin`).
+          color: Optional. Use the default arrowprops but replace the color.
+          kwargs: Other arrow properties. See `matplotlib.pyplot.annotate`.
         """
         # Check input
         if arrowprops is None:
@@ -550,8 +552,14 @@ class PlotHandler:
         # Locations
         dx = l * np.cos(np.radians(pa))
         dy = l * np.sin(np.radians(pa))
-        xy = (x0 + dx, y0 + dy)
-        xytext = (x0 - dx, y0 - dy)
+        if origin == 'mid':
+            xy = (x0 + dx, y0 + dy)
+            xytext = (x0 - dx, y0 - dy)
+        elif origin == 'origin':
+            xy = (x0 + 2*dx, y0 + 2*dy)
+            xytext = (x0, y0)
+        else:
+            raise NotImplementedError(f'Arrow origin {origin} not implemented')
 
         # Check colors
         if color and color != arrowprops['fc']:

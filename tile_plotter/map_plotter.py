@@ -952,6 +952,7 @@ class MapHandler(PhysPlotHandler):
               y: Union[u.Quantity, float],
               pa: u.Quantity,
               length: float = 0.5,
+              origin: str = 'mid',
               **kwargs):
         """Draw an arrow.
 
@@ -968,10 +969,11 @@ class MapHandler(PhysPlotHandler):
         coordinates. The `length` is specified in axes fraction.
 
         Args:
-          x, y: position of the center of the arrow.
-          pa: position angle of the arrow.
-          length: optional; length of the arrow.
-          kwargs: optional; arrow properties for `matplotlib.pyplot.annotate`.
+          x, y: Position of the center of the arrow.
+          pa: Position angle of the arrow.
+          length: Optional. Length of the arrow.
+          origin: Optional. Arrow origin (`mid` or `origin`).
+          kwargs: Optional. Arrow properties for `matplotlib.pyplot.annotate`.
         """
         xycoords = kwargs.pop('xycoords', 'data')
         if xycoords == 'data':
@@ -985,7 +987,7 @@ class MapHandler(PhysPlotHandler):
             xy_axes = (x, y)
             vals = (pa.to(u.deg).value, length)
 
-        return super().arrow(xy_axes + vals, **kwargs)
+        return super().arrow(xy_axes + vals, origin=origin, **kwargs)
 
     def ellipse(self,
                 x: Union[u.Quantity, float],
