@@ -1,5 +1,5 @@
 """Implement loaders for different types of data."""
-from typing import Callable, Tuple, TypeVar, Sequence, Dict, List
+from typing import Callable, Tuple, TypeVar, Sequence, Dict, List, Optional
 
 from astropy.io import fits
 from astropy import wcs
@@ -72,7 +72,9 @@ def load_structured_array(
 def eval_function(function: str,
                   coeficients: List[float],
                   xval: u.Quantity,
-                  rotation: u.Quantity):
+                  yunit: u.Unit,
+                  rotation: u.Quantity,
+                  rotation_center: Optional[Tuple[u.Quantity, u.Quantity]]):
     """Evaluate a function.
 
     Functions are:
@@ -88,18 +90,24 @@ def eval_function(function: str,
         c1 = coeficients[0]
         c2 = coeficients[1]
         c3 = coeficients[2]
+        funct = lambda x: c1 * (x - c2)**2 + c3
 
-        # To keep the vertex at the input position
-        c2rot = c2 * np.cos(-rotation) - c3 * np.sin(-rotation)
-        c3rot = c2 * np.sin(-rotation) + c3 * np.cos(-rotation)
-        funct = lambda x: c1 * (x - c2rot)**2 + c3rot
+        # Put the rotation center at the vertex
+        if rotation_center is None:
+            rotation_center = (c2 * xval.unit, c3 * yunit)
     else:
         raise NotImplementedError(f'Function {function} not implemented')
+    if rotation_center is None:
+        rotation_center = (0 * xval.unit, 0 * yunit)
 
     # Evaluate and rotate
-    yval = funct(xval.value) * xval.unit
-    xrot = xval * np.cos(rotation) - yval * np.sin(rotation)
-    yrot = xval * np.sin(rotation) + yval * np.cos(rotation)
+    yval = funct(xval.value) * yunit
+    xrot = (rotation_center[0]
+            + (xval - rotation_center[0]) * np.cos(rotation)
+            - (yval - rotation_center[1]) * np.sin(rotation))
+    yrot = (rotation_center[1]
+            + (xval - rotation_center[0]) * np.sin(rotation)
+            + (yval - rotation_center[1]) * np.cos(rotation))
 
     return (xrot, yrot), 'rectilinear'
 
@@ -183,9 +191,11 @@ def get_function_args(config: 'configparseradv.configparser.ConfigParserAdv'):
     function = config['function']
     x_low, x_high = config.getquantity('xrange')
     stretch = config.get('stretch', fallback='linear')
-    rotation = config.getquantity('rotate', fallback=0 * u.deg)
     sampling = config.getint('sampling', fallback=100)
     coef = config.getfloatlist('coeficients')
+    yunit = u.Unit(config['yunit'])
+    rotation = config.getquantity('rotate', fallback=0 * u.deg)
+    rotation_center = config.getquantity('rotation_center', fallback=None)
     
     # Calculate the x-axis values
     if stretch == 'linear':
@@ -195,6 +205,5 @@ def get_function_args(config: 'configparseradv.configparser.ConfigParserAdv'):
     else:
         raise NotImplementedError(f'Stretch {stretch} not implemented')
 
-    return function, coef, xval, rotation
+    return function, coef, xval, yunit, rotation, rotation_center
 
-    
