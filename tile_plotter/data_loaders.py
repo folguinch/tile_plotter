@@ -176,7 +176,7 @@ def data_loader(config: 'configparseradv.configparser.ConfigParserAdv',
         elif key == 'function':
             loader_args = get_function_args(config)
         elif key == 'region_patch':
-            header = load_image(config.getpath('image'))[0].header
+            header = load_image(config.getpath('ref_image'))[0].header
             loader_args = (config.getpath(key), header)
         else:
             loader_args = (config.getpath(key),)
@@ -190,7 +190,7 @@ def data_loader(config: 'configparseradv.configparser.ConfigParserAdv',
                 elif key == 'function':
                     loader_args = get_function_args(config)
                 elif key == 'region_patch':
-                    header = load_image(config.getpath('image'))[0].header
+                    header = load_image(config.getpath('ref_image'))[0].header
                     loader_args = (config.getpath(key), header)
                 else:
                     loader_args = (config.getpath(key),)
