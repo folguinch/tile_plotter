@@ -82,6 +82,10 @@ def eval_function(function: str,
     - `poly`: polynomial specified as in `np.poly1d`.
     - `parabola_vertex`: parabola specified by the vertex `(h, k)` as
       `y = a * (x - h)**2 + k` (coeficient order: `a`, `h`, `k`)
+    - `ellipse`: ellipse specified by the central position `(x0, y0)` and the
+      semi-major and -minor axes `(a, b)` in degrees:
+      `y = +/- b/a sqrt(a**2 - (x - x0)**2) + y0` (coeficient order: `x0`,
+      `y0`, `a`, `b`)
     """
     # Convert to functional form
     if function == 'poly':
@@ -95,6 +99,15 @@ def eval_function(function: str,
         # Put the rotation center at the vertex
         if rotation_center is None:
             rotation_center = (c2 * xval.unit, c3 * yunit)
+    elif function == 'ellipse':
+        x0 = coeficients[0]
+        y0 = coeficients[1]
+        smaj = coeficients[2]
+        smin = coeficients[3]
+        funct = lambda x: smin/smaj * np.sqrt(smaj**2 - (x - x0)**2) + y0
+
+        if rotation_center is None:
+            rotation_center = (x0 * xval.unit, y0 * yunit)
     else:
         raise NotImplementedError(f'Function {function} not implemented')
     if rotation_center is None:
@@ -102,6 +115,9 @@ def eval_function(function: str,
 
     # Evaluate and rotate
     yval = funct(xval.value) * yunit
+    if function == 'ellipse':
+        xval = np.append(xval, xval)
+        yval = np.append(yval, -yval)
     xrot = (rotation_center[0]
             + (xval - rotation_center[0]) * np.cos(rotation)
             - (yval - rotation_center[1]) * np.sin(rotation))
@@ -204,6 +220,12 @@ def get_function_args(config: 'configparseradv.configparser.ConfigParserAdv'):
         xval = np.logspace(np.log10(x_low), np.log10(x_high), sampling)
     else:
         raise NotImplementedError(f'Stretch {stretch} not implemented')
+
+    # Limit x-range for ellipse
+    if function == 'ellipse':
+        mask = ((xval >= (coef[0] - coef[2]) * xval.unit) &
+                (xval <= (coef[0] + coef[2]) * xval.unit))
+        xval = xval[mask]
 
     return function, coef, xval, yunit, rotation, rotation_center
 
