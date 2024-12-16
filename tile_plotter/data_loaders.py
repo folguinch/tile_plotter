@@ -8,6 +8,7 @@ from toolkit.array_utils import load_struct_array
 import astropy.units as u
 import numpy as np
 import numpy.typing as npt
+import pyregion
 
 Data = TypeVar('Data')
 Projection = TypeVar('Projection')
@@ -68,6 +69,12 @@ def load_structured_array(
     proj = 'rectilinear'
 
     return data, proj
+
+def region_patch(filename: 'pathlib.Path', header: fits.Header):
+    """Load a region and convert it to ."""
+    region = pyregion.open(filename).as_imagecoord(header)
+
+    return region, 'rectilinear'
 
 def eval_function(function: str,
                   coeficients: List[float],
@@ -139,6 +146,7 @@ LOADERS = {
     'spectra_cassis_model': load_spectra_cassis_model,
     'structured_array': load_structured_array,
     'function': eval_function,
+    'region_patch': region_patch,
 }
 
 # General purpose loader
@@ -164,11 +172,14 @@ def data_loader(config: 'configparseradv.configparser.ConfigParserAdv',
         log('Using loader option')
         key = config['loader']
         if key == 'composite':
-            loader_args = get_composite_args(config)
+            loader_args = (get_composite_args(config),)
         elif key == 'function':
             loader_args = get_function_args(config)
+        elif key == 'region_patch':
+            header = load_image(config.getpath('image'))[0].header
+            loader_args = (config.getpath(key), header)
         else:
-            loader_args = config.getpath(key)
+            loader_args = (config.getpath(key),)
         loader = LOADERS[key]
     else:
         for key, loader in LOADERS.items():
@@ -178,6 +189,9 @@ def data_loader(config: 'configparseradv.configparser.ConfigParserAdv',
                     loader_args = (get_composite_args(config),)
                 elif key == 'function':
                     loader_args = get_function_args(config)
+                elif key == 'region_patch':
+                    header = load_image(config.getpath('image'))[0].header
+                    loader_args = (config.getpath(key), header)
                 else:
                     loader_args = (config.getpath(key),)
                 break
