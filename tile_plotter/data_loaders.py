@@ -212,6 +212,10 @@ def get_function_args(config: 'configparseradv.configparser.ConfigParserAdv'):
     yunit = u.Unit(config['yunit'])
     rotation = config.getquantity('rotate', fallback=0 * u.deg)
     rotation_center = config.getquantity('rotation_center', fallback=None)
+    # Limit x-range for ellipse
+    if function == 'ellipse':
+        x_low = (coef[0] - coef[2]) * x_low.unit
+        x_high = (coef[0] + coef[2]) * x_high.unit
     
     # Calculate the x-axis values
     if stretch == 'linear':
@@ -220,12 +224,6 @@ def get_function_args(config: 'configparseradv.configparser.ConfigParserAdv'):
         xval = np.logspace(np.log10(x_low), np.log10(x_high), sampling)
     else:
         raise NotImplementedError(f'Stretch {stretch} not implemented')
-
-    # Limit x-range for ellipse
-    if function == 'ellipse':
-        mask = ((xval >= (coef[0] - coef[2]) * xval.unit) &
-                (xval <= (coef[0] + coef[2]) * xval.unit))
-        xval = xval[mask]
 
     return function, coef, xval, yunit, rotation, rotation_center
 
