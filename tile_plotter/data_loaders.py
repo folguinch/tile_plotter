@@ -70,13 +70,28 @@ def load_structured_array(
 
     return data, proj
 
-def region_patch(filename: 'pathlib.Path', header: fits.Header):
+def region_patch(filename: 'pathlib.Path',
+                 ref_wcs: wcs.WCS,
+                 config: 'configparseradv.configparser.ConfigParserAdv'):
     """Load a region and convert it to ."""
+    # Load region
     region = Regions.read(filename)[0]
-    ref_wcs = wcs.WCS(header, naxis=2)
     pixel_region = region.to_pixel(ref_wcs)
 
-    return pixel_region.as_artist(), 'rectilinear'
+    # Load artist properties
+    edgecolor = config.get('edgecolor', fallback='g')
+    if edgecolor == 'none':
+        edgecolor = None
+    facecolor = config.get('facecolor', fallback=None)
+    linestyle = config.get('linestyle', fallback='-')
+    linewidth = config.getfloat('linewidth', fallback=1)
+    kwargs = {'ec': edgecolor,
+              'fc': facecolor,
+              'ls': linestyle,
+              'lw': linewidth,
+              }
+
+    return pixel_region.as_artist(**kwargs), 'rectilinear'
 
 def eval_function(function: str,
                   coeficients: List[float],
@@ -179,7 +194,8 @@ def data_loader(config: 'configparseradv.configparser.ConfigParserAdv',
             loader_args = get_function_args(config)
         elif key == 'region_patch':
             header = load_image(config.getpath('ref_image'))[0].header
-            loader_args = (config.getpath(key), header)
+            ref_wcs = wcs.WCS(header, naxis=2)
+            loader_args = (config.getpath(key), ref_wcs, config)
         else:
             loader_args = (config.getpath(key),)
         loader = LOADERS[key]
@@ -193,7 +209,8 @@ def data_loader(config: 'configparseradv.configparser.ConfigParserAdv',
                     loader_args = get_function_args(config)
                 elif key == 'region_patch':
                     header = load_image(config.getpath('ref_image'))[0].header
-                    loader_args = (config.getpath(key), header)
+                    ref_wcs = wcs.WCS(header, naxis=2)
+                    loader_args = (config.getpath(key), ref_wcs, config)
                 else:
                     loader_args = (config.getpath(key),)
                 break
