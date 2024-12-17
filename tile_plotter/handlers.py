@@ -14,6 +14,7 @@ HANDLERS = {
     'spectra_cassis_model': None,
     'structured_array': PhysPlotHandler,
     'function': PhysPlotHandler,
+    'region_patch': MapHandler,
 }
 
 def get_handler(config: 'configparser.ConfigParser') -> PlotHandler:
