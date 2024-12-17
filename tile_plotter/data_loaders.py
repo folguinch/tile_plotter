@@ -73,7 +73,7 @@ def load_structured_array(
 def region_patch(filename: 'pathlib.Path', header: fits.Header):
     """Load a region and convert it to ."""
     region = Regions.read(filename)[0]
-    ref_wcs = wcs.WCS(header)
+    ref_wcs = wcs.WCS(header, axis=2)
     pixel_region = region.to_pixel(ref_wcs)
 
     return pixel_region.as_artist(), 'rectilinear'
