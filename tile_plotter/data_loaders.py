@@ -4,11 +4,11 @@ from typing import Callable, Tuple, TypeVar, Sequence, Dict, List, Optional
 from astropy.io import fits
 from astropy import wcs
 from line_little_helper.spectrum import Spectrum, CassisModelSpectra
+from regions import Regions
 from toolkit.array_utils import load_struct_array
 import astropy.units as u
 import numpy as np
 import numpy.typing as npt
-import pyregion
 
 Data = TypeVar('Data')
 Projection = TypeVar('Projection')
@@ -72,9 +72,11 @@ def load_structured_array(
 
 def region_patch(filename: 'pathlib.Path', header: fits.Header):
     """Load a region and convert it to ."""
-    region = pyregion.open(filename).as_imagecoord(header)
+    region = Regions.read(filename)[0]
+    ref_wcs = wcs.WCS(header)
+    pixel_region = sky_region.to_pixel(ref_wcs)
 
-    return region, 'rectilinear'
+    return pixel_region.as_artist(), 'rectilinear'
 
 def eval_function(function: str,
                   coeficients: List[float],

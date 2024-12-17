@@ -1155,6 +1155,9 @@ class MapHandler(PhysPlotHandler):
             color = config.get('color', fallback='r',)
             self.plot(*data, linestyle=linestyle, color=color,
                       transform=self.get_transform())
+        elif dtype == 'region_patch':
+            self._log.info('Plotting region patch')
+            self.ax.add_artist(data)
         else:
             self.plot_map(data,
                           use_extent=use_extent,
