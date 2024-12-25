@@ -70,12 +70,14 @@ class MapHandler(PhysPlotHandler):
 
     Attributes:
       im: Object from `plt.imshow`.
-      axes_props: axes properties.
-      vscale: intensity scale parameters.
-      artists: artists to plot.
-      radesys: projection system.
-      skeleton: skeleton for the configuration options.
+      base_wcs: The WCS of the plotted map.
+      axes_props: Axes properties.
+      vscale: Intensity scale parameters.
+      artists: Artists to plot.
+      radesys: Projection system.
+      skeleton: Skeleton for the configuration options.
     """
+    base_wcs: apy_wcs.WCS = None
     # Common class attributes
     _defconfig = (pathlib.Path(__file__).resolve().parent /
                   pathlib.Path('../configs/map_default.cfg'))
@@ -151,6 +153,8 @@ class MapHandler(PhysPlotHandler):
                 value = config.getboolean(opt, vars=kwargs, fallback=fallback)
             elif opt in ['label_xpad', 'label_ypad']:
                 value = config.getfloat(opt, vars=kwargs, fallback=float(val))
+            elif opt in ['xlim', 'ylim']:
+                value = config.getquantity(opt, vars=kwargs, fallback=None)
             else:
                 value = config.get(opt, vars=kwargs, fallback=val)
             axes_props[opt] = value
