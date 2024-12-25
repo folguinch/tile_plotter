@@ -70,9 +70,9 @@ class AxesProps:
                                          unit_fmt=self.unit_fmt)
 
         # Limits
-        if self.xlim is not None:
+        if self.xlim is not None and 'left' not in self.xlim:
             self.xlim = dict(zip(('left', 'right'), self.xlim))
-        if self.ylim is not None:
+        if self.ylim is not None and 'top' not in self.ylim:
             self.ylim = dict(zip(('bottom', 'top'), self.ylim))
 
 @dataclasses.dataclass
@@ -86,10 +86,10 @@ class PhysAxesProps(AxesProps):
 
     def __post_init__(self):
         # Check units
-        if self.xlim is not None:
+        if self.xlim is not None and 'left' not in self.xlim:
             self.xlim = (self._check_unit(self.xlim[0], self.xunit),
                          self._check_unit(self.xlim[1], self.xunit))
-        if self.ylim is not None:
+        if self.ylim is not None and 'top' not in self.ylim:
             self.ylim = (self._check_unit(self.ylim[0], self.yunit),
                          self._check_unit(self.ylim[1], self.yunit))
 
