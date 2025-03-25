@@ -196,8 +196,8 @@ class MapHandler(PhysPlotHandler):
             if opt not in config and opt not in kwargs:
                 continue
             # Scale is a special artist
-            if opt == 'scale':
-                props = ('length', 'size', 'distance')
+            if opt in ['scale', 'xrefscale', 'yrefscale']:
+                props = ('length', 'size', 'distance', 'offset')
                 artists[opt] = get_artist_properties(opt, config,
                                                      float_props=(),
                                                      quantity_props=props)
@@ -631,6 +631,9 @@ class MapHandler(PhysPlotHandler):
             elif artist == 'scale':
                 distance = props.pop('distance')
                 self.scale(pos.ra, pos.dec, distance, **props)
+            elif artist in ['xrefscale', 'yrefscale']:
+                size = props.pop('size')
+                self.draw_scale(pos[0], pos[1], size, axis=artist[0], **props)
             elif artist == 'regions':
                 self.region(pos.ra, pos.dec, **props)
             elif artist == 'hlines':

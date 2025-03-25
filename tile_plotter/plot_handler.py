@@ -9,6 +9,7 @@ from matplotlib import patches
 from toolkit.logger import get_logger
 import astropy.units as u
 import matplotlib as mpl
+import matplotlib.transforms as transforms
 #import matplotlib.lines as mlines
 import numpy as np
 import numpy.typing as npt
@@ -781,3 +782,87 @@ class PhysPlotHandler(PlotHandler):
         kwargs.setdeafult('color', color)
 
         return self.plot(x, y, **kwargs)
+
+    def draw_scale(self,
+                   x0: u.Quantity,
+                   y0: u.Quantity,
+                   size: u.Quantity,
+                   axis: str = 'x',
+                   unit: Optional[u.Unit] = None,
+                   distance: Optional[u.Quantity] = None,
+                   offset: u.Quantity = None,
+                   **kwargs):
+        """Draw scale along axis.
+
+        For a scale along the `x` axis, the given `offset` should be in units
+        of the `y` axis, and viceversa.
+
+        Args:
+          x0: X-axis origin point.
+          y0: Y-axis origin point.
+          size: Size of the scale.
+          axis: Optional. Scale direction.
+          unit: Optional. Unit of the scale label.
+          distance: Optional. Source distance to convert arcsec to au.
+          offset: Optional. Label offset in data units.
+          kwargs: 
+        """
+        # Check units
+        kwargs_label = {}
+        xaxis_unit = self.axes_props.xunit
+        yaxis_unit = self.axes_props.yunit
+        if axis == 'x':
+            xval = [x0.to(xaxis_unit).value, (x0 + size).to(xaxis_unit).value]
+            yval = [y0.to(yaxis_unit).value] * 2
+            kwargs_label['verticalalignment'] = kwargs.pop('verticalalignment',
+                                                           'bottom')
+            dx = 0
+            if offset is not None:
+                dy = offset.to(yaxis_unit).value
+            else:
+                dy = 0
+        else:
+            xval = [x0.to(xaxis_unit).value] * 2
+            yval = [y0.to(yaxis_unit).value, (y0 + size).to(yaxis_unit).value]
+            kwargs_label['horizontalalignment'] = kwargs.pop(
+                'horizontalalignment',
+                'right',
+            )
+            dy = 0
+            if offset is not None:
+                dx = offset.to(xaxis_unit).value
+            else:
+                dx = 0
+
+        # Plotting scale
+        color = kwargs.get('color', 'w')
+        zorder = kwargs.get('zorder', 10)
+        self._log.info('Scale length: %s', size)
+        self.plot(xval, yval, color=color, ls='-', lw=1, marker='_',
+                  zorder=zorder)
+
+        # Annotate
+        if unit is not None:
+            if size.unit.is_equivalent(u.arcsec) and unit.is_equivalent(u.pc):
+                if distance is None:
+                    self._log.warn('Ignoring scale unit conversion')
+                    pass
+                else:
+                    fsize = size.to(u.arcsec).value * distance.to(u.pc).value
+                    fsize = fsize * u.au
+                    fsize = fsize.to(unit)
+            else:
+                fsize = size.to(unit)
+        else:
+            fsize = size
+        label = f'{fsize.value} {fsize.unit:latex_inline}  '.lower()
+        xycoords = 'data'
+        self.annotate(label,
+                      xy=[xval[0]+dx, yval[0]+dy],
+                      xytext=[xval[0]+dx, yval[0]+xy],
+                      color=color,
+                      xycoords=xycoords,
+                      zorder=zorder,
+                      transform=label_transform,
+                      **kwargs_label)
+
