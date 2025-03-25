@@ -110,6 +110,11 @@ def eval_function(function: str,
       semi-major and -minor axes `(a, b)` in degrees:
       `y = +/- b/a sqrt(a**2 - (x - x0)**2) + y0` (coeficient order: `x0`,
       `y0`, `a`, `b`)
+    - `piecewise_powerlaw`: power law defined around a central value `x0` and
+      symmetric along diagonal quadrants  as:
+      `y = a * (abs(x - x0) / xref)**-alpha + b` for `(x-x0)` < 0
+      `y = -a * ((x - x0) / xref)**-alpha + b` otherwise
+      (coeficient order: `a`, `xref`, `alpha`, `b`, `x0`)
     """
     # Convert to functional form
     if function == 'poly':
@@ -132,24 +137,46 @@ def eval_function(function: str,
 
         if rotation_center is None:
             rotation_center = (x0 * xval.unit, y0 * yunit)
+    elif function == 'piecewise_powerlaw':
+        a = coeficients[0]
+        xref = coeficients[1]
+        alpha = coeficients[2]
+        b =  coeficients[3]
+        x0 = coeficients[4]
+        def piece_powerlaw(x):
+            sign = -1 * np.sign(x - x0)
+            vals = np.zeros(len(x))
+            vals = sign * a * (np.abs(x - x0) / xref)**-alpha
+
+            return vals + b
+        funct = piece_powerlaw
     else:
         raise NotImplementedError(f'Function {function} not implemented')
     if rotation_center is None:
         rotation_center = (0 * xval.unit, 0 * yunit)
 
     # Evaluate and rotate
-    yval = funct(xval.value) * yunit
-    if function == 'ellipse':
-        xval = np.append(xval, xval)
-        yval = np.append(yval, -yval)
-    xrot = (rotation_center[0]
-            + (xval - rotation_center[0]) * np.cos(rotation)
-            - (yval - rotation_center[1]) * np.sin(rotation))
-    yrot = (rotation_center[1]
-            + (xval - rotation_center[0]) * np.sin(rotation)
-            + (yval - rotation_center[1]) * np.cos(rotation))
+    if function != 'piecewise_powerlaw':
+        yval = funct(xval.value) * yunit
+        if function == 'ellipse':
+            xval = np.append(xval, xval)
+            yval = np.append(yval, -yval)
+        xrot = (rotation_center[0]
+                + (xval - rotation_center[0]) * np.cos(rotation)
+                - (yval - rotation_center[1]) * np.sin(rotation))
+        yrot = (rotation_center[1]
+                + (xval - rotation_center[0]) * np.sin(rotation)
+                + (yval - rotation_center[1]) * np.cos(rotation))
+        vals = (xrot, yrot)
+    else:
+        xval1 = xval[xval.value < xref]
+        xval2 = xval[xval.value >= xref]
+        yval1 = funct(xval1.value) * yunit
+        yval2 = funct(xval2.value) * yunit
+        
+        vals = (xval1, yval1, xval2, yval2)
 
-    return (xrot, yrot), 'rectilinear'
+    return vals, 'rectilinear'
 
 # Available loaders
 LOADERS = {
