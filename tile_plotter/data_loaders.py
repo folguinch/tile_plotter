@@ -244,7 +244,10 @@ def data_loader(config: 'configparseradv.configparser.ConfigParserAdv',
         else:
             raise KeyError('Cannot find loader for data')
 
-    log(f'Loading data: {loader_args}')
+    if key == 'function':
+        log(f'Loading function: {loader_args[0]} {loader_args[1]}')
+    else:
+        log(f'Loading data: {loader_args}')
     data, proj = loader(*loader_args)
 
     return data, proj, key
