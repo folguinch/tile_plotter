@@ -727,8 +727,13 @@ class PhysPlotHandler(PlotHandler):
         elif nphys_args == 1:
             phys_args = (args[0].to(yunit).value,)
         elif nphys_args == 2:
-            phys_args = (args[0].to(xunit).value,
-                         args[1].to(yunit).value)
+            phys_args = tuple()
+            for xarg, yarg in zip(args[0::2], args[1::2]):
+                try:
+                    phys_args += (xarg.to(xunit).value,
+                                  yarg.to(yunit).value)
+                except AttributeError:
+                    break
         elif nphys_args == 3:
             phys_args = (args[0].to(xunit).value,
                          args[1].to(yunit).value,
@@ -737,7 +742,8 @@ class PhysPlotHandler(PlotHandler):
             raise ValueError('Could not convert values')
 
         # Non physical arguments
-        non_phys_args = args[nphys_args:]
+        #non_phys_args = args[nphys_args:]
+        non_phys_args = args[len(phys_args):]
         fn_args = phys_args + non_phys_args
 
         return self.insert_plt(kwargs.get('label', None),
