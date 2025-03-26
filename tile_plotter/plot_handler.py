@@ -783,8 +783,10 @@ class PhysPlotHandler(PlotHandler):
 
         # Configure plot
         linestyle = config.get('linestyle', vars=kwargs, fallback='-')
-        color = config.get('color', vars=kwargs, fallback='r',)
+        color = config.get('color', vars=kwargs, fallback='r')
+        marker = config.get('marker', vars=kwargs, fallback='')
         kwargs.setdeafult('linestyle', linestyle)
+        kwargs.setdeafult('marker', marker)
         kwargs.setdeafult('color', color)
 
         return self.plot(x, y, **kwargs)
