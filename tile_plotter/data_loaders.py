@@ -169,8 +169,8 @@ def eval_function(function: str,
                 + (yval - rotation_center[1]) * np.cos(rotation))
         vals = (xrot, yrot)
     else:
-        xval1 = xval[xval.value < xref]
-        xval2 = xval[xval.value >= xref]
+        xval1 = xval[xval.value < x0]
+        xval2 = xval[xval.value >= x0]
         yval1 = funct(xval1.value) * yunit
         yval2 = funct(xval2.value) * yunit
         
