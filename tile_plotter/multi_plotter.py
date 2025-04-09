@@ -92,12 +92,12 @@ class MultiPlotter(BasePlotter):
             label_loc = self.config.getfloatlist('label_position',
                                                  fallback=(0.1, 0.9))
             label_ha = 'left'
-        elif label_type in ['sicence', 'nature']:
+        elif label_type in ['science', 'nature']:
             label_loc = self.config.getfloatlist('label_position',
                                                  fallback=(0.9, 0.9))
             label_ha = 'right'
         else:
-            raise ValueError(f'Axis label type not available: {label_fmt}')
+            raise ValueError(f'Axis label type not available: {label_type}')
         label_bkgc = self.config.getfloatlist('label_backgroundcolor',
                                               fallback='w')
         enum = self.config.getboolean('enumerate')
