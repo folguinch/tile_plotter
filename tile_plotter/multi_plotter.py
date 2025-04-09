@@ -104,7 +104,7 @@ class MultiPlotter(BasePlotter):
         if len(self.axes) > 1 and enum:
             nrows, ncols = self.shape
             ind = list(product(range(nrows), range(ncols))).index(loc)
-            if label_type in ['sicence', 'nature']:
+            if label_type in ['science', 'nature']:
                 number = ''
                 axnum = chr(ord('A') + ind)
                 handler.label_axes(axnum,
