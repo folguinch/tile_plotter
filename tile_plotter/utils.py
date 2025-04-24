@@ -409,6 +409,8 @@ def generate_label(name: str,
         else:
             unit_label = unit_fmt.format(factor, unit).replace('mathrm',
                                                                'mathdefault')
+        if 'prime' in unit_label:
+            unit_label = unit_label.replace(r'\\prime', "'")
         label.append(unit_label)
     elif factor is not None:
         label.append(factor)
