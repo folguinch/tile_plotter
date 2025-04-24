@@ -405,11 +405,7 @@ def generate_label(name: str,
     # Replace unit
     if unit is not None and unit != u.dimensionless_unscaled:
         if unit is u.arcsec:
-            unit_label = "''"
-            if factor is None:
-                unit_label = unit_fmt.format(unit_label)
-            else:
-                unit_label = unit_fmt.format(factor, unit_label)
+            unit_label = "('')"
         elif factor is None:
             unit_label = unit_fmt.format(unit).replace('mathrm', 
                                                        'mathdefault')
