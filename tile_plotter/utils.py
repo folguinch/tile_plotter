@@ -404,13 +404,18 @@ def generate_label(name: str,
 
     # Replace unit
     if unit is not None and unit != u.dimensionless_unscaled:
-        if factor is None:
-            unit_label = unit_fmt.format(unit).replace('mathrm', 'mathdefault')
+        if unit is u.arcsec:
+            unit_label = "''"
+            if factor is None:
+                unit_label = unit_fmt.format(unit_label)
+            else:
+                unit_label = unit_fmt.format(factor, unit_label)
+        elif factor is None:
+            unit_label = unit_fmt.format(unit).replace('mathrm', 
+                                                       'mathdefault')
         else:
             unit_label = unit_fmt.format(factor, unit).replace('mathrm',
                                                                'mathdefault')
-        if 'prime' in unit_label:
-            unit_label = unit_label.replace(r'\\prime', "'")
         label.append(unit_label)
     elif factor is not None:
         label.append(factor)
