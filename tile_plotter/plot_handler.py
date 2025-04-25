@@ -218,16 +218,16 @@ class PlotHandler:
         if xlabel == '':
             pass
         elif xlabel is not None:
-            self.ax.set_xlabel(xlabel)
+            self.ax.set_xlabel(xlabel, labelpad=self.axes_props.label_xpad)
         elif self.axes_props.set_xlabel:
             self.ax.set_xlabel(self.axes_props.xlabel,
                                labelpad=self.axes_props.label_xpad)
         if ylabel == '':
             pass
         elif ylabel is not None:
-            self.ax.set_ylabel(ylabel)
+            self.ax.set_ylabel(ylabel, labelpad=self.axes_props.label_ypad)
         elif self.axes_props.set_ylabel:
-            self.ax.set_xlabel(self.axes_props.ylabel,
+            self.ax.set_ylabel(self.axes_props.ylabel,
                                labelpad=self.axes_props.label_ypad)
 
     # Matplotlib plotting functions
