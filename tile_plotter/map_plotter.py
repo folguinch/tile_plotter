@@ -1197,10 +1197,11 @@ class MapHandler(PhysPlotHandler):
             beam_color = config.get('beam_color', fallback=beam_color)
             beam_pad = self.skeleton.getfloat('data', 'beam_pad')
             beam_pad = config.getfloat('beam_pad', fallback=beam_pad)
+            beam_zorder = config.getint('beam_zorder', fallback=4)
 
             # Plot
             self.plot_beam(data.header, beam=beam, color=beam_color,
-                           pad=beam_pad)
+                           pad=beam_pad, zorder=beam_zorder)
 
         ## Title
         #if 'title' in config:
