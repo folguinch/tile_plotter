@@ -71,7 +71,7 @@ class MapHandler(PhysPlotHandler):
     Attributes:
       im: Object from `plt.imshow`.
       base_wcs: The WCS of the plotted map.
-      beam_transform: Transform for beam plotting.
+      beam_position: Store beam position.
       axes_props: Axes properties.
       vscale: Intensity scale parameters.
       artists: Artists to plot.
@@ -79,7 +79,7 @@ class MapHandler(PhysPlotHandler):
       skeleton: Skeleton for the configuration options.
     """
     base_wcs: apy_wcs.WCS = None
-    beam_transform: Any = None
+    beam_position: Tuple[float] = None
     # Common class attributes
     _defconfig = (pathlib.Path(__file__).resolve().parent /
                   pathlib.Path('../configs/map_default.cfg'))
@@ -751,15 +751,17 @@ class MapHandler(PhysPlotHandler):
         bmin = beam.minor.cgs / pixsize.cgs
 
         # Define position
-        xmin, _ = self.ax.get_xlim()
-        ymin, _ = self.ax.get_ylim()
-        xmin += dx
-        ymin += dy
-        size = bmaj + pad
+        if self.beam_position is None:
+            xmin, _ = self.ax.get_xlim()
+            ymin, _ = self.ax.get_ylim()
+            xmin += dx
+            ymin += dy
+            size = bmaj + pad
+            self.beam_position = (xmin + size/2., ymin + size/2.)
 
         # Plot beam
         kwargs.setdefault('zorder', 4)
-        beam = Ellipse((xmin + size/2., ymin + size/2.), bmin.value, bmaj.value,
+        beam = Ellipse(self.beam_position, bmin.value, bmaj.value,
                        angle=beam.pa.to(u.deg).value, fc=color,
                        **kwargs)
         self.ax.add_patch(beam)
