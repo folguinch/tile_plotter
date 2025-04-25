@@ -71,6 +71,7 @@ class MapHandler(PhysPlotHandler):
     Attributes:
       im: Object from `plt.imshow`.
       base_wcs: The WCS of the plotted map.
+      beam_transform: Transform for beam plotting.
       axes_props: Axes properties.
       vscale: Intensity scale parameters.
       artists: Artists to plot.
@@ -78,6 +79,7 @@ class MapHandler(PhysPlotHandler):
       skeleton: Skeleton for the configuration options.
     """
     base_wcs: apy_wcs.WCS = None
+    beam_transform: Any = None
     # Common class attributes
     _defconfig = (pathlib.Path(__file__).resolve().parent /
                   pathlib.Path('../configs/map_default.cfg'))
@@ -756,12 +758,10 @@ class MapHandler(PhysPlotHandler):
         size = bmaj + pad
 
         # Plot beam
-        #rect = Rectangle((xmin,ymin), size, size, fill=True, fc='w', zorder=3)
         kwargs.setdefault('zorder', 4)
         beam = Ellipse((xmin + size/2., ymin + size/2.), bmin.value, bmaj.value,
                        angle=beam.pa.to(u.deg).value, fc=color,
-                       transform=self.get_transform(wcs), **kwargs)
-        #ax.add_patch(rect)
+                       **kwargs)
         self.ax.add_patch(beam)
 
     # Configurations
