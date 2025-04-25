@@ -220,7 +220,7 @@ class PlotHandler:
         elif xlabel is not None:
             self.ax.set_xlabel(xlabel)
         elif self.axes_props.set_xlabel:
-            self.ax.set_xlabel(self.axes_props.xlabel
+            self.ax.set_xlabel(self.axes_props.xlabel,
                                labelpad=self.axes_props.label_xpad)
         if ylabel == '':
             pass
