@@ -508,7 +508,7 @@ def get_artist_properties(
     separator: str = ',',
     float_props: Sequence[str] = ('size', 'width', 'height', 'angle', 's',
                                   'alpha', 'length', 'linewidth', 'minor',
-                                  'major'),
+                                  'major', 'mew'),
     quantity_props: Sequence[str] = ('pa', 'slope'),
     from_region: bool = False,
     from_table: bool = False,
