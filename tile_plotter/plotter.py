@@ -28,6 +28,8 @@ def multiplot(args):
     plot.savefig(args.plotname[0])
     if args.pdf:
         plot.savefig(args.plotname[0].with_suffix('.pdf'))
+    if args.eps:
+        plot.savefig(args.plotname[0].with_suffix('.eps'))
 
 def plotter(args: Optional[Sequence] = None):
     """Plotting script.
@@ -61,6 +63,8 @@ def plotter(args: Optional[Sequence] = None):
     )
     parser.add_argument('--pdf', action='store_true',
                         help='Store also as pdf?')
+    parser.add_argument('--eps', action='store_true',
+                        help='Store also as eps?')
     parser.add_argument('plotname', nargs=1, action=actions.NormalizePath,
                         help='Plot file name')
 
@@ -88,5 +92,5 @@ def plotter(args: Optional[Sequence] = None):
     #if figure is not None:
     #    args.post(figure, args)
 
-if __name__=='__main__':
+if __name__ == '__main__':
     plotter(sys.argv[1:])
