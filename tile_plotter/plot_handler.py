@@ -505,6 +505,7 @@ class PlotHandler:
               arrowprops: Optional[dict] = None,
               origin: str = 'mid',
               color: Optional[str] = None,
+              style: str = '->',
               **kwargs) -> None:
         """Draw an arrow.
 
@@ -525,12 +526,17 @@ class PlotHandler:
           arrowprops: Optional. Arrow properties.
           origin: Optional. Arrow origin (`mid` or `origin`).
           color: Optional. Use the default arrowprops but replace the color.
+          style: Optional. Arrow style.
           kwargs: Other arrow properties. See `matplotlib.pyplot.annotate`.
         """
         # Check input
         if arrowprops is None:
             lw = kwargs.pop('linewidth', kwargs.pop('lw', 2))
-            arrowprops = {'arrowstyle':'->', 'fc':'k', 'ec':'k', 'ls':'-',
+            ls = kwargs.pop('linestyle', kwargs.pop('ls', '-'))
+            arrowprops = {'arrowstyle':style,
+                          'fc':'k',
+                          'ec':'k',
+                          'ls':ls,
                           'lw':float(lw)}
 
         # Arrow specified as PA or (x y PA) or (PA len) or (x y PA len)
