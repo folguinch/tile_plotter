@@ -9,16 +9,16 @@ packages = [{include = "tile_plotter"}]
 include = ['config']
 
 [tool.poetry.dependencies]
-python = ">=3.9,<4.0"
-numpy = "^1.26.3"
+python = ">=3.11,<4.0"
+numpy = "^2.3"
 matplotlib = "^3.8.3"
-astropy = "^6.0.0"
+astropy = "^7.0.0"
 radio-beam = "^0.3.4"
 #configparseradv = {path = "../configparseradv"}
 #toolkit = {path = "../toolkit"}
-configparseradv = {git = "https://github.com/folguinch/configparseradv"}
-toolkit = {git = "https://github.com/folguinch/toolkit.git"}
-regions = "^0.7"
+#configparseradv = {git = "https://github.com/folguinch/configparseradv"}
+#toolkit = {git = "https://github.com/folguinch/toolkit.git"}
+regions = "^0.10"
 cmcrameri = "^1.5"
 
 [tool.poetry.scripts]
