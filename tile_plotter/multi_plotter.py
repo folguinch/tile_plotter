@@ -122,9 +122,7 @@ class MultiPlotter(BasePlotter):
                     div = real_index//enumerate_modulus
                     number1 = ord('a') + div
                     number2 = ord('a') + real_index%enumerate_modulus
-                    number = (enum_fmt.format(chr(number1)) +
-                              enum_fmt.format(chr(number2)) +
-                              ' ')
+                    number = enum_fmt.format(chr(number1) + chr(number2)) + ' '
                 else:
                     n = abs(ord('a') + ord('z')) + 1
                     div = real_index//n
@@ -134,8 +132,7 @@ class MultiPlotter(BasePlotter):
                     else:
                         number1 = ord('a') + div - 1
                         number2 = ord('a') + real_index%n
-                        number = (enum_fmt.format(chr(number1)) +
-                                  enum_fmt.format(chr(number2)))
+                        number = enum_fmt.format(chr(number1) + chr(number2))
                     number += ' '
             label = f'{number}{label}'.strip()
         if len(label) >= 1:
