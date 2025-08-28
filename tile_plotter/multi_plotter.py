@@ -104,9 +104,10 @@ class MultiPlotter(BasePlotter):
         if len(self.axes) > 1 and enum:
             nrows, ncols = self.shape
             ind = list(product(range(nrows), range(ncols))).index(loc)
+            enumerate_shift = self.config.getint('enumerate_shift', fallback=0)
             if label_type in ['science', 'nature']:
                 number = ''
-                axnum = chr(ord('A') + ind)
+                axnum = chr(ord('A') + ind + enumerate_shift)
                 handler.label_axes(axnum,
                                    loc=(0.1, 0.9),
                                    backgroundcolor=label_bkgc,
@@ -114,7 +115,8 @@ class MultiPlotter(BasePlotter):
                                    fontweight='bold')
             else:
                 enum_fmt = self.config['enumerate_fmt']
-                number = enum_fmt.format(chr(ord('a') + ind)) + ' '
+                number = enum_fmt.format(chr(ord('a') + ind + enumerate_shift))
+                number += ' '
             label = f'{number}{label}'.strip()
         if len(label) >= 1:
             handler.label_axes(label, loc=label_loc,
