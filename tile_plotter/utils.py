@@ -622,5 +622,5 @@ def tick_formatter(stretch: str, sci: Tuple[int,int] = (-3, 4)) -> Callable:
             elif x < 10**sci[1]:
                 return f'{int(x)}'
             else:
-                return f'$10^{{{np.floor(np.log10(x))}}}$'
+                return f'$10^{{{int(np.floor(np.log10(x)))}}}$'
         return FuncFormatter(logformatter)
