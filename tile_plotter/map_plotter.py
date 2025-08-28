@@ -624,7 +624,10 @@ class MapHandler(PhysPlotHandler):
                 self.text(pos.ra, pos.dec, text, nphys_args=2, **props)
             elif artist == 'arrows':
                 pa = props.pop('pa')
-                self.arrow(pos.ra, pos.dec, pa, **props)
+                if (length := props.pop('length', None)) is not None:
+                    self.arrow(pos.ra, pos.dec, pa, length, **props)
+                else:
+                    self.arrow(pos.ra, pos.dec, pa, **props)
             elif artist == 'ellipses':
                 minor = props.pop('minor')
                 major = props.pop('major')
