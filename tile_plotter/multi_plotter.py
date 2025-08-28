@@ -105,6 +105,8 @@ class MultiPlotter(BasePlotter):
             nrows, ncols = self.shape
             ind = list(product(range(nrows), range(ncols))).index(loc)
             enumerate_shift = self.config.getint('enumerate_shift', fallback=0)
+            enumerate_modulus = self.config.getint('enumerate_modulus',
+                                                   fallback=None)
             if label_type in ['science', 'nature']:
                 number = ''
                 axnum = chr(ord('A') + ind + enumerate_shift)
@@ -115,8 +117,26 @@ class MultiPlotter(BasePlotter):
                                    fontweight='bold')
             else:
                 enum_fmt = self.config['enumerate_fmt']
-                number = enum_fmt.format(chr(ord('a') + ind + enumerate_shift))
-                number += ' '
+                real_index = ind + enumerate_shift
+                if enumerate_modulus is not None:
+                    div = real_index//enumerate_modulus
+                    number1 = ord('a') + div
+                    number2 = ord('a') + real_index%enumerate_modulus
+                    number = (enum_fmt.format(chr(number1)) +
+                              enum_fmt.format(chr(number2)) +
+                              ' ')
+                else:
+                    n = abs(ord('a') + ord('z')) + 1
+                    div = real_index//n
+                    if div == 0:
+                        number = ord('a') + real_index
+                        number = enum_fmt.format(chr(number))
+                    else:
+                        number1 = ord('a') + div - 1
+                        number2 = ord('a') + real_index%n
+                        number = (enum_fmt.format(chr(number1)) +
+                                  enum_fmt.format(chr(number2)))
+                    number += ' '
             label = f'{number}{label}'.strip()
         if len(label) >= 1:
             handler.label_axes(label, loc=label_loc,
