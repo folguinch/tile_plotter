@@ -53,6 +53,8 @@ class AxesProps:
     """Invert y axis direction?"""
     ticks_color: str = 'k'
     """Ticks color."""
+    spine_color: str = 'k'
+    """Axes spine color."""
     xticks_fmt: Union[None, str, Callable] = '{:.3f}'
     """Ticks label format for x-axis."""
     yticks_fmt: Union[None, str, Callable] = '{:.3f}'
