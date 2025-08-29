@@ -202,7 +202,7 @@ class PlotHandler:
 
         # Spine color
         for border in ['top', 'bottom', 'left', 'right']:
-            self.ax.spines[border].set_color(props.ticks_color)
+            self.ax.spines[border].set_color(props.spine_color)
 
         # Ticks colors
         self.ax.tick_params('both', color=props.ticks_color)
