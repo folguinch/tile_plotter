@@ -185,7 +185,7 @@ class MultiPlotter(BasePlotter):
         # Plot legends:
         for axis in self.axes:
             if self.is_init(axis):
-                self.axes[axis].legend()
+                self.axes[axis].handler.legend()
 
 class OTFMultiPlotter(BasePlotter):
     """On-the-fly multiple plot manager.
