@@ -1138,7 +1138,8 @@ class MapHandler(PhysPlotHandler):
                                stretch=contour_stretch,
                                linewidths=contour_linewidth, zorder=2)
         elif 'array' in dtype:
-            self.plot_array(data, config=config)
+            legend = config.get('legend', fallback=None)
+            self.plot_array(data, config=config, label=legend)
         elif 'with_style' in config:
             self._log.info('Changing style: %s', config['with_style'])
             with mpl.pyplot.style.context(config['with_style']):
@@ -1165,8 +1166,9 @@ class MapHandler(PhysPlotHandler):
             self._log.info('Plotting function values')
             linestyle = config.get('linestyle', fallback='-')
             color = config.get('color', fallback='r',)
+            legend = config.get('legend', fallback=None)
             self.plot(*data, linestyle=linestyle, color=color,
-                      transform=self.get_transform())
+                      transform=self.get_transform(), label=legend)
         elif dtype == 'region_patch':
             self._log.info('Plotting region patch')
             self.ax.add_artist(data)

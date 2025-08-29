@@ -182,6 +182,11 @@ class MultiPlotter(BasePlotter):
                 self.log.info('Configuring plot')
                 self.apply_config(loc, handler, dtype)
 
+        # Plot legends:
+        for axis in in self.axes:
+            if self.is_init(axis):
+                self.axes[axis].legend()
+
 class OTFMultiPlotter(BasePlotter):
     """On-the-fly multiple plot manager.
 
