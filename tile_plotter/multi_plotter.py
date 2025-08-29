@@ -183,7 +183,7 @@ class MultiPlotter(BasePlotter):
                 self.apply_config(loc, handler, dtype)
 
         # Plot legends:
-        for axis in in self.axes:
+        for axis in self.axes:
             if self.is_init(axis):
                 self.axes[axis].legend()
 
