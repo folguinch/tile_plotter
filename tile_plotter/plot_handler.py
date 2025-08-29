@@ -200,6 +200,10 @@ class PlotHandler:
         if minor_yticks:
             self.ax.set_yticks(minor_yticks, minor=True)
 
+        # Spine color
+        for border in ['top', 'bottom', 'left', 'right']:
+            self.ax.spines[border].set_color(props.ticks_color)
+
         # Ticks colors
         self.ax.tick_params('both', color=props.ticks_color)
 
