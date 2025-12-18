@@ -85,7 +85,7 @@ class MultiPlotter(BasePlotter):
             handler.config_plot(set_xlabel=set_xlabel, set_ylabel=set_ylabel,
                                 set_xticks=set_xticks, set_yticks=set_yticks)
 
-        # Axes label
+        # Axes label position
         label = self.config.get('label', fallback='')
         label_type = self.config.get('label_type', fallback='normal')
         if label_type == 'normal':
@@ -98,8 +98,23 @@ class MultiPlotter(BasePlotter):
             label_ha = 'right'
         else:
             raise ValueError(f'Axis label type not available: {label_type}')
-        label_bkgc = self.config.getfloatlist('label_backgroundcolor',
-                                              fallback='w')
+
+        # Axes label text properties
+        bbox = {
+            'boxstyle': 'square',
+            'facecolor': self.config.get('label_backgroundcolor',
+                                         fallback='w'),
+            }
+        bbox['edgecolor'] = self.config.get('label_edgecolor',
+                                            fallback=bbox['facecolor'])
+        if 'label_alpha' in self.config:
+            bbox['alpha'] = self.config.getfloat('label_alpha')
+        text_args = {
+            'color': self.config.get('label_font_color', fallback='k'),
+            'bbox': bbox,
+        }
+
+        # Axes label enumeration
         enum = self.config.getboolean('enumerate')
         if len(self.axes) > 1 and enum:
             nrows, ncols = self.shape
@@ -112,7 +127,7 @@ class MultiPlotter(BasePlotter):
                 axnum = chr(ord('A') + ind + enumerate_shift)
                 handler.label_axes(axnum,
                                    loc=(0.1, 0.9),
-                                   backgroundcolor=label_bkgc,
+                                   backgroundcolor=bbox['facecolor'],
                                    fontsize=9,
                                    fontweight='bold')
             else:
@@ -137,8 +152,8 @@ class MultiPlotter(BasePlotter):
             label = f'{number}{label}'.strip()
         if len(label) >= 1:
             handler.label_axes(label, loc=label_loc,
-                               backgroundcolor=label_bkgc,
-                               horizontalalignment=label_ha)
+                               horizontalalignment=label_ha,
+                               **text_args)
 
     def plot_sections(self, sections: Sequence, loc: Location):
         """Plot the requested sections in the requested location.
