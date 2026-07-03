@@ -563,6 +563,10 @@ def get_artist_properties(
     nprops = len(positions)
     artist_props['positions'] = positions
 
+    # Override separator
+    if (opt := f'{artist}_separator') in config:
+        separator = config[opt]
+
     # Iterate over properties
     props = [{} for i in range(nprops)]
     for opt in config:
@@ -572,7 +576,7 @@ def get_artist_properties(
 
         # Iterate over positions
         prop = opt.split('_')[-1]
-        if prop == 'physframe':
+        if prop in ('physframe', 'separator'):
             continue
         for i in range(nprops):
             if prop in float_props:
