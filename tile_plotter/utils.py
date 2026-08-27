@@ -580,8 +580,16 @@ def get_artist_properties(
             continue
         for i in range(nprops):
             if prop in float_props:
-                val = config.getvalue(opt, n=i, dtype=float, allow_global=True,
-                                      sep=separator)
+                try:
+                    val = config.getvalue(opt, n=i, dtype=float,
+                                          allow_global=True, sep=separator)
+                except ValueError as e:
+                    val = config.getvalue(opt, n=i, allow_global=True,
+                                          sep=separator)
+                    if val.lower() in ['none', 'default']:
+                        pass
+                    else:
+                        raise
             elif prop in ['zorder']:
                 val = config.getvalue(opt, n=i, dtype=int, allow_global=True,
                                       sep=separator)
@@ -595,10 +603,13 @@ def get_artist_properties(
                     val = u.Unit(val)
 
             # Special value
-            if val.lower() == 'default':
-                continue
-            if val.lower() == 'none' and prop != 'fillstyle':
-                val = None
+            try:
+                if val.lower() == 'default':
+                    continue
+                elif val.lower() == 'none' and prop != 'fillstyle':
+                    val = None
+            except AttributeError:
+                pass
 
             # Fill the properties tuple
             try:
