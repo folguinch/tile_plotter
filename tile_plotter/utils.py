@@ -576,6 +576,7 @@ def get_artist_properties(
 
         # Iterate over positions
         prop = opt.split('_')[-1]
+        is_bbox = bbox in opt
         if prop in ('physframe', 'separator'):
             continue
         for i in range(nprops):
@@ -612,10 +613,17 @@ def get_artist_properties(
                 pass
 
             # Fill the properties tuple
-            try:
-                props[i].update({prop: val})
-            except IndexError:
-                props += ({prop: val},)
+            if not is_bbox:
+                try:
+                    props[i].update({prop: val})
+                except IndexError:
+                    props += ({prop: val},)
+            else:
+                props[i].setdefault('bbox', {prop: val})
+                if 'bbox' in props[i]:
+                    props[i]['bbox'].update({prop: val})
+                else:
+                    props[i]['bbox'] = {prop: val}
     artist_props['properties'] = props
 
     return artist_props
