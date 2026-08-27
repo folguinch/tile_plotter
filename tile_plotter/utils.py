@@ -576,7 +576,7 @@ def get_artist_properties(
 
         # Iterate over positions
         prop = opt.split('_')[-1]
-        is_bbox = bbox in opt
+        is_bbox = 'bbox' in opt
         if prop in ('physframe', 'separator'):
             continue
         for i in range(nprops):
