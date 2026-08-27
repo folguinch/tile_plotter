@@ -595,7 +595,9 @@ def get_artist_properties(
                     val = u.Unit(val)
 
             # Special value
-            if val == 'none' and prop != 'fillstyle':
+            if val.lower() == 'default':
+                continue
+            if val.lower() == 'none' and prop != 'fillstyle':
                 val = None
 
             # Fill the properties tuple
